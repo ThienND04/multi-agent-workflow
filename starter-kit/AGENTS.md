@@ -112,7 +112,7 @@ task: T-01
 | 9. Kiểm tra | Tester | Chạy test và chạy sản phẩm thật | Đạt: `status: verified`, `to: <master>`. Trượt: tạo lỗi `to: <assignee>`, việc `status: reopened`, `to: <assignee>` |
 | 10. Sửa lỗi | Coder | Viết test tái hiện, sửa | Lỗi `status: fixed`, `to: <tester>`; việc `status: in_test`, `to: <tester>` |
 | 10b. Kiểm lại | Tester | Kiểm lại lỗi đã sửa và cả việc | Lỗi hết: lỗi `status: closed`, `to: none`, rồi làm như bước 9 |
-| 11. Báo cáo | Master | Mọi việc `verified`: viết mục "Báo cáo" (đã làm, test gì, lỗi đã sửa, cách thử) | `SPEC.md` `status: acceptance`, `to: owner` |
+| 11. Báo cáo | Master | Mọi việc `verified`: viết mục "Báo cáo" (đã làm, test gì, lỗi đã sửa, cách thử), rồi báo chủ dự án trong phiên chat | Mỗi việc `to: none`; `SPEC.md` `status: acceptance`, `to: owner` |
 | 12. Nghiệm thu | Chủ dự án | Tự thử, nói "đạt" với Master | Master gộp code, đặt `SPEC.md` `status: done`, `to: none`. **Chủ dự án push** |
 
 Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
@@ -124,6 +124,7 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
 - **Lần đầu trong dự án:**
   - hỏi chủ dự án trước khi `git init -b main` (nếu chưa là repo git);
   - tạo `DECISIONS.md` và `journal/`;
+  - nhánh `main` chưa có commit nào thì xin chủ dự án cho tạo commit đầu tiên (bộ khởi đầu và `workflow/`), vì Coder cần ít nhất một commit mới tạo được worktree;
   - dự án đã có code thì khảo sát (cấu trúc, build, test, quy ước), ghi vào `DECISIONS.md`.
 - **Mỗi tính năng:**
   - tạo thư mục `F-NNN-short-name/` với số kế tiếp; ID của bạn là `master-F-NNN`;

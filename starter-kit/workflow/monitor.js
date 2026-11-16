@@ -38,6 +38,24 @@ function frontmatter(text) {
   }
   return o;
 }
+// Lấy các mục có tiêu đề khớp re (ví dụ "Cách thử", "Báo cáo") trong phần thân Markdown
+function sections(text, re) {
+  const lines = text.split(/\r?\n/), out = [];
+  let i = 0;
+  if (/^---/.test(lines[0] || '')) { i = 1; while (i < lines.length && !/^---/.test(lines[i])) i++; i++; }
+  for (; i < lines.length; i++) {
+    const h = lines[i].match(/^(#{1,6})\s+(.*)$/);
+    if (!h || !re.test(h[2])) continue;
+    const body = [];
+    let j = i + 1;
+    for (; j < lines.length; j++) { const n = lines[j].match(/^(#{1,6})\s/); if (n && n[1].length <= h[1].length) break; body.push(lines[j]); }
+    out.push({ title: h[2].trim(), text: body.join('\n').trim().slice(0, 3000) });
+    i = j - 1;
+  }
+  return out;
+}
+// Phần thân (bỏ frontmatter), dùng cho câu hỏi chờ chủ dự án
+const bodyOf = text => text.replace(/^---[\s\S]*?\n---[^\n]*\n?/, '').trim().slice(0, 2000);
 const read = f => { try { return fs.readFileSync(f, 'utf8'); } catch { return ''; } };
 const isDir = d => { try { return fs.statSync(d).isDirectory(); } catch { return false; } };
 
@@ -67,15 +85,17 @@ function readFeatures() {
     const specText = read(path.join(fd, 'SPEC.md'));
     const s = frontmatter(specText);
     const items = [];
-    const add = (rel, m, kind) => items.push({
+    const add = (rel, m, kind, text) => items.push({
       path: dir + '/' + rel, file: rel, kind, id: m.id || rel, title: m.title || '', status: m.status || '',
       to: m.to || 'none', assignee: m.assignee || '', tester: m.tester || '', from: m.from || '',
+      // Chỉ kèm nội dung khi file đang chờ chủ dự án
+      sections: m.to !== 'owner' ? [] : kind === 'spec' ? sections(text, /cách thử|báo cáo/i) : [{ title: 'Nội dung', text: bodyOf(text) }],
     });
-    if (specText) add('SPEC.md', s, 'spec');
+    if (specText) add('SPEC.md', s, 'spec', specText);
     for (const sub of ['tasks', 'questions', 'bugs']) {
       const sd = path.join(fd, sub);
       if (!isDir(sd)) continue;
-      for (const n of fs.readdirSync(sd).filter(n => n.endsWith('.md')).sort()) add(sub + '/' + n, frontmatter(read(path.join(sd, n))), sub);
+      for (const n of fs.readdirSync(sd).filter(n => n.endsWith('.md')).sort()) { const t = read(path.join(sd, n)); add(sub + '/' + n, frontmatter(t), sub, t); }
     }
     return { dir, id: s.id || dir.split('-').slice(0, 2).join('-'), title: s.title || dir, status: s.status || '', to: s.to || 'none', master: s.master || '', items };
   });
@@ -156,7 +176,12 @@ h2{font:700 12.5px ui-monospace,Consolas,monospace;text-transform:uppercase;lett
 .sp{flex:1}
 .badge{font:700 12px ui-monospace,Consolas,monospace;padding:3px 8px;border:2px solid var(--ink);background:var(--paper);white-space:nowrap}
 .badge.warn{background:var(--waitbg);color:var(--wait)}.badge.off{background:var(--badbg);color:var(--bad)}
-.need ul{margin:0;padding-left:18px}.need li{margin:3px 0}
+.need.on{background:var(--waitbg);border-color:var(--wait);box-shadow:4px 4px 0 var(--wait)}
+.need.on h2{color:var(--wait)}
+.ask{border-top:2px dashed var(--line);padding:10px 0 4px}.ask:first-of-type{border-top:0;padding-top:0}
+.ask .act{font-weight:700;font-size:16px;margin:0 0 2px}
+.ask p{margin:2px 0}.ask .say code{background:var(--paper);border:1px solid var(--line);padding:1px 6px;font-size:14px}
+.ask details{margin-top:6px}.ask pre{white-space:pre-wrap;font:13px/1.5 ui-monospace,Consolas,monospace;background:var(--paper);border:1px solid var(--line);padding:8px 10px;margin:4px 0 0;max-height:360px;overflow:auto}
 .muted{color:var(--fg2);font-size:13px;margin:0}
 .scene{padding:6px;background:#2a211b}
 #office{display:block;width:100%;height:auto;image-rendering:pixelated;shape-rendering:crispEdges}
@@ -180,7 +205,7 @@ td:last-child{white-space:nowrap}
 <body><main>
 <header class="pix"><h1 id="proj">VĂN PHÒNG AGENT</h1><span class="sp"></span>
 <span class="badge" id="bFeat"></span><span class="badge" id="bRun"></span><span class="badge warn" id="bNeed"></span><span class="badge" id="bConn">…</span></header>
-<section class="pix need"><h2>Cần bạn</h2><div id="need"></div></section>
+<section class="pix need" id="needBox"><h2>Cần bạn</h2><div id="need"></div></section>
 <section class="pix scene" aria-label="Văn phòng: mỗi tính năng một dãy bàn">
 <svg id="office" role="img" aria-label="Văn phòng agent"></svg>
 <div class="legend" id="legend"></div>
@@ -195,9 +220,18 @@ const HAIR=['#3b2a20','#7a4a22','#c9a24a','#2d2d3a','#a33a2a','#5a3a2a','#1f1a17
 const $=s=>document.querySelector(s);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let S=null,openId=null;
+let S=null,openId=null;const OPEN=new Map();
 const MODE_NAME={auto:'đánh thức tự động',manual:'đánh thức tay',subagent:'subagent, Master tự gọi'};
 const MODE_WAIT={auto:'Có việc, chờ watch.sh đánh thức',manual:'Có việc, cần mở phiên tay',subagent:'Có việc, chờ Master gọi'};
+const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
+const stVi=x=>ST[x]||x||'?';
+// Chủ dự án cần làm gì với một file to: owner
+function ownerAction(o){
+ if(o.kind==='spec'&&o.status==='acceptance')return{act:'Đã làm xong, chờ bạn nghiệm thu',how:'Thử theo hướng dẫn bên dưới. Ổn thì nói với Master câu này; chưa ổn thì nói rõ chỗ chưa đạt.',say:'đạt'};
+ if(o.kind==='spec')return{act:'Tài liệu chờ bạn duyệt',how:'Đọc file workflow/'+o.path+'. Ổn thì nói với Master câu này; chưa ổn thì nói chỗ cần sửa.',say:'duyệt'};
+ if(o.kind==='questions')return{act:'Câu hỏi chờ bạn trả lời',how:'Master sẽ hỏi bạn trong phiên chat. Nếu Master chưa hỏi, nói với Master câu này.',say:'Xử lý việc đang chờ'};
+ return{act:'Cần bạn xem',how:'Mở file workflow/'+o.path+' rồi trao đổi với Master.',say:''};
+}
 const hashN=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
 
 /* ---------- vẽ pixel ---------- */
@@ -232,6 +266,8 @@ function stateOf(a,dir){
 }
 
 /* ---------- dựng cảnh ---------- */
+const CW=0.57; // độ rộng một ký tự monospace so với cỡ chữ (Consolas khoảng 0.55)
+const cut=(t,n)=>t.length>n?t.slice(0,Math.max(1,n-1))+'…':t;
 const W=320, COL0=66, STEP=50, PER_ROW=5, ROW_H=58, HEAD=13;
 function build(){
  const byId=Object.fromEntries(S.agents.map(a=>[a.id,a]));
@@ -252,7 +288,10 @@ function build(){
  s+=R(141,9,32,48,'#6e3a20')+(need?R(144,12,26,45,'#2c201a')+R(144,12,4,45,'#c06a3a')+bubble(157,30,'!'+need,'bad'):R(144,12,26,45,'#c06a3a')+R(148,17,18,11,'#d98b55')+R(148,32,18,11,'#d98b55')+R(166,35,2,2,'#f0d07a'));
  // bảng trắng: các tính năng
  s+=R(182,6,74,46,'#6e4a30')+R(184,8,70,42,'#f8f8f2')+T(219,13.5,4,'#3b2a20','CÁC TÍNH NĂNG');
- blocks.slice(0,6).forEach((b,i)=>{const y=17+i*5.5;s+=R(187,y,3,3,b.color)+T(192,y+2.8,3.4,'#3b2a20',(b.f.id+' '+b.f.title).slice(0,22),'start')+T(252,y+2.8,3.4,'#6b5c4e',b.f.status||'','end')});
+ // mỗi tính năng 2 dòng: tên, rồi trạng thái; tối đa 4 tính năng
+ blocks.slice(0,4).forEach((b,i)=>{const y=16+i*8.5;
+  s+=R(187,y,3,3,b.color)+T(192,y+2.8,3.4,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(60/(CW*3.4))),'start')+T(192,y+6.6,3.1,b.f.to==='owner'?'#b23030':'#6b5c4e',stVi(b.f.status),'start')});
+ if(blocks.length>4)s+=T(252,49,3,'#6b5c4e','+'+(blocks.length-4)+' nữa','end');
  if(!blocks.length)s+=T(219,30,3.6,'#6b5c4e','(chưa có)');
  // cây nước + agent rảnh đứng quanh
  s+=R(298,22,12,15,'#7fc6ea')+R(300,24,2,10,'#c9ecff')+R(296,37,16,21,'#96a0b4')+R(296,37,16,2,'#b6bfd0')+R(300,44,2,2,'#d64545')+R(305,44,2,2,'#3f78d6');
@@ -263,10 +302,13 @@ function build(){
  blocks.forEach(b=>{
   const f=b.f;
   s+=R(4,y,W-8,b.h,'rgba(0,0,0,.06)')+R(4,y,W-8,1,b.color)+R(4,y+b.h-1,W-8,1,b.color)+R(4,y,1,b.h,b.color)+R(W-5,y,1,b.h,b.color);
-  const label=f.id+' · '+f.title;s+=R(6,y+2,Math.min(label.length*2.5+26,W-12),8,b.color)+T(8,y+7.6,4.4,'#ffffff',label,'start')+T(10+label.length*2.5,y+7.6,3.8,'#ffffffcc','['+(f.status||'?')+']','start');
+  const sv='['+stVi(f.status)+']',svw=sv.length*CW*3.8,label=cut(f.id+' · '+f.title,Math.floor((W-12-11-svw)/(CW*4.4))),lw=label.length*CW*4.4;
+  s+=R(6,y+2,Math.min(lw+svw+11,W-12),8,b.color)+T(8,y+7.6,4.4,'#ffffff',label,'start')+T(11+lw,y+7.6,3.8,f.to==='owner'?'#ffe066':'#ffffffcc',sv,'start');
   const rowTop=r=>y+HEAD+r*ROW_H;
   // bàn Master (rộng, 2 màn hình) ở đầu dãy
-  if(b.master){const a=byId[b.master],st=stateOf(a,f.dir),Y=rowTop(0)+23,cx=33;
+  if(b.master){const a=byId[b.master],Y=rowTop(0)+23,cx=33;let st=stateOf(a,f.dir);
+   // Master không còn file chờ nhưng tính năng đang chờ chủ dự án: hiện "!" thay vì "z"
+   if(st.kind==='idle'&&S.owner.some(o=>o.path.indexOf(f.dir+'/')===0))st={kind:'wait',txt:'!',label:'Chờ bạn (xem mục Cần bạn)',on:true};
    s+='<g class="ag'+(openId===b.master?' on':'')+'" data-id="'+esc(b.master)+'" tabindex="0" role="button" aria-label="'+esc(b.master+': '+st.label)+'">'+selBox(8,rowTop(0)-1,50,ROW_H-2)
     +monitor(14,Y-13,true,b.color)+monitor(34,Y-13,true,'#55d27a')+desk(9,Y,48)+seated(cx,Y+6,HAIR[hashN(b.master)%HAIR.length],b.color,st.kind==='run')+chair(cx,Y+13)
     +bubble(cx,rowTop(0)+1,st.txt,st.kind)+nameTag(cx,Y+31,b.master)+'</g>'}
@@ -291,14 +333,23 @@ function render(){
  $('#bFeat').textContent=S.features.length+' TÍNH NĂNG';
  $('#bRun').textContent=S.agents.filter(a=>a.running).length+'/'+S.agents.length+' ĐANG CHẠY';
  $('#bNeed').textContent=S.owner.length+' CHỜ BẠN';
+ document.title=(S.owner.length?'('+S.owner.length+') Chờ bạn · ':'')+'Văn phòng agent';
+ $('#needBox').classList.toggle('on',S.owner.length>0);
  const need=$('#need');need.replaceChildren();
  if(!S.hasWorkflow)need.append(el('p','muted','Không thấy thư mục workflow/. Hãy chạy monitor tại thư mục dự án.'));
  else if(!S.owner.length)need.append(el('p','muted','Không có gì chờ bạn.'));
- else{const ul=el('ul');S.owner.forEach(o=>{const li=el('li');li.append(el('strong',null,o.feature+' '),el('code',null,o.file),document.createTextNode(' '+(o.title||'')+(o.status?' ('+o.status+')':'')));ul.append(li)});need.append(ul)}
+ else S.owner.forEach(o=>{const a=ownerAction(o),box=el('div','ask');
+  box.append(el('p','act',o.feature+' · '+a.act),el('p',null,o.title||o.file),el('p','muted',a.how));
+  if(a.say){const p=el('p','say');p.append(document.createTextNode('Nói với Master: '),el('code',null,a.say));box.append(p)}
+  (o.sections||[]).forEach((x,i)=>{const k=o.path+'#'+x.title,d=el('details');
+   d.open=OPEN.has(k)?OPEN.get(k):/cách thử/i.test(x.title); // mặc định mở mục "Cách thử"; nhớ lựa chọn của bạn
+   d.addEventListener('toggle',()=>OPEN.set(k,d.open));
+   d.append(el('summary',null,x.title),el('pre',null,x.text||'(trống)'));box.append(d)});
+  need.append(box)});
  build();
  const files=$('#files');files.replaceChildren();
  S.features.forEach((f,i)=>{const d=el('details');const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' ('+f.items.length+' file)');d.append(sm);
-  const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,it.status),el('td',null,'→ '+it.to));t.append(tr)});d.append(t);files.append(d)});
+  const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,stVi(it.status)),el('td',null,'→ '+(it.to==='owner'?'bạn':it.to==='none'?'không ai':it.to)));t.append(tr)});d.append(t);files.append(d)});
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
  if(openId)showDetail();
 }

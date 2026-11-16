@@ -55,6 +55,18 @@ fm() {
     }' "$1"
 }
 
+# owner_lines <dòng scan có to: owner>: mỗi dòng nói rõ chủ dự án cần làm gì
+owner_lines() {
+  echo "$1" | awk -F'|' '{
+    f = $3; if (match(f, /^F-[0-9]+/)) f = substr(f, 1, RLENGTH)
+    if ($3 ~ /\/SPEC\.md$/ && $2 == "acceptance") a = "Xong, chờ bạn nghiệm thu (thử rồi nói \"đạt\" với Master)"
+    else if ($3 ~ /\/SPEC\.md$/) a = "Tài liệu chờ bạn duyệt (đọc rồi nói \"duyệt\" với Master)"
+    else if ($3 ~ /\/questions\//) a = "Câu hỏi chờ bạn trả lời (Master sẽ hỏi trong phiên chat)"
+    else a = "Cần bạn xem"
+    printf "- [%s] %s: %s (`%s`)\n", f, a, $4, $3
+  }'
+}
+
 # Liệt kê mọi file trao đổi: <to>|<status>|<đường dẫn tương đối>|<tiêu đề>
 scan() {
   for f in "$W"/F-*/SPEC.md "$W"/F-*/tasks/*.md "$W"/F-*/questions/*.md "$W"/F-*/bugs/*.md; do
@@ -96,7 +108,7 @@ write_status() { # write_status <kết quả scan>
     echo "## Chờ bạn"
     echo
     owner=$(echo "$data" | awk -F'|' '$1=="owner"')
-    if [ -n "$owner" ]; then echo "$owner" | awk -F'|' '{printf "- `%s` (%s): %s\n", $3, $2, $4}'; else echo "Không có."; fi
+    if [ -n "$owner" ]; then owner_lines "$owner"; else echo "Không có."; fi
     echo
     echo "## Agent"
     echo
@@ -158,7 +170,8 @@ tick() {
     s=$(sig_of "$ofiles")
     if [ ! -f "$RUN/owner.sig" ] || [ "$s" != "$(cat "$RUN/owner.sig")" ]; then
       echo "$s" > "$RUN/owner.sig"
-      notify "Cần bạn: $(echo $ofiles | tr '\n' ' ')"
+      notify "Cần bạn:
+$(owner_lines "$(echo "$data" | awk -F'|' '$1=="owner"')" | tr -d '`')"
     fi
   else
     rm -f "$RUN/owner.sig"
