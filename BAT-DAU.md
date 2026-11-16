@@ -15,7 +15,7 @@ Bản thân công cụ `ag` (lệnh quản lý quy trình) **chưa có**. Ta đa
 
 | Đã xong | Chưa có |
 |---|---|
-| Thiết kế tổng thể. Đặc tả Giai đoạn 1 và 1b (đã duyệt). 27 việc T-001…T-027. Tài liệu cho agent. Bản phác giao diện văn phòng pixel. Repo trên GitHub: [pnhit/multi-agent-workflow](https://github.com/pnhit/multi-agent-workflow) | Code của lệnh `ag`, Monitor, Telegram, trang web |
+| Thiết kế tổng thể. Đặc tả Giai đoạn 1 và 1b (đã duyệt). 28 việc T-001…T-028. Tài liệu cho agent. Bản phác giao diện văn phòng pixel. Repo trên GitHub: [pnhit/multi-agent-workflow](https://github.com/pnhit/multi-agent-workflow) | Code của lệnh `ag`, Monitor, Telegram, trang web |
 
 ## Cần chuẩn bị
 
@@ -71,7 +71,7 @@ Khi `dac-ta/viec-gd1/T-001.md` có `status: in_test`:
 
 Khi T-001 có `status: verified`, mở phiên Master và nói *"T-001 đã verified, gộp đi"*.
 
-Sau đó lặp lại bước 3 đến bước 5 cho các việc tiếp theo, theo bảng **"Thứ tự giao"** trong `dac-ta/giao-viec.md`. Từ đợt 3 trở đi, bạn mở nhiều Coder cùng lúc được.
+Sau đó lặp lại bước 3 đến bước 5 cho các việc tiếp theo, theo bảng **"Thứ tự giao"** trong `dac-ta/giao-viec.md`. Hướng dẫn chi tiết từng đợt nằm ở [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md). Từ đợt 3 trở đi, bạn mở nhiều Coder cùng lúc được.
 
 ## Việc thường ngày của bạn
 
@@ -132,23 +132,25 @@ Trong lúc tính năng A đang làm hoặc đang chờ, bạn và Master bàn ti
 
 Chi tiết: [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) mục 5.3 và 11.6–11.9.
 
-## Sau khi có lệnh `ag` (từ đợt 4)
+## Sau khi có lệnh `ag` (sau Đợt 5)
 
-Khi T-003 và T-006 xong, Master chạy `ag init` trên chính repo này. Từ đó:
+Khi Đợt 5 xong (T-001 … T-012), bạn chạy `ag init --existing` trên chính repo này và Master chuyển dữ liệu sang (các bước ở [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md) mục 4). Từ đó:
 - AI dùng lệnh `ag` thay cho sửa file bằng tay.
 - Bạn trả lời câu hỏi bằng lệnh `ag decide D-NNN "…"` trong terminal của bạn. Lệnh này bắt gõ xác nhận, nên AI không chạy thay bạn được.
 - Bạn duyệt AI mới bằng lệnh `ag approve-agent <ID> --role <vai>`.
 
-Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pixel** có ở Giai đoạn 3, kèm hộp thư để nhắn Master theo từng tính năng. Xem trước bản phác: mở `monitor-pixel-office.html` bằng trình duyệt. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
+Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pixel** có ở Giai đoạn 3, kèm **Phòng họp** để chat trực tiếp với Master chính và Master của từng tính năng, giống mở nhiều phiên chat. Xem trước bản phác: mở `monitor-pixel-office.html` bằng trình duyệt. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
 
 ## Tìm hiểu thêm
 
 | Muốn biết | Đọc |
 |---|---|
+| **Làm từng bước Giai đoạn 1 và 1b**: mở phiên nào, dán gì, kiểm tra gì, mốc chuyển sang `ag` | [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md) |
 | Toàn bộ workflow và cách tuỳ chỉnh cho dự án, cho đội của bạn | [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) |
 | Vì sao thiết kế như vậy, các quyết định đã chốt | [README.md](README.md) |
 | Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE hai repo, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
 | FE/BE cùng repo, BE đội khác, API có sẵn, nhiều tính năng cùng lúc, luồng có review (đã duyệt) | [dac-ta/de-xuat-bo-sung-02.md](dac-ta/de-xuat-bo-sung-02.md) |
+| Chat với Master trên web, Master chính và Master luồng (đã duyệt) | [dac-ta/de-xuat-bo-sung-03.md](dac-ta/de-xuat-bo-sung-03.md) |
 | Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md), [dac-ta/giai-doan-1b.md](dac-ta/giai-doan-1b.md) |
 | Giao việc nào trước, lời nhắn dán sẵn | [dac-ta/giao-viec.md](dac-ta/giao-viec.md) |
 | Quy tắc AI phải theo lúc này | [AGENTS.md](AGENTS.md) |

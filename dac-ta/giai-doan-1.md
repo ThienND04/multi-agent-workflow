@@ -433,8 +433,9 @@ Sau T-006, các việc T-007…T-011 sửa các file riêng trong `src/commands/
 ## 8. Cách chạy chính Giai đoạn 1 khi chưa có `ag`
 
 Lệnh `ag` chưa tồn tại, nên các việc tạm đặt ở `dac-ta/viec-gd1/` và đổi trạng thái bằng tay theo đúng mẫu.
-- Khi T-003 (`ag init`) và T-006 xong, Master chạy `ag init` trên chính repo này, chuyển các việc sang `.agents-state/board/`.
-- Từ đó trở đi, mọi việc chạy bằng `ag`. Hệ thống tự xây phần còn lại bằng chính nó.
+- **Mốc chuyển sang `ag` đặt sau Đợt 5**, khi T-001 … T-012 đều `done` (thứ tự đợt: `dac-ta/giao-viec.md`). Lúc đó `ag` đã có đủ lõi: `init`, `checkin`, duyệt agent, `task`, `status`, `claim`, `handoff`, `inbox`, hỏi đáp, `bug`, `verify`, `merge`, hook.
+- Chủ dự án chạy `ag init --existing` trên chính repo này. Master **chuyển dữ liệu một lần**: chép việc, câu hỏi, lỗi từ `dac-ta/` vào `.agents-state/` và commit trên nhánh `agents-state`. Đây là **ngoại lệ duy nhất** của luật "chỉ đổi trạng thái qua `ag`".
+- Từ đó trở đi, mọi việc chạy bằng `ag`. Hệ thống tự xây phần còn lại bằng chính nó. Các bước chi tiết: `HUONG-DAN-THUC-HIEN.md` mục 4.
 
 ## 9. Các điểm đã duyệt (16/11/2026)
 
@@ -454,6 +455,7 @@ Lệnh `ag` chưa tồn tại, nên các việc tạm đặt ở `dac-ta/viec-gd
 | Ngày | Thay đổi | Ai duyệt |
 |---|---|---|
 | 16/11/2026 | Bản đầu tiên, duyệt toàn bộ | Chủ dự án |
+| 16/11/2026 | Mục 8: mốc chuyển sang `ag` dời ra sau Đợt 5 (thay vì sau T-003 và T-006); cho phép chuyển dữ liệu một lần ở mốc chuyển. Thứ tự đợt mới, T-022 sang Đợt 8. T-001 thêm `.gitattributes` | Chủ dự án |
 | 16/11/2026 | Thêm A-TSK-5 (chừa chỗ cho Giai đoạn 1b: `area`, `feature`, loại việc `review` và `integration`). Giai đoạn 1b đặc tả riêng ở `dac-ta/giai-doan-1b.md` | Chủ dự án (duyệt đề xuất 02) |
 | 16/11/2026 | Thêm mục 5.14–5.19 theo đề xuất bổ sung 01: dự án có sẵn, chế độ gọn, cổng xác nhận và người tham gia, liên kết hai repo (cùng máy), kế hoạch các bước và tiếp quản, bộ skill. Thêm việc T-015…T-019, mở rộng T-003, T-011, T-013 | Chủ dự án |
 | 16/11/2026 | Thêm mục 5.13a: cấm agent tự push, chỉ chủ dự án push qua `ag push`. Thêm việc T-014 | Chủ dự án (yêu cầu trực tiếp) |

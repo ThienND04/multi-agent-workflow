@@ -1,6 +1,6 @@
 # Hướng dẫn cho AI agent (giai đoạn tự khởi động)
 
-Repo này xây **lệnh `ag`** cho workflow multi-agent. Lệnh `ag` chưa có, nên tạm thời mọi agent làm theo quy trình bằng tay dưới đây. Khi T-003 và T-006 xong, Master chạy `ag init` trên chính repo này, và file này được thay bằng bản thật.
+Repo này xây **lệnh `ag`** cho workflow multi-agent. Lệnh `ag` chưa có, nên tạm thời mọi agent làm theo quy trình bằng tay dưới đây. Khi Đợt 5 xong (T-001 … T-012 đều `done`, xem `dac-ta/giao-viec.md`), chủ dự án chạy `ag init --existing` trên chính repo này, và file này được thay bằng bản thật (`HUONG-DAN-THUC-HIEN.md` mục 4).
 
 File này áp dụng cho **mọi AI** (Claude, Codex, Gemini, Cursor, Copilot…). Điều kiện tham gia: đọc/ghi được file và chạy được `git`, `node` (≥ 20).
 

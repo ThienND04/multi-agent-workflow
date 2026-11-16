@@ -2,7 +2,7 @@
 
 Tài liệu cho **người muốn hiểu và áp dụng** workflow này vào dự án của mình. Đọc từ đầu đến cuối mất khoảng 20 phút. Phần tuỳ chỉnh ở mục 10.
 
-> **Tình trạng (16/11/2026):** thiết kế, đặc tả Giai đoạn 1 và Giai đoạn 1b đã chốt (27 việc). Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
+> **Tình trạng (16/11/2026):** thiết kế, đặc tả Giai đoạn 1 và Giai đoạn 1b đã chốt (28 việc). Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
 
 ---
 
@@ -58,7 +58,7 @@ Workflow này biến việc nhiều AI cùng làm thành một **quy trình có 
 | Vai | Là ai | Hỏi ai | Phải làm | Không được |
 |---|---|---|---|---|
 | **Chủ dự án** | Con người | — | Cùng Master phân tích yêu cầu, trả lời câu hỏi được chuyển lên, cho tính năng "bắt đầu làm", xác nhận cổng và API của đội ngoài, nghiệm thu tính năng, quyết định push, duyệt agent mới | — |
-| **Master** | AI bất kỳ, **chỉ 1** mỗi repo | Chủ dự án | Làm rõ yêu cầu, viết đặc tả có tiêu chí chấp nhận, chia việc, trả lời câu hỏi khi có nguồn, kiểm tra lại, gộp nhánh | Sửa code. Chọn thay chủ dự án. Push |
+| **Master** | AI bất kỳ. **Master chính**: 1 mỗi repo. **Master luồng**: mỗi tính năng tối đa 1 (1b) | Chủ dự án | Làm rõ yêu cầu, viết đặc tả có tiêu chí chấp nhận, chia việc, trả lời câu hỏi khi có nguồn, kiểm tra lại, gộp nhánh | Sửa code. Chọn thay chủ dự án. Push |
 | **Coder** | AI bất kỳ, **nhiều**, chạy song song, có **chuyên môn** (`fe`, `be`…) | Master | Review đặc tả phần của mình, rồi viết code và test cho đúng việc được giao, trên nhánh riêng | Sửa đặc tả hay test chấp nhận. Thêm tính năng. Tự nghiệm thu. Push |
 | **Tester** | AI bất kỳ, có thể có chuyên môn (`fe`, `be`, `e2e`) | Master | Review đặc tả và viết kế hoạch kiểm thử trước khi có code, chạy sản phẩm thật, kiểm tra API so với hợp đồng, báo lỗi kèm bằng chứng | Sửa code. Kiểm việc do chính mình code. Push |
 | **Monitor** | **Chương trình**, không phải AI | — | Theo dõi trạng thái, gửi Telegram, chạy trang web | Ra quyết định |
@@ -226,7 +226,7 @@ Cả hai cách 2 và 3: nếu worktree cũ còn thay đổi chưa commit, `ag` t
 | `STATUS.md` | Giai đoạn 2 | Bản tóm tắt tự cập nhật |
 | **Telegram** | Giai đoạn 2 | **Chỉ thông báo, một chiều.** Gửi ngay khi: có câu hỏi chờ chủ dự án, cổng chờ xác nhận, agent mới xin vào, agent bị chặn lâu, lỗi nghiêm trọng, agent im lặng khi đang giữ việc. Các sự kiện trong 2 phút được gom thành một tin. Có bản tóm tắt ngày |
 | **Trang web văn phòng pixel** | Giai đoạn 3 | Văn phòng pixel-art, mỗi agent là một nhân vật ngồi ở bàn. Màu áo là màu tính năng đang làm. Bong bóng trên đầu cho biết trạng thái. Agent đang chờ đứng ở cây nước, agent mới xin vào đứng ở cửa. Bảng trắng trên tường là bảng luồng thu nhỏ. Bên cạnh có khu "Cần bạn", bảng luồng theo tính năng, chi tiết từng agent. Trả lời câu hỏi, xác nhận cổng, nghiệm thu ngay trên web. Bản phác: `monitor-pixel-office.html` |
-| **Hộp thư Master** | Giai đoạn 3 | Nhắn Master trên web. Master đọc qua `ag inbox`, trả lời bằng `ag reply`. Không tức thì, trừ khi bật `master_wake_cmd` (mục 10.1) |
+| **Phòng họp với Master** | Giai đoạn 3 | Chat trực tiếp trên web với Master chính (hội thoại "Chung") và từng Master luồng (mỗi tính năng một hội thoại). Monitor chạy công cụ AI qua bộ nối, câu trả lời hiện dần. Câu hỏi, "bắt đầu làm", nghiệm thu hiện thành thẻ có nút ngay trong hội thoại. Công cụ không hỗ trợ thì quay về hộp thư (`ag reply`) |
 
 Trang web mặc định chỉ xem được trên máy hoặc mạng nội bộ. Muốn xem từ xa thì dùng Tailscale hoặc Cloudflare Tunnel, có đăng nhập. Telegram chỉ nhận bản tóm tắt, không nhận mã nguồn, vì nội dung đi qua máy chủ của Telegram.
 
@@ -436,8 +436,8 @@ Xem mục 7. Cách nhanh nhất: mở phiên mới trong đúng worktree cũ v�
 | **1** | Lệnh `ag`, khung `.agents/`, hook, tài liệu agent, dự án có sẵn, chế độ gọn, cổng, liên kết hai repo, tiếp quản, bộ skill | Đặc tả đã duyệt, 19 việc chờ giao. **Chưa có code** |
 | **1b** | Tính năng và vòng đời có review, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy song song an toàn, hộp thư Master theo tính năng | Đặc tả đã duyệt (`dac-ta/giai-doan-1b.md`), 8 việc T-020…T-027. **Chưa có code** |
 | **2** | Monitor: `STATUS.md`, Telegram một chiều, liên kết hai repo ở hai máy khác nhau | Chưa đặc tả |
-| **3** | Trang web văn phòng pixel, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web, hộp thư Master theo tính năng | Có bản phác `monitor-pixel-office.html` (hướng chính) |
-| **4** | Đóng gói thành mẫu repo, cài bằng một lệnh | Chưa đặc tả |
+| **3** | Trang web văn phòng pixel, Phòng họp chat với Master chính và các Master luồng, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web | Có bản phác `monitor-pixel-office.html` (hướng chính) |
+| **4** | Đóng gói thành mẫu repo, cài bằng một lệnh; tuỳ chọn tự mở phiên Coder và Tester | Chưa đặc tả |
 
 **Trong lúc chưa có `ag`:** repo này đang tự xây chính nó bằng quy trình làm tay. Xem `AGENTS.md` ở gốc repo và `BAT-DAU.md`.
 
@@ -466,7 +466,7 @@ Xem mục 7. Cách nhanh nhất: mở phiên mới trong đúng worktree cũ v�
 | `ag verify T --evidence "…"` | Tester (Master khi `solo`) | Xác nhận đạt |
 | `ag merge T` | Master | Gộp vào nhánh chính |
 | `ag gate new / check / pass / fail` | Master / mọi agent / chủ dự án (TTY) | Cổng xác nhận |
-| `ag approve-agent <ID> --role <vai>` | Chủ dự án (TTY) | Duyệt agent mới |
+| `ag approve-agent <ID> --role <vai> [--area …] [--feature F]` | Chủ dự án (TTY) | Duyệt agent mới. `--role master --feature F` duyệt Master luồng (1b) |
 | `ag reassign T --to <ID>` | Chủ dự án (TTY) | Chuyển việc ngay |
 | `ag push <nhánh>` | Chủ dự án (TTY) | Đẩy code lên remote |
 | `ag reply M "…"` | Master | Trả lời tin nhắn trên web (Giai đoạn 3) |
@@ -541,7 +541,7 @@ Không. FE và BE là chuyên môn của Coder: cùng quyền, khác loại vi�
 Không bao giờ. Bạn là cầu nối. `ag ext issues --export` soạn sẵn danh sách vấn đề để bạn gửi đi.
 
 **Master có bị quá tải khi chạy nhiều tính năng không?**
-Master trả lời câu hỏi đang chặn việc trước, rồi mới bàn tính năng mới. Mọi thứ đều gắn mã tính năng, nên phiên Master có thể đổi bất kỳ lúc nào mà không mất mạch của từng luồng. Phương án "mỗi tính năng một Master" để sau.
+Không, vì mỗi tính năng có thể có **Master luồng** riêng (`master-F-NNN`). Master luồng chỉ lo tính năng của mình, làm trên nhánh của tính năng. **Master chính** lo hội thoại "Chung", độ ưu tiên giữa các luồng và gộp tính năng vào `main`. Trên web (Giai đoạn 3), mỗi Master là một hội thoại riêng, giống mở nhiều phiên chat.
 
 **Có chạy được trên Windows không?**
 Có. `ag` viết bằng Node, không dùng thư viện ngoài. Hook chạy qua Git Bash.

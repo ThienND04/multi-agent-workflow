@@ -70,6 +70,27 @@ td:first-child{text-align:left}
 .seg{display:inline-block;width:14px;height:10px;border:2px solid var(--ink);background:var(--paper)}
 .seg.done{background:var(--c);opacity:.5}.seg.cur{background:var(--c)}
 .curlbl{display:block;font:700 10.5px ui-monospace,Consolas,monospace;color:var(--fg);margin-top:2px;white-space:nowrap}
+/* Phòng họp */
+.meet{display:grid;grid-template-columns:minmax(150px,210px) minmax(0,1fr);gap:12px}
+@media (max-width:640px){.meet{grid-template-columns:1fr}}
+.threads{display:flex;flex-direction:column;gap:6px}
+.th{display:flex;align-items:center;gap:7px;text-align:left;width:100%;box-shadow:2px 2px 0 var(--ink);font-weight:600}
+.th .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th.on{background:color-mix(in srgb,var(--accent) 18%,var(--paper))}
+.dotn{width:8px;height:8px;border-radius:50%;flex:none}
+.dotn.need{background:var(--bad)}.dotn.typing{background:var(--ok)}
+@media (prefers-reduced-motion:no-preference){.dotn.typing{animation:bl 1s steps(2) infinite}}
+.th.new{border-style:dashed;box-shadow:none;color:var(--fg2)}
+.chat{border:2px solid var(--ink);background:var(--bg);display:flex;flex-direction:column;min-height:330px}
+.chathead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:7px 10px;border-bottom:2px solid var(--ink);background:var(--paper);font-size:13px}
+.chathead .who{font-weight:700}.chathead .st{color:var(--fg2)}
+.msgs{flex:1;padding:8px 10px;overflow-y:auto;max-height:420px}
+.card{border:2px solid var(--ink);border-left:7px solid var(--c);background:var(--paper);padding:8px 10px;margin:8px 0}
+.card .k{font:700 11px ui-monospace,Consolas,monospace;text-transform:uppercase;color:var(--fg2)}
+.card .t{font-weight:650;margin:2px 0}.card .m{font-size:13px;color:var(--fg2);margin:0 0 7px}
+.sys{font-size:12px;color:var(--fg2);text-align:center;margin:8px 0}
+.typingdots{font-size:13px;color:var(--ok);margin:6px 0}
+.chat .compose{margin:0;padding:8px;border-top:2px solid var(--ink);background:var(--paper)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:#e9dcc6;padding:6px 4px 2px}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 </style>
@@ -91,6 +112,13 @@ td:first-child{text-align:left}
     <section class="pix scene" aria-label="Văn phòng">
       <svg id="office" viewBox="0 0 320 180" role="img" aria-label="Văn phòng pixel: mỗi bàn là một agent"></svg>
       <div class="legend" id="legend"></div>
+    </section>
+    <section class="pix" id="meetSec" aria-labelledby="h-meet">
+      <h2 id="h-meet">Phòng họp với Master</h2>
+      <div class="meet">
+        <div class="threads" id="threads"></div>
+        <div class="chat" id="chat"></div>
+      </div>
     </section>
     <section class="pix" aria-labelledby="h-flow">
       <h2 id="h-flow">Bảng luồng</h2>
@@ -138,7 +166,9 @@ const NEED=[
  {f:null,k:'Agent mới',t:'coder-07 (Gemini CLI) đang đứng ở cửa xin vào',m:'Chưa có vai. Duyệt thì chọn vai và chuyên môn.',a:['Duyệt…','Từ chối']}
 ];
 const A=[
- {id:'Master',tool:'Claude Code',f:'F-005',st:'run',b:'F-005',hair:'#3b2a20',task:'Đang phân tích F-005 cùng bạn',inbox:'Hộp thư: 0 câu hỏi chặn việc · 1 việc chờ gộp (F-002)',log:['Chuyển D-014 (F-003) lên bạn','Trả lời D-012 (F-002) theo D-003','Soạn báo cáo nghiệm thu F-004']},
+ {id:'Master',tool:'Claude Code · Master chính',f:null,st:'run',b:'gộp',hair:'#3b2a20',task:'Master chính: gộp việc của F-002, theo dõi ưu tiên giữa các luồng, hội thoại "Chung"',inbox:'Hộp thư: 0 câu hỏi chặn việc · 1 việc chờ gộp (F-002)',log:['Gộp T-029 vào feature/F-002','Trả lời D-012 (F-002) theo D-003','Soạn báo cáo nghiệm thu F-004'],thread:'C-001'},
+ {id:'master-F-005',tool:'Claude Code · Master luồng',f:'F-005',st:'run',b:'…',hair:'#2a2a2a',task:'Đang phân tích F-005 cùng bạn trong hội thoại C-012',log:['Tạo F-005, nhánh feature/F-005','Ghi 3 yêu cầu đầu tiên vào đặc tả nháp'],thread:'C-012'},
+ {id:'master-F-003',tool:'Codex · Master luồng',f:'F-003',st:'wait',b:'?',hair:'#6b4a2a',task:'Chờ bạn trả lời D-014, review của Tester đang bị chặn',log:['Chuyển D-014 lên bạn kèm 2 phương án','Review fe, be: ok'],thread:'C-009'},
  {id:'Bạn',tool:'Người · fe',f:'F-001',st:'run',b:'T-019',hair:'#1f1a17',task:'T-019: Màn thanh toán (bạn giữ 2 việc: T-019, T-035)',log:['Nhận T-019 (F-001)','Nhận T-035 (F-002)']},
  {id:'coder-fe-01',tool:'Codex · fe',f:'F-002',st:'run',b:'T-031',hair:'#7a4a22',task:'T-031: Biểu đồ doanh thu theo tháng',plan:[['Component biểu đồ',1],['Nối API giả',1],['Bộ lọc tháng',0],['Test giao diện',0]],log:['Xong bước 2: nối API giả','Review F-003 (fe): ok']},
  {id:'coder-be-01',tool:'Claude Code · be',f:'F-002',st:'run',b:'T-032',hair:'#c9a24a',task:'T-032: API tổng hợp doanh thu',plan:[['Truy vấn tổng hợp',1],['Endpoint',1],['Test hợp đồng',1],['Thêm chỉ mục',0]],log:['Test hợp đồng 12/12 đạt','Đang thêm chỉ mục']},
@@ -148,6 +178,32 @@ const A=[
  {id:'tester-02',tool:'Codex',f:null,st:'off',b:'z z',hair:'#444',task:'Ngoại tuyến, không giữ việc',log:['Kết thúc phiên 2 giờ trước']},
  {id:'coder-07',tool:'Gemini CLI',f:null,st:'pending',b:'?',hair:'#6b3d1e',task:'Đang xin tham gia, chưa được duyệt vai',log:['ag checkin --id coder-07 --tool gemini-cli','Chờ chủ dự án: ag approve-agent']}
 ];
+const THREADS=[
+ {id:'C-001',f:null,name:'Chung',agent:'Master',tool:'Claude Code',st:'idle',msgs:[
+   ['ma','Chào bạn. Hiện có 5 tính năng: F-001 bị chặn chờ đội BE, F-002 đang làm, F-003 chờ bạn trả lời D-014, F-004 chờ nghiệm thu, F-005 đang phân tích.'],
+   ['me','Đưa F-002 lên ưu tiên 1, F-001 xuống 2 trong lúc chờ đội BE.'],
+   ['card',{k:'Cần xác nhận',t:'Đổi ưu tiên: F-002 → P1, F-001 → P2',m:'Agent rảnh sẽ nhận việc của F-002 trước.',a:['Xác nhận','Huỷ']}]]},
+ {id:'C-012',f:'F-005',agent:'master-F-005',tool:'Claude Code',st:'typing',msgs:[
+   ['sys','Bạn tạo tính năng mới F-005 "Đăng nhập Google". Master luồng master-F-005 nhận hội thoại này.'],
+   ['me','Cho người dùng đăng nhập bằng Google, chỉ tài khoản công ty.'],
+   ['ma','Ghi nhận. Tôi cần làm rõ 3 điểm trước khi viết đặc tả. (1) Tài khoản mới đăng nhập lần đầu: tự tạo người dùng, hay phải có quản trị viên mời trước?'],
+   ['me','Phải được mời trước.'],
+   ['ma','Rõ. (2) Có giữ cách đăng nhập bằng mật khẩu cũ song song không?']]},
+ {id:'C-009',f:'F-003',agent:'master-F-003',tool:'Codex',st:'need',msgs:[
+   ['ma','Review F-003: coder-fe-01 và coder-be-02 đã ok. Tester hỏi một điểm đặc tả không nói, tôi không có nguồn để trả lời.'],
+   ['card',{k:'Câu hỏi D-014',t:'Có gửi thông báo đẩy trong 22:00–7:00 không?',m:'A: không gửi, trừ cảnh báo giá (Master đề xuất). B: gửi mọi lúc. Đây là câu cuối cùng còn chặn review.',a:['Chọn A','Chọn B','Trả lời khác…']}]]},
+ {id:'C-007',f:'F-004',agent:'master-F-004',tool:'Claude Code',st:'need',msgs:[
+   ['ma','F-004 xong: 4/4 việc, 18 test đạt, 2 lỗi đã sửa (B-017, B-019). Báo cáo nghiệm thu bên dưới.'],
+   ['card',{k:'Nghiệm thu',t:'Xuất Excel',m:'Cách thử: mở Báo cáo → Xuất Excel, chọn tháng 10. File phải có 3 sheet.',a:['Xem báo cáo','Đạt + push','Đạt, chưa push','Chưa đạt']}]]},
+ {id:'C-005',f:'F-001',agent:'master-F-001',tool:'Gemini CLI',st:'need',msgs:[
+   ['me','Đội BE nói thứ 5 xong bản sửa.'],
+   ['ma','Đã ghi nhận. Trong lúc chờ, coder-fe-02 chuyển sang F-002. Văn bản 3 chỗ lệch hợp đồng đã soạn sẵn để bạn gửi họ.'],
+   ['card',{k:'Gửi đội ngoài',t:'X-001: 3 chỗ API đội BE lệch hợp đồng',m:'Khi đội BE báo đã sửa, bấm "Đội BE đã sửa" để Tester kiểm lại.',a:['Sao chép văn bản','Đội BE đã sửa']}]]},
+ {id:'C-006',f:'F-002',agent:'master-F-002',tool:'Claude Code',st:'idle',msgs:[
+   ['me','Biểu đồ cần so sánh cùng kỳ năm trước không?'],
+   ['ma','Đặc tả F-002 chưa có phần này, đây là thay đổi phạm vi. Tôi soạn bản bổ sung để bạn duyệt, không đưa vào đợt này nếu bạn không đồng ý.']]}
+];
+let curThread='C-012';
 const ST={done:['xong','t-ok'],in_progress:['đang làm','t-n'],approved:['chờ nhận','t-n'],blocked:['bị chặn','t-bad'],reopened:['trả lại','t-warn']};
 let filt=null,sel=null;
 const fhex=f=>f?F[f].hex:'#9a9a9a';
@@ -254,6 +310,10 @@ function render(){
  // Agent đang chờ, đứng ở cây nước
  { const i=by('coder-be-02'),a=A[i];
    s+=agentG(i,standing(288,46,a.hair,fhex(a.f),'sip')+bubble(288,35,a.b,a.st),a.id,288,69,[280,33,17,38]); }
+ // Bàn họp: các Master luồng (góc dưới bên trái)
+ [['master-F-005',22],['master-F-003',52]].forEach(([id,cx])=>{const i=by(id),a=A[i];
+   s+=agentG(i,standing(cx,146,a.hair,fhex(a.f),a.st==='run'?'typing':'')+bubble(cx,135,a.b,a.st),id,cx,177,[cx-11,133,22,46]);});
+ s+=R(10,158,54,11,'#8a5530')+R(10,158,54,2,'#a86a40')+R(12,169,3,6,'#6e3a20')+R(59,169,3,6,'#6e3a20')+R(33,160,8,5,'#f8f8f2')+R(34,161,6,1,'#9aa')+R(34,163,4,1,'#9aa')+T(37,174,3.6,'#3b2a20','BÀN HỌP');
  // Agent mới đứng ở cửa
  { const i=by('coder-07'),a=A[i];
    s+=agentG(i,standing(161,38,a.hair,'#9a9a9a','')+bubble(161,27,a.b,a.st),'coder-07 xin vào',161,22.5,[148,17,26,39]); }
@@ -262,8 +322,32 @@ function render(){
    g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
  const wb=$('#wb');const wgo=()=>{filt=null;sel=null;render();showFeature(null)};
  wb.addEventListener('click',wgo);wb.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wgo()}});
- renderNeed();renderFlow();renderHud();
+ renderNeed();renderFlow();renderHud();renderMeet();
 }
+function renderMeet(){
+ const list=$('#threads');list.replaceChildren();
+ THREADS.filter(t=>!filt||t.f===filt||!t.f).forEach(t=>{
+   const b=el('button','th'+(t.id===curThread?' on':''));b.style.borderLeft=`6px solid ${t.f?fhex(t.f):'var(--ink)'}`;
+   b.append(el('span','nm',(t.f?t.f+' ':'')+(t.f?F[t.f].n:t.name)));
+   if(t.st==='need'||t.st==='typing'){const d=el('span','dotn '+t.st);d.title=t.st==='need'?'Có việc chờ bạn':'Master đang trả lời';b.append(d)}
+   b.setAttribute('aria-pressed',t.id===curThread);
+   b.addEventListener('click',()=>{curThread=t.id;renderMeet()});list.append(b)});
+ const nb=el('button','th new','+ Tính năng mới');nb.title='Bản phác: tạo F-NNN, nhánh và hội thoại mới với Master luồng';list.append(nb);
+ const t=THREADS.find(x=>x.id===curThread)||THREADS[0];const c=$('#chat');c.replaceChildren();
+ const h=el('div','chathead');h.append(sq(t.f),el('span','who',`${t.id} · ${t.f?t.f+' '+F[t.f].n:t.name}`));
+ h.append(el('span','st',`${t.agent} · ${t.tool} · ${t.st==='typing'?'đang trả lời':t.st==='need'?'chờ bạn':'đang hoạt động'}`));c.append(h);
+ const m=el('div','msgs');
+ t.msgs.forEach(([w,x])=>{
+   if(w==='sys'){m.append(el('p','sys',x));return}
+   if(w==='card'){const d=el('div','card');d.style.setProperty('--c',t.f?fhex(t.f):'var(--ink)');d.append(el('div','k',x.k),el('p','t',x.t),el('p','m',x.m));
+     const bs=el('div','btns');x.a.forEach((a,i)=>{const bt=el('button',i===(x.a.length>2?1:0)?'pri':null,a);bt.title='Bản phác: cần đăng nhập và gõ lại mã để xác nhận';bs.append(bt)});d.append(bs);m.append(d);return}
+   const d=el('div','msg '+w);d.append(el('b',null,w==='me'?'Bạn':t.agent),document.createTextNode(x));m.append(d)});
+ if(t.st==='typing')m.append(el('p','typingdots blink',`${t.agent} đang trả lời…`));
+ c.append(m);
+ const cp=el('div','compose');const inp=el('input');inp.placeholder=`Nhắn ${t.agent}…`;inp.setAttribute('aria-label','Tin nhắn cho '+t.agent);
+ const bt=el('button','pri','Gửi');bt.title='Bản phác: nút chưa hoạt động';cp.append(inp,bt);c.append(cp);
+}
+function openThread(f){const t=THREADS.find(x=>x.f===f);if(t){curThread=t.id;renderMeet();$('#meetSec').scrollIntoView({behavior:'smooth',block:'start'})}}
 /* ---------- Bảng điều khiển ---------- */
 const $=s=>document.querySelector(s);
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
@@ -308,9 +392,8 @@ function showFeature(id){
  d.append(el('h4',null,'Các việc'));const ul=el('ul');if(!f.tasks.length)ul.append(el('li',null,'Chưa chia việc (đang phân tích).'));
  f.tasks.forEach(([tid,tt,st,who])=>{const li=el('li',null,`${tid} ${tt}`);const [lb,cl]=ST[st];li.append(el('span','tag '+cl,lb));if(who)li.append(el('span','s',' · '+who));ul.append(li)});d.append(ul);
  if(f.qs.length){d.append(el('h4',null,'Câu hỏi và phụ thuộc'));const q=el('ul');f.qs.forEach(x=>q.append(el('li',null,x)));d.append(q)}
- d.append(el('h4',null,'Trao đổi với Master'));
- f.th.forEach(([w,txt])=>{const m=el('div','msg '+w);m.append(el('b',null,w==='me'?'Bạn':'Master'),document.createTextNode(txt));d.append(m)});
- const c=el('div','compose');const inp=el('input');inp.placeholder='Nhắn Master về '+id+'…';inp.setAttribute('aria-label','Tin nhắn cho Master');const bt=el('button','pri','Gửi');bt.title='Bản phác: nút chưa hoạt động';c.append(inp,bt);d.append(c);
+ d.append(el('h4',null,'Trao đổi với Master luồng'));
+ const ob=el('button','pri','Mở hội thoại của '+id);ob.addEventListener('click',()=>openThread(id));d.append(ob);
 }
 function showAgent(i){
  const a=A[i],d=$('#detail');d.replaceChildren();d.append(el('h2',null,'Agent'));
@@ -321,6 +404,7 @@ function showAgent(i){
  if(a.plan){d.append(el('h4',null,'Kế hoạch các bước'));const ul=el('ul');a.plan.forEach(([t,ok],k)=>ul.append(el('li',null,`${ok?'☑':'☐'} ${k+1}. ${t}`)));d.append(ul)}
  d.append(el('h4',null,'Nhật ký gần nhất'));const l=el('ul');a.log.forEach(x=>l.append(el('li',null,x)));d.append(l);
  if(a.st==='pending'){const b=el('div','btns');b.style.marginTop='10px';['Duyệt làm Coder fe','Duyệt làm Tester','Từ chối'].forEach((t,k)=>{const bt=el('button',k===0?'pri':null,t);bt.title='Bản phác: nút chưa hoạt động';b.append(bt)});d.append(b)}
+ if(a.thread){const ob=el('button','pri','Mở hội thoại '+a.thread);ob.style.cssText='margin:10px 8px 0 0';ob.addEventListener('click',()=>{curThread=a.thread;renderMeet();$('#meetSec').scrollIntoView({behavior:'smooth',block:'start'})});d.append(ob)}
  if(a.f){const bt=el('button',null,'Xem tính năng '+a.f);bt.style.marginTop='10px';bt.addEventListener('click',()=>{filt=a.f;sel=null;render();showFeature(a.f)});d.append(bt)}
 }
 render();showFeature(null);

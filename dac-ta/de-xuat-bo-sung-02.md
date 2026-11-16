@@ -272,7 +272,7 @@ Bạn đang bàn tính năng B với Master trong khi tính năng A đang chạy
 - **`ag inbox` của Master nhóm theo tính năng**, kèm độ ưu tiên. Lọc được: `ag inbox --feature F-002`.
 - **Mọi thứ của Master đều gắn mã tính năng**: đặc tả `dac-ta/F-NNN-*.md`, câu hỏi, tin nhắn. Phiên Master có thể đổi bất kỳ lúc nào: phiên mới đọc file là biết từng luồng đang ở đâu.
 - **Khi ngữ cảnh của Master quá nặng** (nhiều luồng, phiên dài): mở phiên Master mới. Mỗi tính năng có mục "Ghi chú của Master" trong file tính năng (bàn giao riêng theo luồng), nên phiên mới không mất gì.
-- **Phương án cho đội lớn, để sau:** mỗi tính năng một phiên Master riêng ("Master luồng"), làm việc trên nhánh tính năng. Phương án này phức tạp hơn (cần tách quyền gộp vào `main`), nên đề xuất chưa làm ở Giai đoạn 1b.
+- **Đã thay bằng đề xuất bổ sung 03 (Master chính và Master luồng, việc T-028).** Nội dung cũ: **Phương án cho đội lớn, để sau:** mỗi tính năng một phiên Master riêng ("Master luồng"), làm việc trên nhánh tính năng. Phương án này phức tạp hơn (cần tách quyền gộp vào `main`), nên đề xuất chưa làm ở Giai đoạn 1b.
 
 #### F.5 Việc mới
 

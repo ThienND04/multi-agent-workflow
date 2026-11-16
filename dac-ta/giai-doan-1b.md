@@ -3,7 +3,7 @@
 **Trạng thái:** **Đã duyệt** ngày 16/11/2026 (chủ dự án duyệt toàn bộ 13 điểm của đề xuất bổ sung 02). Viết bởi vai Master.
 **Nguồn:** `dac-ta/de-xuat-bo-sung-02.md` (lý do, ví dụ, so sánh phương án). File này chỉ ghi **cái phải làm** và **tiêu chí chấp nhận**.
 **Nền:** mọi quy ước của `dac-ta/giai-doan-1.md` (mục 2: môi trường, mã thoát; mục 3: dữ liệu; mục 7: định nghĩa "xong") áp dụng nguyên cho file này.
-**Các việc:** T-020 … T-027 trong `dac-ta/viec-gd1/`.
+**Các việc:** T-020 … T-028 trong `dac-ta/viec-gd1/`. T-028 thêm theo đề xuất bổ sung 03.
 
 ---
 
@@ -21,7 +21,8 @@
 **Không có:**
 - Monitor chạy `live_check_cmd` theo lịch, Telegram nhóm theo tính năng (Giai đoạn 2);
 - giao diện monitor nhiều luồng (Giai đoạn 3; bản phác `monitor-nhieu-luong-mockup.html`);
-- "Master luồng", mỗi tính năng một Master (để sau).
+- Trò chuyện với Master trên web qua bộ nối công cụ, hội thoại `C-NNN`, đăng nhập và mã dùng một lần (Giai đoạn 3, đề xuất bổ sung 03);
+- tự mở phiên Coder và Tester (Giai đoạn 4).
 
 ## 2. Dữ liệu mới
 
@@ -197,6 +198,26 @@ Sinh mục `## Báo cáo nghiệm thu` trong file tính năng, và in ra màn h�
 | **A-MIB-3** | `ag feature note F "…"` (Master) ghi thêm vào mục "Ghi chú của Master" kèm giờ, không ghi đè ghi chú cũ |
 | **A-MIB-4** | `ag inbox` của Coder và Tester: việc có thể nhận được xếp theo ưu tiên của tính năng trước (1 cao nhất), rồi tới thứ tự cũ |
 
+## 8a. Master chính và Master luồng, việc T-028
+
+Thêm theo đề xuất bổ sung 03 (thay quyết định 22).
+
+- **Master chính:** ID `master`, làm ở worktree chính, phạm vi toàn dự án. Chỉ có 1.
+- **Master luồng:** ID `master-F-NNN`, mỗi tính năng tối đa 1. Duyệt bằng `ag approve-agent master-F-005 --role master --feature F-005` (chủ dự án, TTY).
+- Khi check-in, Master luồng được cấp worktree `<repo>-wt/master-F-NNN/` trên nhánh `feature/F-NNN`.
+- Câu hỏi của Coder và Tester thuộc tính năng có Master luồng thì gửi `to: master-F-NNN`. Tính năng không có Master luồng thì gửi Master chính. Master luồng không có nguồn để trả lời thì `escalate` thẳng lên chủ dự án.
+- Đặc tả của tính năng (`dac-ta/F-NNN-*.md`) nằm trên nhánh tính năng cho tới khi tính năng được gộp vào `main_branch`.
+
+| Tiêu chí | Nội dung |
+|---|---|
+| **A-MFL-1** | Duyệt Master luồng cho tính năng không tồn tại, đã `merged`, hoặc đã có Master luồng: mã 3 |
+| **A-MFL-2** | Master luồng gọi lệnh trên đối tượng (việc, câu hỏi, lỗi, tính năng) **không thuộc** tính năng của mình: mã 2. Test dạng bảng phủ các lệnh `task new`, `status`, `answer`, `escalate`, `merge`, `feature review/ready/note`, `ext new`, `gate new` |
+| **A-MFL-3** | Master luồng gọi `feature merge`, `feature priority`, `approve-agent`: mã 2. Đây là việc của Master chính hoặc chủ dự án |
+| **A-MFL-4** | Hook: Master luồng chỉ commit được trên nhánh `feature/F-NNN` của mình, và chỉ file đặc tả khớp `dac-ta/F-NNN-*`. Commit lên `main_branch` hoặc sửa mã nguồn: bị từ chối |
+| **A-MFL-5** | `ag ask` của Coder hoặc Tester trên việc thuộc tính năng có Master luồng: câu hỏi có `to: master-F-NNN` và hiện trong `ag inbox` của Master luồng, không hiện trong inbox của Master chính |
+| **A-MFL-6** | Tính năng chuyển `merged`: Master luồng tự chuyển `status: retired` trong registry, worktree được dọn nếu không còn thay đổi chưa commit, sinh sự kiện `agent_retired` |
+| **A-MFL-7** | Master chính vẫn làm được mọi lệnh trên mọi tính năng, kể cả tính năng đang có Master luồng |
+
 ## 9. Skill mới, việc T-025
 
 Thêm vào `templates/skills/`, mỗi file đủ 4 mục như A-SKL-1:
@@ -216,10 +237,12 @@ Thêm vào `templates/skills/`, mỗi file đủ 4 mục như A-SKL-1:
 3. Trong bước review của F-A có một câu hỏi lên tới chủ dự án.
 4. F-B phụ thuộc một `X-NNN` (giả lập "đội ngoài" bằng một server cục bộ). Lần đầu lệch hợp đồng, `--export` ra văn bản, "đội ngoài" sửa, rồi `verified`.
 5. Hai Coder BE chạy server cùng lúc trên hai cổng khác nhau nhờ `AG_SLOT`.
-6. **Đạt khi:** cả hai tính năng `merged`; báo cáo nghiệm thu của F-A đủ 7 phần; không có commit nào vi phạm hook chuyên môn hay hợp đồng.
+6. F-A có một Master luồng `master-F-A`: câu hỏi của Coder F-A đi tới Master luồng; Master luồng thử gộp vào `main` thì bị từ chối; Master chính gộp tính năng sau khi chủ dự án nghiệm thu.
+7. **Đạt khi:** cả hai tính năng `merged`; báo cáo nghiệm thu của F-A đủ 7 phần; không có commit nào vi phạm hook chuyên môn hay hợp đồng.
 
 ## 11. Lịch sử thay đổi
 
 | Ngày | Thay đổi | Ai duyệt |
 |---|---|---|
 | 16/11/2026 | Bản đầu tiên, từ đề xuất bổ sung 02 | Chủ dự án |
+| 16/11/2026 | Thêm mục 8a (Master chính và Master luồng, việc T-028), bước 6 của A-E2E-1b. Từ đề xuất bổ sung 03 | Chủ dự án |

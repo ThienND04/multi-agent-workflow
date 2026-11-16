@@ -6,21 +6,23 @@ Master soạn, chủ dự án dán vào phiên AI tương ứng. Lời nhắn c�
 
 ## Thứ tự giao
 
-| Đợt | Việc | Vai | Song song được |
+Chi tiết từng bước (mở phiên nào, kiểm tra gì, mốc chuyển sang `ag`): [HUONG-DAN-THUC-HIEN.md](../HUONG-DAN-THUC-HIEN.md). Các việc trong cùng một đợt không phụ thuộc nhau và không sửa chung file.
+
+| Đợt | Việc | Vai | Song song |
 |---|---|---|---|
-| 1 | T-001 | Coder | Chỉ 1 việc (mọi việc code khác đều cần T-001) |
-| 1 | T-004 | Chủ dự án duyệt | Đã viết xong, chờ bạn đọc `templates/` |
-| 2 | T-002 | Coder | — |
-| 3 | T-003, T-005 | 2 Coder | Có |
-| 4 | T-006 | Coder | — |
-| 5 | T-007, T-008, T-009, T-010, T-011, T-012 | tối đa 6 Coder | Có, phạm vi file không chồng nhau |
-| 5b | T-014 (`ag push`), T-016 (`plan`/`step`), T-017 (tiếp quản), T-018 (cổng) | tối đa 4 Coder | Có. T-014 cần T-012, T-017 cần T-007 |
-| 5c | T-019 (liên kết hai repo) | Coder | — |
-| bất kỳ | T-015 (bộ skill) | Master | Chạy song song với mọi đợt |
-| 7 (1b) | T-020, T-021, T-022, T-023 | tối đa 4 Coder | Có, sau khi các việc Giai đoạn 1 mà chúng phụ thuộc đã xong |
-| 8 (1b) | T-024, T-026, T-027 | tối đa 3 Coder | Có |
-| bất kỳ (1b) | T-025 (skill 1b) | Master | Sau T-015 |
-| 9 | T-013 | Tester (2 công cụ AI khác nhau cho 2 Coder, cần 2 repo mẫu FE/BE) | — |
+| trước Đợt 5 | T-004 | Chủ dự án duyệt | Đã viết xong, chờ bạn đọc `templates/` |
+| 1 | T-001 | Coder | 1 |
+| 2 | T-002 | Coder | 1 |
+| 3 | T-003, T-005 | Coder | 2 |
+| 4 | T-006 | Coder | 1 |
+| 5 | T-007, T-008, T-009, T-010, T-011, T-012 | Coder | tối đa 6 (nên 3 + 3) |
+| ★ | Mốc chuyển sang `ag` | Chủ dự án + Master | HUONG-DAN-THUC-HIEN.md mục 4 |
+| 6 | T-014, T-016, T-017, T-018 | Coder | 4 |
+| 7 | T-019, T-020, T-021, T-023 | Coder | 4 (bắt đầu 1b) |
+| 8 | T-022, T-024, T-026, T-027 | Coder | 4 |
+| 9 | T-028 (Master luồng) | Coder | 1 |
+| 10 | T-013 | Tester (2 công cụ AI khác nhau) | — |
+| bất kỳ | T-015 (sau T-004), T-025 (sau T-015), xong trước Đợt 10 | Master | — |
 
 Sau mỗi việc code: Tester kiểm tra (`in_test → verified`), rồi Master gộp (`verified → done`).
 

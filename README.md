@@ -4,8 +4,9 @@ Bản xuất ngày 16/11/2026, để tiếp tục trên máy khác. Tài liệu 
 
 > **Mới vào?** Đọc [BAT-DAU.md](BAT-DAU.md) trước: 5 bước để bắt đầu và việc thường ngày của chủ dự án.
 > **Muốn hiểu toàn bộ hoặc tuỳ chỉnh cho mình?** Đọc [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md).
+> **Bắt tay xây Giai đoạn 1 và 1b?** Làm theo [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md).
 
-**Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01 và 02 đã duyệt. Giai đoạn 1b (tính năng, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy nhiều luồng) có đặc tả riêng `dac-ta/giai-doan-1b.md`, thêm 8 việc T-020…T-027 (tổng 27 việc). Chưa có mã nguồn.
+**Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01, 02 và 03 đã duyệt. Giai đoạn 1b (tính năng, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy nhiều luồng, Master luồng) có đặc tả riêng `dac-ta/giai-doan-1b.md`, thêm 9 việc T-020…T-028 (tổng 28 việc). Chưa có mã nguồn.
 
 **File kèm theo:**
 - `monitor-2d-mockup.html`: bản phác trang monitor 2D, dữ liệu giả. Mở bằng trình duyệt.
@@ -269,8 +270,8 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
 | **1** | Khung `.agents/` + nhánh `agents-state`, lệnh `ag` (init, checkin, claim kèm worktree, heartbeat, log, status, ask/answer/escalate/decide, bug, handoff, merge), hook git, file vai trò, `AGENTS.md` và các file trỏ | Agent nào cũng nhận vai, hỏi đúng cấp và làm tiếp được từ file. **Kiểm chứng bằng ít nhất 2 công cụ AI khác nhau** cùng chạy |
 | **1b** | Tính năng `F-NNN` (vòng đời có bước review đặc tả, "bắt đầu làm", nghiệm thu kèm push), chuyên môn FE/BE, hợp đồng API và việc ghép nối, phụ thuộc bên ngoài `X-NNN`, chạy song song an toàn (`AG_SLOT`), hộp thư Master theo tính năng | Làm nhiều tính năng FE/BE cùng lúc, kể cả khi BE do đội khác làm hoặc API có sẵn |
 | **2** | Monitor: `STATUS.md` + Telegram thông báo một chiều | Nhận thông báo khi vắng mặt |
-| **3** | Trang web 2D, trả lời câu hỏi trên web, hộp thư trao đổi với Master (tuỳ chọn đánh thức Master bằng `master_wake_cmd`) | Nhìn trực quan ai làm gì, duyệt và nhắn Master không cần gõ lệnh |
-| **4** | Đóng gói mẫu repo | Dùng lại bằng một lệnh |
+| **3** | Trang web văn phòng pixel; **Phòng họp**: chat với Master chính và các Master luồng qua bộ nối công cụ (hộp thư làm dự phòng); trả lời câu hỏi, cho bắt đầu làm, nghiệm thu ngay trong hội thoại | Bàn giao và theo dõi mọi luồng trên một trang |
+| **4** | Đóng gói mẫu repo; (tuỳ chọn) Monitor tự mở phiên Coder và Tester khi có việc chờ | Dùng lại bằng một lệnh |
 
 Giai đoạn "Telegram hai chiều" trong bản cũ đã bỏ, vì chủ dự án chọn Telegram chỉ thông báo.
 
@@ -324,7 +325,11 @@ Chỗ nào chưa rõ thì hỏi tôi, không tự quyết.
 | 19 | Hợp đồng API | Tài liệu chính thức trong `contract_dirs`, chỉ Master sửa, chủ dự án duyệt. Tính năng FE+BE chia thành: hợp đồng, BE, FE (API giả), ghép nối |
 | 20 | API của đội khác hoặc có sẵn | Phụ thuộc bên ngoài `X-NNN`. Agent không liên lạc đội ngoài; chủ dự án là cầu nối, gửi danh sách vấn đề soạn sẵn. Test thường chỉ chạy trên dữ liệu mẫu |
 | 21 | Nhiều phiên song song | Mỗi agent AI giữ tối đa 1 việc; người giữ được nhiều. `setup_cmd`, `AG_SLOT` tách cổng mạng và cơ sở dữ liệu |
-| 22 | Master nhiều luồng | Một phiên Master chung, trả lời câu hỏi đang chặn việc trước khi bàn tính năng mới. "Master luồng" để sau |
+| 22 | Master nhiều luồng | **Đã thay (đề xuất 03):** một **Master chính** (toàn dự án, gộp vào `main`) và **Master luồng** cho từng tính năng (`master-F-NNN`, làm trên nhánh tính năng, chỉ động vào tính năng của mình). Việc T-028 |
+| 23 | Chat với Master trên web | Monitor chạy công cụ AI qua **bộ nối** (`master_adapter`, đầu tiên là Claude Code), trả lời hiện dần như app chat. Nhiều hội thoại song song: "Chung" và mỗi tính năng một hội thoại. Công cụ không hỗ trợ thì dùng hộp thư. Giai đoạn 3 |
+| 24 | Lịch sử hội thoại | Lưu trong file `threads/C-NNN.md`, không phụ thuộc phiên AI. Phiên mất thì phiên mới đọc lại và trả lời tiếp |
+| 25 | Hành động của chủ dự án trên web | Đăng nhập + gõ lại mã + mã dùng một lần do Monitor cấp, tương đương gõ xác nhận trong terminal |
+| 26 | Tự mở phiên Coder và Tester | Để Giai đoạn 4 (tuỳ chọn) |
 
 ## 10. Câu hỏi chờ chủ dự án
 
