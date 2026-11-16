@@ -1,21 +1,27 @@
-# Danh sách agent và cách đánh thức. Chủ dự án điền, agent không sửa file này.
+# Danh sách agent và cách đánh thức. Chủ dự án điền; agent không sửa file này.
 #
 # Mỗi dòng:  <ID>  <vai>  <auto|manual>  <lệnh đánh thức, hoặc ghi chú nếu manual>
-#   auto   : watch.sh tự chạy lệnh, thêm lời nhắn đánh thức vào cuối lệnh
-#   manual : watch.sh chỉ báo (màn hình + Telegram) rằng agent này có việc; bạn tự mở phiên cho nó
+#   auto   : watch.sh tự chạy lệnh và thêm lời nhắn đánh thức vào cuối lệnh
+#   manual : watch.sh chỉ báo (màn hình và Telegram) rằng agent này có việc; bạn tự mở phiên cho nó
 #
-# Ví dụ lệnh (kiểm tra lại theo phiên bản công cụ của bạn):
-#   Claude Code : claude -p --permission-mode acceptEdits
+# Lệnh mẫu (kiểm tra lại theo phiên bản công cụ bạn cài):
+#   Claude Code : claude -p --permission-mode acceptEdits --model sonnet
 #   Codex CLI   : codex exec --full-auto
 #   Gemini CLI  : gemini --yolo -p
-# Mỗi công cụ dùng tài khoản đang đăng nhập trên máy. Muốn agent dùng tài khoản hay model khác thì
-# cấu hình trong công cụ đó (ví dụ thêm --model).
 #
-# Agent chạy tự động là chạy KHÔNG có người canh. Chỉ cấp quyền cần thiết (sửa file, chạy git và lệnh test).
+# Dùng tài khoản Claude thứ hai: đặt thư mục cấu hình riêng cho lệnh claude (xem SETUP.md, bước 3), ví dụ
+#   coder-01  coder  auto  env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
+#
+# Agent tự động chạy KHÔNG có người canh. Chỉ cấp quyền cần thiết (sửa file, chạy git, chạy lệnh build và test).
 # Không bao giờ cấp quyền push.
+#
+# Master: mặc định để manual, vì bạn đang chat với Master trong phiên chính. Khi có việc chờ Master,
+# watch.sh báo bạn; bạn nói với Master "Xử lý việc đang chờ".
+# Muốn Master tự trả lời những câu có nguồn khi bạn vắng mặt: đổi sang auto với lệnh claude -p dùng tài khoản
+# của Master. Câu nào Master không chắc vẫn được chuyển sang to: owner để bạn quyết. Khi đã để auto, đừng
+# chat với Master của cùng tính năng vào lúc watch.sh đang đánh thức nó, để hai phiên không sửa cùng một file.
 
-# Master: thường để manual. Bạn đang chat với Master trong phiên chính; watch.sh chỉ nhắc bạn bảo Master "xử lý việc đang chờ".
 master-F-001  master  manual  phiên chat chính
 
-coder-01      coder   auto    claude -p --permission-mode acceptEdits
+coder-01      coder   auto    claude -p --permission-mode acceptEdits --model sonnet
 tester-01     tester  manual  Antigravity (tester độc lập)

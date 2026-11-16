@@ -2,7 +2,7 @@
 
 Tài liệu cho **người muốn hiểu và áp dụng** workflow này vào dự án của mình. Đọc từ đầu đến cuối mất khoảng 20 phút. Phần tuỳ chỉnh ở mục 10.
 
-> **Tình trạng (16/11/2026):** thiết kế và đặc tả Giai đoạn 1, 1b, 2, 3 đã chốt (45 việc). Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
+> **Tình trạng (16/11/2026):** thiết kế và đặc tả Giai đoạn 1, 1b, 2, 3 đã chốt (45 việc). Bộ công cụ `ag` đầy đủ, cùng Monitor, Telegram và trang web theo thiết kế ở đây, **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**; chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Trong lúc chờ, dùng bản nhẹ trong `starter-kit/` (xem `HOW-IT-WORKS.md` và `SETUP.md` ở gốc repo).
 
 ---
 

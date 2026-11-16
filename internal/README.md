@@ -4,6 +4,8 @@ Thư mục này dành cho **chủ repo và người đóng góp** xây công c�
 
 **Từ 16/11/2026, [HOW-IT-WORKS.md](../HOW-IT-WORKS.md) là bản thiết kế gọn, viết lại từ 14 yêu cầu gốc của chủ repo.** Khi `DESIGN.md` và các đặc tả trong `specs/` khác với nó, lấy HOW-IT-WORKS làm chuẩn, và Master đề xuất sửa đặc tả cho khớp.
 
+**Bản nhẹ đã chạy được** nằm trong `starter-kit/` (quy tắc `to:`, `watch.sh`, `monitor.js`, `notify.sh`). Các tài liệu trong thư mục này mô tả bộ công cụ `ag` đầy đủ sẽ thay dần cho bản nhẹ đó.
+
 ## ⚠ Đóng băng thiết kế (từ 16/11/2026)
 
 - **Không thêm** giai đoạn, đề xuất hay đặc tả mới, cho tới khi bản làm tay (`starter-kit/`) được dùng thật trên ít nhất một dự án (đang thử: TradeStats).

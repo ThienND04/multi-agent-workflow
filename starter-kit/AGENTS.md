@@ -35,8 +35,10 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
 workflow/
   agents.txt                  # danh sách agent và cách đánh thức (chủ dự án điền)
   watch.sh                    # script theo dõi và đánh thức
+  monitor.js                  # trang theo dõi local (chủ dự án chạy)
   notify.sh                   # gửi Telegram (tuỳ chọn)
   STATUS.md                   # bảng trạng thái, watch.sh tự sinh, đừng sửa tay
+  logs/                       # log mỗi lần watch.sh đánh thức agent, đừng sửa tay
   DECISIONS.md                # quy ước code, quyết định dùng chung
   journal/<ngày>-<ID>.md      # nhật ký, chỉ ghi thêm
   F-001-short-name/
@@ -108,7 +110,8 @@ task: T-01
 | 7. Mở cho làm | Master | Mọi việc `reviewed`, không còn câu hỏi mở | `SPEC.md` `status: in_dev`; mỗi việc `status: ready`, `to: <assignee>` |
 | 8. Code | Coder | Code trong worktree riêng, test xanh, commit | Việc `status: in_test`, `to: <tester>` |
 | 9. Kiểm tra | Tester | Chạy test và chạy sản phẩm thật | Đạt: `status: verified`, `to: <master>`. Trượt: tạo lỗi `to: <assignee>`, việc `status: reopened`, `to: <assignee>` |
-| 10. Sửa lỗi | Coder | Viết test tái hiện, sửa | Lỗi `status: fixed`, `to: none`; việc `status: in_test`, `to: <tester>` |
+| 10. Sửa lỗi | Coder | Viết test tái hiện, sửa | Lỗi `status: fixed`, `to: <tester>`; việc `status: in_test`, `to: <tester>` |
+| 10b. Kiểm lại | Tester | Kiểm lại lỗi đã sửa và cả việc | Lỗi hết: lỗi `status: closed`, `to: none`, rồi làm như bước 9 |
 | 11. Báo cáo | Master | Mọi việc `verified`: viết mục "Báo cáo" (đã làm, test gì, lỗi đã sửa, cách thử) | `SPEC.md` `status: acceptance`, `to: owner` |
 | 12. Nghiệm thu | Chủ dự án | Tự thử, nói "đạt" với Master | Master gộp code, đặt `SPEC.md` `status: done`, `to: none`. **Chủ dự án push** |
 
@@ -125,7 +128,8 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
 - **Mỗi tính năng:**
   - tạo thư mục `F-NNN-short-name/` với số kế tiếp; ID của bạn là `master-F-NNN`;
   - `SPEC.md` có tiêu chí **kiểm được** và mục **"Cách thử"**;
-  - chia việc nhỏ, ghi `assignee`, `tester`, `files`, `can_doc`. Việc chạy song song thì `files` không chồng nhau. Chọn assignee theo `agents.txt` (ví dụ việc khó cho agent dùng model mạnh).
+  - chia việc nhỏ, ghi `assignee`, `tester`, `files`, `can_doc`. Việc chạy song song thì `files` không chồng nhau. Chọn assignee theo `agents.txt` (ví dụ việc khó cho agent dùng model mạnh);
+  - tạo thêm một việc **"Kế hoạch kiểm thử"** cho Tester (`assignee` là Tester), để Tester khảo sát và viết các ca kiểm thử ở bước 3.
 - **Trả lời câu hỏi:** chỉ khi **dẫn được nguồn**. Đổi phạm vi (thêm, bớt yêu cầu) thì luôn hỏi chủ dự án. Gom các câu cần chủ dự án lại, hỏi một lần, kèm phương án và đề xuất của bạn.
 - **Gộp code** (khi chủ dự án nói "đạt"):
   - tạo khoá `workflow/.merging`; đã có khoá thì chờ, vì Master khác đang gộp;
@@ -142,13 +146,14 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
      ```bash
      git worktree add ../<tên-dự-án>-wt/<F-NNN>-<T-xx> -b <F-NNN>/<T-xx>
      ```
-     Việc `reopened` thì dùng lại nhánh cũ.
+     Việc `reopened` thì dùng lại nhánh cũ. Ghi tên nhánh vào dòng `branch:` của file việc.
   2. Ghi kế hoạch các bước. **Chỉ sửa file trong `files`.** Xong mỗi bước thì đánh dấu, ghi bàn giao, commit.
   3. Gặp điều tài liệu không trả lời được: **dừng**, hỏi (bước 3), đặt việc `to: none`.
+  4. Xong: test xanh, commit hết, đặt việc `status: in_test`, `to: <tester>` (bước 8).
 
 ### Tester
-- **Khảo sát:** viết kế hoạch kiểm thử, mỗi tiêu chí ít nhất một ca. Tiêu chí nào không kiểm được thì hỏi.
-- **Kiểm tra:** tạo worktree riêng từ nhánh của việc (`git worktree add --detach …`). Chạy test **và chạy sản phẩm thật** như người dùng. Đối chiếu **từng** tiêu chí.
+- **Khảo sát:** trong việc "Kế hoạch kiểm thử", viết các ca kiểm thử, mỗi tiêu chí trong `SPEC.md` ít nhất một ca. Tiêu chí nào không kiểm được thì hỏi.
+- **Kiểm tra:** tạo worktree riêng từ nhánh của việc (`git worktree add --detach …`). Chạy test **và chạy sản phẩm thật** như người dùng. Đối chiếu **từng** tiêu chí, rồi ghi kết quả theo bước 9.
 - **Không sửa code**, kể cả một dòng.
 
 ## 6. Không tự quyết
