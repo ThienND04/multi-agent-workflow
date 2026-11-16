@@ -78,11 +78,24 @@ tester-01     tester   manual         Antigravity
 - **Claude Code:** thêm lệnh build và test của dự án vào danh sách `allow` trong `.claude/settings.json`, ví dụ `"Bash(npm test:*)"` hay `"Bash(./gradlew test:*)"`. `git push` đã bị chặn sẵn.
 - **Công cụ khác:** dùng cơ chế sandbox hay phê duyệt của công cụ đó.
 
-**Coder chạy bằng tài khoản Claude thứ hai:** lệnh `claude` dùng tài khoản đang đăng nhập trong thư mục cấu hình của nó. Muốn tách tài khoản, chạy CLI với một thư mục cấu hình riêng (biến môi trường `CLAUDE_CONFIG_DIR`), đăng nhập tài khoản #2 một lần trong thư mục đó, rồi viết lệnh đánh thức là:
+**Cài Claude Code dạng dòng lệnh (lệnh `claude`)** cho agent tự động. Ứng dụng desktop không tạo lệnh này.
+- Windows (PowerShell): `irm https://claude.ai/install.ps1 | iex`
+- macOS, Linux: `curl -fsSL https://claude.ai/install.sh | bash`
+- Kiểm tra: `claude --version`, `claude doctor`. Trên Windows, nếu gõ `claude` mà lại mở ứng dụng desktop, xem mục "Claude Desktop overrides the claude command on Windows" trong tài liệu khắc phục sự cố cài đặt của Claude Code.
+
+**Coder chạy bằng tài khoản Claude thứ hai:** mỗi thư mục cấu hình (biến `CLAUDE_CONFIG_DIR`) giữ một lần đăng nhập riêng. Trong Git Bash:
+```bash
+CLAUDE_CONFIG_DIR="$HOME/.claude-acc2" claude auth login
 ```
-coder-01  coder  auto  env CLAUDE_CONFIG_DIR=<đường-dẫn> claude -p --permission-mode acceptEdits
+Đăng nhập tài khoản #2 trong trình duyệt, rồi kiểm tra đúng tài khoản:
+```bash
+CLAUDE_CONFIG_DIR="$HOME/.claude-acc2" claude auth status --text
 ```
-Kiểm tra lại tên biến này với phiên bản Claude Code bạn đang dùng.
+Sau đó viết lệnh đánh thức trong `agents.txt`:
+```
+coder-01  coder  auto  env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
+```
+Lưu ý: nếu máy có biến môi trường `ANTHROPIC_API_KEY` thì Claude Code dùng khoá đó thay cho tài khoản đã đăng nhập.
 
 ## 4. Lần đầu mở Master
 
