@@ -15,7 +15,7 @@ Bản thân công cụ `ag` (lệnh quản lý quy trình) **chưa có**. Ta đa
 
 | Đã xong | Chưa có |
 |---|---|
-| Thiết kế tổng thể, đặc tả Giai đoạn 1 (đã duyệt), 27 việc T-001…T-027 (Giai đoạn 1 và 1b), tài liệu cho agent | Code của lệnh `ag`, Monitor, Telegram, trang web 2D |
+| Thiết kế tổng thể. Đặc tả Giai đoạn 1 và 1b (đã duyệt). 27 việc T-001…T-027. Tài liệu cho agent. Bản phác giao diện văn phòng pixel. Repo trên GitHub: [pnhit/multi-agent-workflow](https://github.com/pnhit/multi-agent-workflow) | Code của lệnh `ag`, Monitor, Telegram, trang web |
 
 ## Cần chuẩn bị
 
@@ -30,16 +30,15 @@ Bản thân công cụ `ag` (lệnh quản lý quy trình) **chưa có**. Ta đa
 
 ## 5 bước đầu tiên
 
-### Bước 1. Tạo commit đầu tiên
+### Bước 1. Có repo trên máy
 
-Coder cần có ít nhất một commit trên `main` mới tạo được nhánh riêng.
+**Đã xong** trên máy hiện tại: repo đã có commit và đã nằm trên GitHub. Sang máy khác thì lấy về:
 
 ```bash
-git add -A
+git clone https://github.com/pnhit/multi-agent-workflow.git
 ```
-```bash
-git commit -m "Thiết kế, đặc tả Giai đoạn 1 và tài liệu cho agent"
-```
+
+Coder cần nhánh `main` có commit mới tạo được nhánh riêng, và điều kiện này đã có sẵn.
 
 ### Bước 2. Duyệt tài liệu cho agent (việc T-004)
 
@@ -103,7 +102,35 @@ Sau đó lặp lại bước 3 đến bước 5 cho các việc tiếp theo, the
    ```
 3. Code đã commit nằm trên nhánh. Code chưa commit vẫn nằm trên ổ đĩa trong worktree đó, nên không bị mất.
 
-**Push code lên remote (GitHub…):** AI không bao giờ tự push. Khi cần đẩy code, AI sẽ hỏi. Bạn tự quyết và tự push (sau này qua lệnh `ag push`, có gõ xác nhận).
+**Push code lên remote (GitHub…):** AI không bao giờ tự push. Khi cần đẩy code, AI sẽ hỏi. Bạn tự quyết và tự push:
+```bash
+git push origin main
+```
+Sau này dùng lệnh `ag push`, hoặc chọn "Đạt + push" khi nghiệm thu một tính năng. Cả hai đều phải gõ xác nhận.
+
+## Khi đã có Giai đoạn 1b: làm việc theo tính năng
+
+Đây là cách bạn sẽ làm việc hằng ngày, khi `ag` đã xây xong:
+
+1. **Bạn trình bày yêu cầu, cùng Master phân tích.**
+2. **Master viết đặc tả** và chia việc theo FE, BE, Tester.
+3. **Các agent cấp dưới review đặc tả**, đặt câu hỏi. Câu nào Master không quyết được thì chuyển lên bạn. Tester viết kế hoạch kiểm thử ngay lúc này.
+4. **Review xong, hết câu hỏi:** bạn được báo để cho **"bắt đầu làm"**.
+5. **Agent code, Tester kiểm tra**, lặp lại nếu có lỗi.
+6. **Xong:** Master kiểm tra lại, gửi bạn **báo cáo nghiệm thu**. Bạn chọn: *Đạt + push*, *Đạt, chưa push*, hoặc *Chưa đạt*.
+
+Trong lúc tính năng A đang làm hoặc đang chờ, bạn và Master bàn tiếp tính năng B theo đúng luồng trên. Agent rảnh tự nhận việc của tính năng có độ ưu tiên cao hơn.
+
+**Bạn chỉ cần vào ở 4 thời điểm**, lần nào cũng có thông báo:
+
+| # | Lúc nào | Bạn làm gì |
+|---|---|---|
+| 1 | Có câu hỏi Master không quyết được | Trả lời |
+| 2 | Review xong | Cho "bắt đầu làm" |
+| 3 | Đội BE bên ngoài báo đã giao API (nếu có) | Ghi nhận, rồi gửi lại cho họ danh sách vấn đề soạn sẵn nếu API lệch hợp đồng |
+| 4 | Tính năng xong | Nghiệm thu và quyết định push |
+
+Chi tiết: [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) mục 5.3 và 11.6–11.9.
 
 ## Sau khi có lệnh `ag` (từ đợt 4)
 
@@ -112,7 +139,7 @@ Khi T-003 và T-006 xong, Master chạy `ag init` trên chính repo này. Từ �
 - Bạn trả lời câu hỏi bằng lệnh `ag decide D-NNN "…"` trong terminal của bạn. Lệnh này bắt gõ xác nhận, nên AI không chạy thay bạn được.
 - Bạn duyệt AI mới bằng lệnh `ag approve-agent <ID> --role <vai>`.
 
-Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web 2D có ở Giai đoạn 3, kèm hộp thư để nhắn Master ngay trên web. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
+Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pixel** có ở Giai đoạn 3, kèm hộp thư để nhắn Master theo từng tính năng. Xem trước bản phác: mở `monitor-pixel-office.html` bằng trình duyệt. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
 
 ## Tìm hiểu thêm
 
@@ -120,7 +147,9 @@ Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web 2D có ở Giai �
 |---|---|
 | Toàn bộ workflow và cách tuỳ chỉnh cho dự án, cho đội của bạn | [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) |
 | Vì sao thiết kế như vậy, các quyết định đã chốt | [README.md](README.md) |
-| Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
-| Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md) |
+| Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE hai repo, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
+| FE/BE cùng repo, BE đội khác, API có sẵn, nhiều tính năng cùng lúc, luồng có review (đã duyệt) | [dac-ta/de-xuat-bo-sung-02.md](dac-ta/de-xuat-bo-sung-02.md) |
+| Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md), [dac-ta/giai-doan-1b.md](dac-ta/giai-doan-1b.md) |
+| Giao việc nào trước, lời nhắn dán sẵn | [dac-ta/giao-viec.md](dac-ta/giao-viec.md) |
 | Quy tắc AI phải theo lúc này | [AGENTS.md](AGENTS.md) |
-| Mẫu trang monitor 2D | Mở `monitor-2d-mockup.html` bằng trình duyệt |
+| Giao diện monitor | Mở `monitor-pixel-office.html` bằng trình duyệt (hướng chính). Bản cũ: `monitor-nhieu-luong-mockup.html`, `monitor-2d-mockup.html` |

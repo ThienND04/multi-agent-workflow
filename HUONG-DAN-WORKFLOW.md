@@ -2,7 +2,7 @@
 
 Tài liệu cho **người muốn hiểu và áp dụng** workflow này vào dự án của mình. Đọc từ đầu đến cuối mất khoảng 20 phút. Phần tuỳ chỉnh ở mục 10.
 
-> **Tình trạng (16/11/2026):** thiết kế và đặc tả Giai đoạn 1 đã chốt. Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
+> **Tình trạng (16/11/2026):** thiết kế, đặc tả Giai đoạn 1 và Giai đoạn 1b đã chốt (27 việc). Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
 
 ---
 
@@ -57,11 +57,13 @@ Workflow này biến việc nhiều AI cùng làm thành một **quy trình có 
 
 | Vai | Là ai | Hỏi ai | Phải làm | Không được |
 |---|---|---|---|---|
-| **Chủ dự án** | Con người | — | Duyệt đặc tả, duyệt agent mới, trả lời câu hỏi được chuyển lên, xác nhận cổng, nghiệm thu, push code | — |
+| **Chủ dự án** | Con người | — | Cùng Master phân tích yêu cầu, trả lời câu hỏi được chuyển lên, cho tính năng "bắt đầu làm", xác nhận cổng và API của đội ngoài, nghiệm thu tính năng, quyết định push, duyệt agent mới | — |
 | **Master** | AI bất kỳ, **chỉ 1** mỗi repo | Chủ dự án | Làm rõ yêu cầu, viết đặc tả có tiêu chí chấp nhận, chia việc, trả lời câu hỏi khi có nguồn, kiểm tra lại, gộp nhánh | Sửa code. Chọn thay chủ dự án. Push |
-| **Coder** | AI bất kỳ, **nhiều**, chạy song song | Master | Viết code và test cho đúng việc được giao, trên nhánh riêng | Sửa đặc tả hay test chấp nhận. Thêm tính năng. Tự nghiệm thu. Push |
-| **Tester** | AI bất kỳ | Master | Viết ca kiểm thử từ đặc tả, chạy sản phẩm thật, báo lỗi kèm bằng chứng | Sửa code. Kiểm việc do chính mình code. Push |
+| **Coder** | AI bất kỳ, **nhiều**, chạy song song, có **chuyên môn** (`fe`, `be`…) | Master | Review đặc tả phần của mình, rồi viết code và test cho đúng việc được giao, trên nhánh riêng | Sửa đặc tả hay test chấp nhận. Thêm tính năng. Tự nghiệm thu. Push |
+| **Tester** | AI bất kỳ, có thể có chuyên môn (`fe`, `be`, `e2e`) | Master | Review đặc tả và viết kế hoạch kiểm thử trước khi có code, chạy sản phẩm thật, kiểm tra API so với hợp đồng, báo lỗi kèm bằng chứng | Sửa code. Kiểm việc do chính mình code. Push |
 | **Monitor** | **Chương trình**, không phải AI | — | Theo dõi trạng thái, gửi Telegram, chạy trang web | Ra quyết định |
+
+**FE và BE không phải vai riêng** mà là **chuyên môn** của Coder và Tester. Họ có cùng quyền, chỉ khác loại việc nhận được và thư mục được sửa (Giai đoạn 1b).
 
 Con người cũng tham gia được như một Coder (`--tool human`), ví dụ chủ dự án tự làm phần giao diện. Xem mục 11.4.
 
@@ -107,7 +109,7 @@ draft ──▶ approved ──claim──▶ in_progress ──▶ in_test ─�
 | Làm | Coder | `ag plan`, `ag step`, `ag log`, `ag heartbeat` | Commit trên nhánh riêng |
 | Giao kiểm tra | Coder | `ag status T in_test` | `ag` **tự chạy test**. Test đỏ thì bị từ chối |
 | Kiểm tra | Tester | `ag claim T`, rồi `ag verify` hoặc `ag bug` | Tester không phải người code việc này |
-| Gộp | Master | `ag merge T` | Gộp thử, chạy lại test, xanh mới commit lên nhánh chính |
+| Gộp | Master | `ag merge T` | Gộp thử, chạy lại test, xanh mới commit. Việc thuộc một tính năng thì gộp vào **nhánh tính năng**; tính năng chỉ vào nhánh chính sau khi chủ dự án nghiệm thu (mục 5.3) |
 | Đẩy lên remote | **Chỉ chủ dự án** | `ag push` | Phải gõ xác nhận tên nhánh |
 
 ### 5.2 Một ngày làm việc của Coder
@@ -208,8 +210,10 @@ Cả hai cách 2 và 3: nếu worktree cũ còn thay đổi chưa commit, `ag` t
 | Lệnh `ag` | Sai vai thì từ chối (mã thoát 2). Ví dụ Coder không đặt được `done`, Master trả lời mà không có nguồn thì bị từ chối |
 | Worktree riêng | Mỗi agent một thư mục, một nhánh, không ghi đè lên nhau |
 | Hook `pre-commit` | Commit sửa file ngoài phạm vi việc, hoặc file cấm theo vai, thì bị từ chối. Chỉ Master commit được lên nhánh chính |
-| Hook `pre-push` | **Mọi lần push đều bị chặn**, trừ khi chủ dự án chạy `ag push` và gõ xác nhận |
-| Lệnh của chủ dự án | `decide`, `approve-agent`, `gate pass/fail`, `reassign`, `push` bắt buộc gõ xác nhận trong terminal tương tác. AI chạy lệnh qua shell không tương tác nên không chạy nhầm được |
+| Hook theo chuyên môn (1b) | Coder `fe` không commit được vào thư mục của `be`, và ngược lại, kể cả khi file đó nằm trong phạm vi việc |
+| Hook hợp đồng (1b) | Chỉ Master commit được vào thư mục hợp đồng API |
+| Hook `pre-push` | **Mọi lần push đều bị chặn**, trừ khi chủ dự án chạy `ag push` (hoặc `ag feature accept --push`) và gõ xác nhận |
+| Lệnh của chủ dự án | `decide`, `approve-agent`, `gate pass/fail`, `reassign`, `push`, `feature start/accept/reject`, `ext delivered/fixed` bắt buộc gõ xác nhận trong terminal tương tác. AI chạy lệnh qua shell không tương tác nên không chạy nhầm được |
 | Master duyệt diff | Đọc toàn bộ thay đổi trước khi gộp |
 
 **Giới hạn cần biết:** trên một máy, hook có thể bị bỏ qua (`--no-verify`). Hàng rào này nhằm **chặn nhầm lẫn**, không chống được một agent cố tình phá. Phần còn lại dựa vào luật (cấm `--no-verify`), lịch sử git, và bước Master duyệt diff.
@@ -221,7 +225,7 @@ Cả hai cách 2 và 3: nếu worktree cũ còn thay đổi chưa commit, `ag` t
 | `ag inbox`, `ag task list` | Giai đoạn 1 | Xem trong terminal |
 | `STATUS.md` | Giai đoạn 2 | Bản tóm tắt tự cập nhật |
 | **Telegram** | Giai đoạn 2 | **Chỉ thông báo, một chiều.** Gửi ngay khi: có câu hỏi chờ chủ dự án, cổng chờ xác nhận, agent mới xin vào, agent bị chặn lâu, lỗi nghiêm trọng, agent im lặng khi đang giữ việc. Các sự kiện trong 2 phút được gom thành một tin. Có bản tóm tắt ngày |
-| **Trang web 2D** | Giai đoạn 3 | Văn phòng 2D, mỗi agent là một nhân vật. Bấm vào để xem việc đang giữ, nhật ký, bàn giao. Trả lời câu hỏi, xác nhận cổng ngay trên web |
+| **Trang web văn phòng pixel** | Giai đoạn 3 | Văn phòng pixel-art, mỗi agent là một nhân vật ngồi ở bàn. Màu áo là màu tính năng đang làm. Bong bóng trên đầu cho biết trạng thái. Agent đang chờ đứng ở cây nước, agent mới xin vào đứng ở cửa. Bảng trắng trên tường là bảng luồng thu nhỏ. Bên cạnh có khu "Cần bạn", bảng luồng theo tính năng, chi tiết từng agent. Trả lời câu hỏi, xác nhận cổng, nghiệm thu ngay trên web. Bản phác: `monitor-pixel-office.html` |
 | **Hộp thư Master** | Giai đoạn 3 | Nhắn Master trên web. Master đọc qua `ag inbox`, trả lời bằng `ag reply`. Không tức thì, trừ khi bật `master_wake_cmd` (mục 10.1) |
 
 Trang web mặc định chỉ xem được trên máy hoặc mạng nội bộ. Muốn xem từ xa thì dùng Tailscale hoặc Cloudflare Tunnel, có đăng nhập. Telegram chỉ nhận bản tóm tắt, không nhận mã nguồn, vì nội dung đi qua máy chủ của Telegram.
@@ -305,6 +309,9 @@ Bot chỉ gửi tin, không nhận lệnh. Không cài Telegram thì mọi thứ
 | Trộn nhiều công cụ AI | Mỗi agent khai `--tool` lúc check-in. Không cần cấu hình gì thêm |
 | Tự mình code một phần | Duyệt một ID cho chính bạn với `tool: human`. Bạn nhận việc như một Coder, không bị tính hạn giữ việc |
 | Thêm agent giữa chừng | Agent chạy `ag checkin`, rồi bạn chạy `ag approve-agent <ID> --role <vai>` |
+| Tách Coder FE và BE (1b) | Khai `areas` trong `project.md`, duyệt agent kèm `--area fe` hoặc `--area be`. Agent làm cả hai thì `--area fe,be` |
+| Làm nhiều tính năng cùng lúc (1b) | Mỗi tính năng có độ ưu tiên. Mở thêm phiên AI cho nhanh; mỗi agent AI chỉ giữ 1 việc. Khai `setup_cmd` và `worktree_env` để các phiên chạy server không đụng nhau |
+| BE do đội khác làm, hoặc API có sẵn (1b) | Master tạo phụ thuộc bên ngoài `X-NNN`. Bạn là cầu nối với đội ngoài |
 
 ### 10.5 Mức 5: sửa luật, vai, skill (bản fork)
 
@@ -429,7 +436,7 @@ Xem mục 7. Cách nhanh nhất: mở phiên mới trong đúng worktree cũ v�
 | **1** | Lệnh `ag`, khung `.agents/`, hook, tài liệu agent, dự án có sẵn, chế độ gọn, cổng, liên kết hai repo, tiếp quản, bộ skill | Đặc tả đã duyệt, 19 việc chờ giao. **Chưa có code** |
 | **1b** | Tính năng và vòng đời có review, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy song song an toàn, hộp thư Master theo tính năng | Đặc tả đã duyệt (`dac-ta/giai-doan-1b.md`), 8 việc T-020…T-027. **Chưa có code** |
 | **2** | Monitor: `STATUS.md`, Telegram một chiều, liên kết hai repo ở hai máy khác nhau | Chưa đặc tả |
-| **3** | Trang web 2D, trả lời câu hỏi và xác nhận cổng trên web, hộp thư Master | Có bản phác `monitor-2d-mockup.html` |
+| **3** | Trang web văn phòng pixel, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web, hộp thư Master theo tính năng | Có bản phác `monitor-pixel-office.html` (hướng chính) |
 | **4** | Đóng gói thành mẫu repo, cài bằng một lệnh | Chưa đặc tả |
 
 **Trong lúc chưa có `ag`:** repo này đang tự xây chính nó bằng quy trình làm tay. Xem `AGENTS.md` ở gốc repo và `BAT-DAU.md`.
@@ -483,7 +490,10 @@ Mã thoát: `0` thành công · `1` sai cú pháp · `2` không có quyền · `
     WORKFLOW.md  project.md  roles/  skills/  hooks/  bin/  src/
   .agents-state/                 # nhánh agents-state (không nằm trên nhánh chính)
     assignments.md  registry/  board/  decisions/  bugs/  messages/  journal/  events.jsonl
+    features/  externals/        # tính năng F-NNN, phụ thuộc bên ngoài X-NNN (1b)
+  contracts/                     # hợp đồng API, chỉ Master sửa (1b, tên thư mục do dự án chọn)
   .agents-local/identity.json    # danh tính của worktree (không đưa lên git)
+  .agents-local/env              # AG_SLOT, cổng, tên cơ sở dữ liệu của worktree (1b)
   .env                           # token Telegram (không đưa lên git)
 <repo>-wt/<ID>/                  # worktree riêng của từng Coder, Tester
 ```
@@ -514,6 +524,24 @@ Có tốn hơn so với một AI làm một mình, vì có thêm Master và Test
 
 **AI cố tình bỏ qua luật thì sao?**
 Hook và lệnh `ag` chặn nhầm lẫn, không chặn được agent cố tình phá trên cùng máy. Lịch sử git (mỗi commit có `Agent-Id`) và bước Master duyệt diff giúp phát hiện ra.
+
+**Tôi có phải ngồi canh không?**
+Không. Với mỗi tính năng, bạn chỉ phải vào 4 lần, lần nào cũng có thông báo:
+1. trả lời câu hỏi Master không quyết được;
+2. cho "bắt đầu làm" sau khi review xong;
+3. xác nhận API của đội ngoài (nếu có);
+4. nghiệm thu và quyết định push.
+
+Xem mục 5.3.
+
+**Có nên tách vai FE và BE riêng không?**
+Không. FE và BE là chuyên môn của Coder: cùng quyền, khác loại việc và thư mục. Tách thành vai riêng thì phải nhân đôi toàn bộ luật mà không được thêm gì.
+
+**BE do đội khác làm, AI có tự liên lạc với họ không?**
+Không bao giờ. Bạn là cầu nối. `ag ext issues --export` soạn sẵn danh sách vấn đề để bạn gửi đi.
+
+**Master có bị quá tải khi chạy nhiều tính năng không?**
+Master trả lời câu hỏi đang chặn việc trước, rồi mới bàn tính năng mới. Mọi thứ đều gắn mã tính năng, nên phiên Master có thể đổi bất kỳ lúc nào mà không mất mạch của từng luồng. Phương án "mỗi tính năng một Master" để sau.
 
 **Có chạy được trên Windows không?**
 Có. `ag` viết bằng Node, không dùng thư viện ngoài. Hook chạy qua Git Bash.
