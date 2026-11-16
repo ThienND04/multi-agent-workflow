@@ -6,7 +6,7 @@ Bản xuất ngày 16/11/2026, để tiếp tục trên máy khác. Tài liệu 
 > **Muốn hiểu toàn bộ hoặc tuỳ chỉnh cho mình?** Đọc [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md).
 > **Bắt tay xây Giai đoạn 1 và 1b?** Làm theo [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md).
 
-**Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01, 02 và 03 đã duyệt. Giai đoạn 1b (tính năng, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy nhiều luồng, Master luồng) có đặc tả riêng `dac-ta/giai-doan-1b.md`, thêm 9 việc T-020…T-028 (tổng 28 việc). Chưa có mã nguồn.
+**Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01, 02 và 03 đã duyệt. Giai đoạn 1b (tính năng, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy nhiều luồng, Master luồng) có đặc tả riêng `dac-ta/giai-doan-1b.md`, thêm 9 việc T-020…T-028 (tổng 28 việc). Đặc tả Giai đoạn 2 và 3 cũng đã duyệt (`dac-ta/giai-doan-2.md`, `dac-ta/giai-doan-3.md`), tổng cộng 45 việc. Chưa có mã nguồn.
 
 **File kèm theo:**
 - `monitor-2d-mockup.html`: bản phác trang monitor 2D, dữ liệu giả. Mở bằng trình duyệt.
@@ -270,7 +270,7 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
 | **1** | Khung `.agents/` + nhánh `agents-state`, lệnh `ag` (init, checkin, claim kèm worktree, heartbeat, log, status, ask/answer/escalate/decide, bug, handoff, merge), hook git, file vai trò, `AGENTS.md` và các file trỏ | Agent nào cũng nhận vai, hỏi đúng cấp và làm tiếp được từ file. **Kiểm chứng bằng ít nhất 2 công cụ AI khác nhau** cùng chạy |
 | **1b** | Tính năng `F-NNN` (vòng đời có bước review đặc tả, "bắt đầu làm", nghiệm thu kèm push), chuyên môn FE/BE, hợp đồng API và việc ghép nối, phụ thuộc bên ngoài `X-NNN`, chạy song song an toàn (`AG_SLOT`), hộp thư Master theo tính năng | Làm nhiều tính năng FE/BE cùng lúc, kể cả khi BE do đội khác làm hoặc API có sẵn |
 | **2** | Monitor: `STATUS.md`, luật phát hiện, Telegram thông báo một chiều (gom tin, tóm tắt), kiểm tra API ngoài theo lịch, liên kết hai repo khác máy. Đặc tả: `dac-ta/giai-doan-2.md` (**đã duyệt**), 8 việc T-029…T-036 | Nhận thông báo khi vắng mặt |
-| **3** | Trang web văn phòng pixel; **Phòng họp**: chat với Master chính và các Master luồng qua bộ nối công cụ (hộp thư làm dự phòng); trả lời câu hỏi, cho bắt đầu làm, nghiệm thu ngay trong hội thoại | Bàn giao và theo dõi mọi luồng trên một trang |
+| **3** | Đặc tả: `dac-ta/giai-doan-3.md` (**đã duyệt**), 9 việc T-037…T-045. Trang web văn phòng pixel; **Phòng họp**: chat với Master chính và các Master luồng qua bộ nối công cụ (hộp thư làm dự phòng); trả lời câu hỏi, cho bắt đầu làm, nghiệm thu ngay trong hội thoại | Bàn giao và theo dõi mọi luồng trên một trang |
 | **4** | Đóng gói mẫu repo; (tuỳ chọn) Monitor tự mở phiên Coder và Tester khi có việc chờ | Dùng lại bằng một lệnh |
 
 Giai đoạn "Telegram hai chiều" trong bản cũ đã bỏ, vì chủ dự án chọn Telegram chỉ thông báo.
@@ -333,6 +333,10 @@ Chỗ nào chưa rõ thì hỏi tôi, không tự quyết.
 | 27 | Monitor | Mỗi repo một Monitor chạy nền (`ag monitor start`), dùng chung một bot, tin có tiền tố tên dự án. `STATUS.md` nằm trong `.agents-state/`, không commit. Danh tính `monitor` chỉ được chạy `ext check` |
 | 28 | Ngưỡng và nội dung thông báo | Im lặng 30 phút, bị chặn 4 giờ, nhắc câu hỏi mỗi 12 giờ, gom tin 2 phút, tóm tắt 08:00 và 17:00. Tin có mã, tiêu đề và lệnh gợi ý; tuỳ chọn `code-only`. Kiểm tra API ngoài theo lịch mặc định tắt |
 | 29 | Ngoại lệ push cho hai repo khác máy | Khi chủ dự án bật `state_push` (gõ xác nhận một lần), Monitor được tự push **riêng nhánh `agents-state`** (chỉ trạng thái, không code). Mọi nhánh khác vẫn bị chặn. Nên dùng remote riêng tư |
+| 30 | Trang web | Chạy trong Monitor, mặc định `127.0.0.1:4300`. HTML/JS thuần, không build, không thư viện. Nét pixel tự vẽ, tuỳ chọn thay bằng sprite có giấy phép. Tối đa 16 agent một phòng |
+| 31 | Đăng nhập và hành động trên web | Mật khẩu đặt bằng `ag web set-password`, lưu băm ngoài repo. Hành động quan trọng gõ lại mã đối tượng. `ag` nhận lệnh chủ dự án qua TTY **hoặc** mã dùng một lần do Monitor ký (60 giây, đúng hành động và đối tượng) |
+| 32 | Phòng họp | Bộ nối đầu tiên: Claude Code; công cụ khác dùng hộp thư (`ag reply`). Tạo tính năng mới từ web đi qua Master chính. Giới hạn: 1 câu trả lời mỗi hội thoại, tối đa 3 đồng thời, 15 phút, có nút Dừng |
+| 33 | Kiểm thử giao diện | Danh sách kiểm tay có ảnh chụp; dữ liệu và chat kiểm tự động bằng bộ nối giả |
 
 ## 10. Câu hỏi chờ chủ dự án
 

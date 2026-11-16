@@ -2,7 +2,7 @@
 
 Tài liệu cho **người muốn hiểu và áp dụng** workflow này vào dự án của mình. Đọc từ đầu đến cuối mất khoảng 20 phút. Phần tuỳ chỉnh ở mục 10.
 
-> **Tình trạng (16/11/2026):** thiết kế, đặc tả Giai đoạn 1 và Giai đoạn 1b đã chốt (28 việc). Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
+> **Tình trạng (16/11/2026):** thiết kế và đặc tả Giai đoạn 1, 1b, 2, 3 đã chốt (45 việc). Lệnh `ag`, Monitor, Telegram và trang web **chưa được viết**. Tài liệu này mô tả hệ thống **khi đã xây xong**. Chỗ nào chỉ có ở giai đoạn sau thì có ghi rõ. Cách dùng tạm trong lúc chưa có `ag` nằm ở mục 12.
 
 ---
 
@@ -460,8 +460,8 @@ Ví dụ đầy đủ từng bước cho đúng kiểu dự án này: [VI-DU-LIC
 |---|---|---|
 | **1** | Lệnh `ag`, khung `.agents/`, hook, tài liệu agent, dự án có sẵn, chế độ gọn, cổng, liên kết hai repo, tiếp quản, bộ skill | Đặc tả đã duyệt, 19 việc chờ giao. **Chưa có code** |
 | **1b** | Tính năng và vòng đời có review, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy song song an toàn, hộp thư Master theo tính năng | Đặc tả đã duyệt (`dac-ta/giai-doan-1b.md`), 8 việc T-020…T-027. **Chưa có code** |
-| **2** | Monitor: `STATUS.md`, Telegram một chiều, liên kết hai repo ở hai máy khác nhau | Chưa đặc tả |
-| **3** | Trang web văn phòng pixel, Phòng họp chat với Master chính và các Master luồng, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web | Có bản phác `monitor-pixel-office.html` (hướng chính) |
+| **2** | Monitor: `STATUS.md`, Telegram một chiều, liên kết hai repo ở hai máy khác nhau | Đặc tả đã duyệt (`dac-ta/giai-doan-2.md`), 8 việc T-029…T-036. **Chưa có code** |
+| **3** | Trang web văn phòng pixel, Phòng họp chat với Master chính và các Master luồng, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web | Đặc tả đã duyệt (`dac-ta/giai-doan-3.md`), 9 việc T-037…T-045. Bản phác `monitor-pixel-office.html`. **Chưa có code** |
 | **4** | Đóng gói thành mẫu repo, cài bằng một lệnh; tuỳ chọn tự mở phiên Coder và Tester | Chưa đặc tả |
 
 **Trong lúc chưa có `ag`:** repo này đang tự xây chính nó bằng quy trình làm tay. Xem `AGENTS.md` ở gốc repo và `BAT-DAU.md`.

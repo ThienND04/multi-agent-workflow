@@ -15,7 +15,7 @@ Bản thân công cụ `ag` (lệnh quản lý quy trình) **chưa có**. Ta đa
 
 | Đã xong | Chưa có |
 |---|---|
-| Thiết kế tổng thể. Đặc tả Giai đoạn 1 và 1b (đã duyệt). 28 việc T-001…T-028. Tài liệu cho agent. Bản phác giao diện văn phòng pixel. Repo trên GitHub: [pnhit/multi-agent-workflow](https://github.com/pnhit/multi-agent-workflow) | Code của lệnh `ag`, Monitor, Telegram, trang web |
+| Thiết kế tổng thể. Đặc tả Giai đoạn 1, 1b, 2 và 3 (đã duyệt). 45 việc T-001…T-045. Tài liệu cho agent. Bản phác giao diện văn phòng pixel. Repo trên GitHub: [pnhit/multi-agent-workflow](https://github.com/pnhit/multi-agent-workflow) | Code của lệnh `ag`, Monitor, Telegram, trang web |
 
 ## Cần chuẩn bị
 
@@ -154,6 +154,7 @@ Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pix
 | Chat với Master trên web, Master chính và Master luồng (đã duyệt) | [dac-ta/de-xuat-bo-sung-03.md](dac-ta/de-xuat-bo-sung-03.md) |
 | Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md), [dac-ta/giai-doan-1b.md](dac-ta/giai-doan-1b.md) |
 | Monitor và thông báo Telegram (Giai đoạn 2, đã duyệt) | [dac-ta/giai-doan-2.md](dac-ta/giai-doan-2.md) |
+| Trang web văn phòng và Phòng họp với Master (Giai đoạn 3, đã duyệt) | [dac-ta/giai-doan-3.md](dac-ta/giai-doan-3.md) |
 | Giao việc nào trước, lời nhắn dán sẵn | [dac-ta/giao-viec.md](dac-ta/giao-viec.md) |
 | Quy tắc AI phải theo lúc này | [AGENTS.md](AGENTS.md) |
 | Giao diện monitor | Mở `monitor-pixel-office.html` bằng trình duyệt (hướng chính). Bản cũ: `monitor-nhieu-luong-mockup.html`, `monitor-2d-mockup.html` |

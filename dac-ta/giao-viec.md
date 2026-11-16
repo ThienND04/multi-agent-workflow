@@ -27,6 +27,12 @@ Chi tiết từng bước (mở phiên nào, kiểm tra gì, mốc chuyển sang
 | 13 (GĐ2) | T-032, T-034 | Coder | 2 |
 | 14 (GĐ2) | T-036 | Tester | — |
 | bất kỳ (GĐ2) | T-035 (tài liệu) | Master | — |
+| 15 (GĐ3) | T-037 | Coder | 1 |
+| 16 (GĐ3) | T-038, T-039, T-041 | Coder | 3 |
+| 17 (GĐ3) | T-040, T-042 | Coder | 2 |
+| 18 (GĐ3) | T-043 | Coder | 1 |
+| 19 (GĐ3) | T-045 | Tester + chủ dự án | — |
+| bất kỳ (GĐ3) | T-044 (tài liệu) | Master | — |
 | bất kỳ | T-015 (sau T-004), T-025 (sau T-015), xong trước Đợt 10 | Master | — |
 
 Sau mỗi việc code: Tester kiểm tra (`in_test → verified`), rồi Master gộp (`verified → done`).
