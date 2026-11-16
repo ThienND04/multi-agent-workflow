@@ -5,12 +5,13 @@ Cách để một developer dùng **nhiều AI agent** cùng làm phần mềm:
 - Master giao việc cho **Coder** và **Tester**, và họ có thể dùng bất kỳ AI nào;
 - **không AI nào tự quyết hay tự push**: bạn là người quyết định cuối.
 
-## Đọc 2 file
+## Đọc 3 file
 
 | File | Nội dung |
 |---|---|
 | **[HOW-IT-WORKS.md](HOW-IT-WORKS.md)** | Bài toán, các vai, một tính năng đi từ đầu đến cuối, 14 yêu cầu và cách đáp ứng, trang monitor, tối ưu token, chia tài khoản AI |
 | **[SETUP.md](SETUP.md)** | Đưa workflow vào dự án mới hoặc dự án đã có, từng bước, có lời nhắn dán sẵn |
+| **[EXAMPLE.md](EXAMPLE.md)** | Ví dụ thật từ đầu đến cuối: làm trang giới thiệu công ty qua 2 tính năng, chủ dự án đã nói gì, các agent đã làm gì, lỗi gặp phải |
 
 Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-kit/](starter-kit/)**.
 
@@ -29,7 +30,7 @@ Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-ki
 
 | | Dành cho |
 |---|---|
-| `README.md`, `HOW-IT-WORKS.md`, `SETUP.md`, `starter-kit/` | **Người dùng** |
+| `README.md`, `HOW-IT-WORKS.md`, `SETUP.md`, `EXAMPLE.md`, `starter-kit/` | **Người dùng** |
 | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `specs/`, `templates/`, `internal/` | Người **xây công cụ**. Người dùng không cần đọc. Xem [internal/README.md](internal/README.md) |
 
 **Lưu ý:** đừng chép `AGENTS.md` ở gốc repo này. Thứ để chép là nội dung thư mục `starter-kit/`.

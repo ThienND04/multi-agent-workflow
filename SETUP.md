@@ -1,6 +1,6 @@
 # Triển khai
 
-Đưa workflow vào **dự án mới** hoặc **dự án đã có**, từng bước. Muốn hiểu workflow chạy thế nào thì đọc [HOW-IT-WORKS.md](HOW-IT-WORKS.md) trước.
+Đưa workflow vào **dự án mới** hoặc **dự án đã có**, từng bước. Muốn hiểu workflow chạy thế nào thì đọc [HOW-IT-WORKS.md](HOW-IT-WORKS.md) trước. Muốn xem một lần dùng thật từ đầu đến cuối thì đọc [EXAMPLE.md](EXAMPLE.md).
 
 ## 0. Cần gì
 
