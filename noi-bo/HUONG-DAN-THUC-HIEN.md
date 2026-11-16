@@ -77,10 +77,10 @@ Cần Git ≥ 2.38 và Node ≥ 20. Máy hiện tại đã đủ: Git 2.45, Node
 Mở công cụ AI ở thư mục repo, dán:
 
 ```text
-Đọc THIET-KE.md, AGENTS.md, dac-ta/giai-doan-1.md, dac-ta/giai-doan-1b.md và HUONG-DAN-THUC-HIEN.md.
+Đọc noi-bo/THIET-KE.md, AGENTS.md, dac-ta/giai-doan-1.md, dac-ta/giai-doan-1b.md và noi-bo/HUONG-DAN-THUC-HIEN.md.
 Vai của bạn: Master trong giai đoạn tự khởi động (làm tay, chưa có lệnh ag).
 Việc của bạn: trả lời câu hỏi trong dac-ta/hoi-dap/ khi có nguồn, chuyển lên tôi khi không có nguồn;
-gộp nhánh các việc đã verified theo mục 3.4 của HUONG-DAN-THUC-HIEN.md; commit các thay đổi trạng thái trong dac-ta/;
+gộp nhánh các việc đã verified theo mục 3.4 của noi-bo/HUONG-DAN-THUC-HIEN.md; commit các thay đổi trạng thái trong dac-ta/;
 làm các việc vai Master (T-004, T-015, T-025). Không viết code trong src/, bin/, test/. Không push.
 Đầu mỗi lượt trao đổi, kiểm tra dac-ta/hoi-dap/ và các file việc có status in_test hoặc verified trước.
 ```
@@ -101,7 +101,7 @@ Thay phần trong `<…>`.
 ```text
 Đọc AGENTS.md trong thư mục này và làm theo.
 ID của bạn: <coder-NN>. Vai: Coder. Việc được giao: <T-NNN> (dac-ta/viec-gd1/<T-NNN>.md). Công cụ: <tên công cụ>.
-Đọc THIET-KE.md mục 3, 4, 9; dac-ta/giai-doan-1.md mục 2, 3, 7 và mục đặc tả mà việc trỏ tới (khoá spec:).
+Đọc noi-bo/THIET-KE.md mục 3, 4, 9; dac-ta/giai-doan-1.md mục 2, 3, 7 và mục đặc tả mà việc trỏ tới (khoá spec:).
 Chỉ sửa đúng các file trong khoá files: của việc. Chỗ nào chưa rõ thì tạo câu hỏi theo AGENTS.md mục 4, không tự quyết.
 Ghi bàn giao sau mỗi bước lớn. Xong thì chạy node --test, đặt việc sang in_test, ghi bàn giao. Không tự đánh dấu verified hay done. Không push.
 ```
@@ -119,7 +119,7 @@ Trượt: tạo dac-ta/loi/B-NNN.md (hiện tượng, cách tái hiện, bằng 
 
 **C. Nhờ Master gộp**, khi việc có `status: verified`. Nói trong phiên Master:
 ```text
-<T-NNN> đã verified. Gộp theo mục 3.4 của HUONG-DAN-THUC-HIEN.md.
+<T-NNN> đã verified. Gộp theo mục 3.4 của noi-bo/HUONG-DAN-THUC-HIEN.md.
 ```
 
 **D. Làm tiếp khi một phiên AI bị dừng hoặc hết token.** Mở phiên mới **trong đúng thư mục worktree cũ** (`../multi-agent-workflow-wt/<ID>`), dán:
@@ -228,7 +228,7 @@ Sau Đợt 5, `ag` đã có đủ lõi: `init`, `checkin`, duyệt agent, `task`
 
 | # | Ai | Làm gì |
 |---|---|---|
-| 1 | Master | Viết `.agents/project.md` cho repo này: `test_cmd: node --test`, `source_dirs: [src/**, bin/**]`, `acceptance_dirs: [test/e2e/**]`, `spec_files: [dac-ta/**, THIET-KE.md]`. Bạn duyệt |
+| 1 | Master | Viết `.agents/project.md` cho repo này: `test_cmd: node --test`, `source_dirs: [src/**, bin/**]`, `acceptance_dirs: [test/e2e/**]`, `spec_files: [dac-ta/**, noi-bo/THIET-KE.md]`. Bạn duyệt |
 | 2 | **Bạn**, trong terminal của bạn | `node bin/ag.js init --existing`. Lệnh in danh sách thay đổi rồi đòi bạn gõ xác nhận |
 | 3 | Master | **Chuyển dữ liệu một lần:** chép các file việc, câu hỏi, lỗi từ `dac-ta/` vào `.agents-state/` (`board/`, `decisions/`, `bugs/`), commit trên nhánh `agents-state` với thông điệp "Chuyển trạng thái từ chặng làm tay". Đây là lần **duy nhất** được sửa tay trạng thái |
 | 4 | Master | Thay nội dung "giai đoạn tự khởi động" trong `AGENTS.md` ở gốc repo bằng nội dung chuẩn. Thêm ghi chú đầu `dac-ta/giao-viec.md` rằng từ nay trạng thái nằm trong `.agents-state/`, các file trong `dac-ta/viec-gd1/` chỉ còn là bản lưu. Bạn duyệt |

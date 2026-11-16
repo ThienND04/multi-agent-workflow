@@ -2,9 +2,9 @@
 
 **Trạng thái:** **Đã duyệt** ngày 16/11/2026 (chủ dự án duyệt toàn bộ 10 điểm ở mục 12). Viết bởi vai Master.
 **Nguồn:**
-- THIET-KE.md mục 5.6c và các quyết định 16, 23–26;
+- noi-bo/THIET-KE.md mục 5.6c và các quyết định 16, 23–26;
 - đề xuất bổ sung 02 mục G (4 khu của giao diện), đề xuất bổ sung 03 (chat qua bộ nối, Master luồng, hành động của chủ dự án trên web);
-- bản phác `monitor-pixel-office.html` (hướng giao diện chính).
+- bản phác `noi-bo/ban-phac/monitor-pixel-office.html` (hướng giao diện chính).
 
 **Nền:** mọi quy ước của `dac-ta/giai-doan-1.md` (mục 2, 3, 7) áp dụng nguyên cho file này, kể cả **không dùng thư viện ngoài**.
 **Các việc:** T-037 … T-045 trong `dac-ta/viec-gd1/`, đã chuyển sang `approved`.
@@ -114,7 +114,7 @@ Khoá trong `project.md`:
 
 ## 5. Văn phòng pixel, việc T-039
 
-Theo bản phác `monitor-pixel-office.html`. Nét vẽ bằng khối pixel trong mã, **không dùng tài sản đồ hoạ của bên thứ ba**.
+Theo bản phác `noi-bo/ban-phac/monitor-pixel-office.html`. Nét vẽ bằng khối pixel trong mã, **không dùng tài sản đồ hoạ của bên thứ ba**.
 - Khoá tuỳ chọn `ui_sprites_dir`: chủ dự án có giấy phép một bộ sprite thì trỏ tới đó để thay nét vẽ. Mặc định dùng nét vẽ có sẵn.
 
 **Bố trí tự động theo dữ liệu thật:**
@@ -242,7 +242,7 @@ Việc T-044 viết hướng dẫn này.
 
 ## 9. Tài liệu, việc T-044 (Master)
 
-- `BAT-DAU.md`, `HUONG-DAN-WORKFLOW.md`: đặt mật khẩu, mở trang, dùng Phòng họp, truy cập từ xa.
+- `noi-bo/BAT-DAU.md`, `noi-bo/HUONG-DAN-WORKFLOW.md`: đặt mật khẩu, mở trang, dùng Phòng họp, truy cập từ xa.
 - `templates/roles/master.md`: luật khi trả lời qua Phòng họp:
   - đầu mỗi lượt chạy `ag inbox`;
   - giữ câu trả lời ngắn, việc dài thì ghi vào file rồi báo;

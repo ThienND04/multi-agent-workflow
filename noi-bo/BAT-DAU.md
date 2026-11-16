@@ -1,6 +1,6 @@
 # Bắt đầu từ đây
 
-Hướng dẫn cho **chủ repo** (người duyệt và giao việc). Đọc trong khoảng 5 phút. Mới clone về và chưa biết mình thuộc nhóm nào thì đọc [README.md](README.md) trước.
+Hướng dẫn cho **chủ repo** (người duyệt và giao việc). Đọc trong khoảng 5 phút. Mới clone về và chưa biết mình thuộc nhóm nào thì đọc [README.md](../README.md) trước.
 
 ## Đây là gì
 
@@ -56,7 +56,7 @@ Cần sửa chỗ nào thì nói với Master. Duyệt xong thì nói *"duyệt 
 ### Bước 3. Giao việc T-001 cho một Coder
 
 1. Mở một công cụ AI tại thư mục repo này.
-2. Dán lời nhắn **"Đợt 1: Coder làm T-001"** trong [dac-ta/giao-viec.md](dac-ta/giao-viec.md).
+2. Dán lời nhắn **"Đợt 1: Coder làm T-001"** trong [dac-ta/giao-viec.md](../dac-ta/giao-viec.md).
 3. Sửa `<tên công cụ>` thành tên công cụ bạn dùng.
 
 Lời nhắn đã có sẵn **ID, vai và việc**. Khi bạn dán lời nhắn, cũng là bạn duyệt AI đó tham gia.
@@ -139,7 +139,7 @@ Khi Đợt 5 xong (T-001 … T-012), bạn chạy `ag init --existing` trên ch�
 - Bạn trả lời câu hỏi bằng lệnh `ag decide D-NNN "…"` trong terminal của bạn. Lệnh này bắt gõ xác nhận, nên AI không chạy thay bạn được.
 - Bạn duyệt AI mới bằng lệnh `ag approve-agent <ID> --role <vai>`.
 
-Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pixel** có ở Giai đoạn 3, kèm **Phòng họp** để chat trực tiếp với Master chính và Master của từng tính năng, giống mở nhiều phiên chat. Xem trước bản phác: mở `monitor-pixel-office.html` bằng trình duyệt. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
+Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pixel** có ở Giai đoạn 3, kèm **Phòng họp** để chat trực tiếp với Master chính và Master của từng tính năng, giống mở nhiều phiên chat. Xem trước bản phác: mở `noi-bo/ban-phac/monitor-pixel-office.html` bằng trình duyệt. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
 
 ## Tìm hiểu thêm
 
@@ -149,12 +149,12 @@ Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pix
 | **Ví dụ đầy đủ: xây app Lịch mua bán** bằng workflow (cần chuẩn bị gì, từng bước) | [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-MUA-BAN.md) |
 | Toàn bộ workflow và cách tuỳ chỉnh cho dự án, cho đội của bạn | [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) |
 | Vì sao thiết kế như vậy, các quyết định đã chốt | [THIET-KE.md](THIET-KE.md) |
-| Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE hai repo, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
-| FE/BE cùng repo, BE đội khác, API có sẵn, nhiều tính năng cùng lúc, luồng có review (đã duyệt) | [dac-ta/de-xuat-bo-sung-02.md](dac-ta/de-xuat-bo-sung-02.md) |
-| Chat với Master trên web, Master chính và Master luồng (đã duyệt) | [dac-ta/de-xuat-bo-sung-03.md](dac-ta/de-xuat-bo-sung-03.md) |
-| Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md), [dac-ta/giai-doan-1b.md](dac-ta/giai-doan-1b.md) |
-| Monitor và thông báo Telegram (Giai đoạn 2, đã duyệt) | [dac-ta/giai-doan-2.md](dac-ta/giai-doan-2.md) |
-| Trang web văn phòng và Phòng họp với Master (Giai đoạn 3, đã duyệt) | [dac-ta/giai-doan-3.md](dac-ta/giai-doan-3.md) |
-| Giao việc nào trước, lời nhắn dán sẵn | [dac-ta/giao-viec.md](dac-ta/giao-viec.md) |
-| Quy tắc AI phải theo lúc này | [AGENTS.md](AGENTS.md) |
-| Giao diện monitor | Mở `monitor-pixel-office.html` bằng trình duyệt (hướng chính). Bản cũ: `monitor-nhieu-luong-mockup.html`, `monitor-2d-mockup.html` |
+| Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE hai repo, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](../dac-ta/de-xuat-bo-sung-01.md) |
+| FE/BE cùng repo, BE đội khác, API có sẵn, nhiều tính năng cùng lúc, luồng có review (đã duyệt) | [dac-ta/de-xuat-bo-sung-02.md](../dac-ta/de-xuat-bo-sung-02.md) |
+| Chat với Master trên web, Master chính và Master luồng (đã duyệt) | [dac-ta/de-xuat-bo-sung-03.md](../dac-ta/de-xuat-bo-sung-03.md) |
+| Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](../dac-ta/giai-doan-1.md), [dac-ta/giai-doan-1b.md](../dac-ta/giai-doan-1b.md) |
+| Monitor và thông báo Telegram (Giai đoạn 2, đã duyệt) | [dac-ta/giai-doan-2.md](../dac-ta/giai-doan-2.md) |
+| Trang web văn phòng và Phòng họp với Master (Giai đoạn 3, đã duyệt) | [dac-ta/giai-doan-3.md](../dac-ta/giai-doan-3.md) |
+| Giao việc nào trước, lời nhắn dán sẵn | [dac-ta/giao-viec.md](../dac-ta/giao-viec.md) |
+| Quy tắc AI phải theo lúc này | [AGENTS.md](../AGENTS.md) |
+| Giao diện monitor | Mở `noi-bo/ban-phac/monitor-pixel-office.html` bằng trình duyệt (hướng chính). |

@@ -1,12 +1,14 @@
 # Hướng dẫn cho AI agent (giai đoạn tự khởi động)
 
-Repo này xây **lệnh `ag`** cho workflow multi-agent. Lệnh `ag` chưa có, nên tạm thời mọi agent làm theo quy trình bằng tay dưới đây. Khi Đợt 5 xong (T-001 … T-012 đều `done`, xem `dac-ta/giao-viec.md`), chủ dự án chạy `ag init --existing` trên chính repo này, và file này được thay bằng bản thật (`HUONG-DAN-THUC-HIEN.md` mục 4).
+> **File này chỉ dành cho AI đang xây công cụ `ag` trong repo này.** Muốn dùng workflow cho dự án khác thì chép `bo-khoi-dau-lam-tay/AGENTS.md`, không chép file này.
+
+Repo này xây **lệnh `ag`** cho workflow multi-agent. Lệnh `ag` chưa có, nên tạm thời mọi agent làm theo quy trình bằng tay dưới đây. Khi Đợt 5 xong (T-001 … T-012 đều `done`, xem `dac-ta/giao-viec.md`), chủ dự án chạy `ag init --existing` trên chính repo này, và file này được thay bằng bản thật (`noi-bo/HUONG-DAN-THUC-HIEN.md` mục 4).
 
 File này áp dụng cho **mọi AI** (Claude, Codex, Gemini, Cursor, Copilot…). Điều kiện tham gia: đọc/ghi được file và chạy được `git`, `node` (≥ 20).
 
 ## 1. Đọc trước khi làm bất cứ việc gì
 
-1. `THIET-KE.md`: thiết kế tổng thể. Mục 3 (nguyên tắc), mục 4 (vai trò và chuỗi hỏi), mục 9 (các quyết định đã chốt).
+1. `noi-bo/THIET-KE.md`: thiết kế tổng thể. Mục 3 (nguyên tắc), mục 4 (vai trò và chuỗi hỏi), mục 9 (các quyết định đã chốt).
 2. `dac-ta/giai-doan-1.md`: **đặc tả đã duyệt. Luôn là bản đúng nhất.**
 3. File việc bạn được giao: `dac-ta/viec-gd1/T-NNN.md`.
 
@@ -20,8 +22,8 @@ Chủ dự án cho bạn **ID, vai và việc** ngay trong lời nhắn mở phi
 
 | Vai | Được sửa | Không được |
 |---|---|---|
-| Master | `THIET-KE.md`, `AGENTS.md`, `dac-ta/**`, `templates/**` (tài liệu) | Sửa code `src/`, `bin/`, `test/`. Tự quyết thay chủ dự án |
-| Coder | Đúng các file trong `files:` của việc được giao, **trên nhánh riêng** | Sửa đặc tả, `THIET-KE.md`, file việc của người khác. Thêm thư viện ngoài. Tự đánh dấu việc xong |
+| Master | `noi-bo/THIET-KE.md`, `AGENTS.md`, `dac-ta/**`, `templates/**` (tài liệu) | Sửa code `src/`, `bin/`, `test/`. Tự quyết thay chủ dự án |
+| Coder | Đúng các file trong `files:` của việc được giao, **trên nhánh riêng** | Sửa đặc tả, `noi-bo/THIET-KE.md`, file việc của người khác. Thêm thư viện ngoài. Tự đánh dấu việc xong |
 | Tester | `test/e2e/**` và file trong `files:` của việc loại `test` | Sửa `src/`, đặc tả |
 
 ## 3. Quy trình (thay cho lệnh `ag` trong lúc chờ)
@@ -58,7 +60,7 @@ Gọi `<repo>` là thư mục chứa file này, nhánh `main`.
 
 ## 4. Không tự quyết: hỏi theo cấp
 
-Ranh giới đã chốt (THIET-KE.md mục 9, dòng 6):
+Ranh giới đã chốt (noi-bo/THIET-KE.md mục 9, dòng 6):
 - **Không cần hỏi:** chi tiết bên trong việc, không đổi hành vi hay giao diện (tên biến cục bộ, cách tách hàm, thứ tự code), theo đúng quy ước.
 - **Bắt buộc hỏi:** hành vi, giao diện, định dạng dữ liệu, API, thêm thư viện, đổi cấu trúc thư mục, và mọi chỗ đặc tả mơ hồ hoặc mâu thuẫn.
 

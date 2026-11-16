@@ -283,7 +283,7 @@ Bạn đang bàn tính năng B với Master trong khi tính năng A đang chạy
 
 ### G. Giao diện monitor cho nhiều luồng (Giai đoạn 3)
 
-Bản phác mới: `monitor-nhieu-luong-mockup.html` (dữ liệu giả, mở bằng trình duyệt). Trang có 4 khu:
+Bản phác ban đầu (`monitor-nhieu-luong-mockup.html`, đã gộp vào bản phác pixel và xoá ngày 16/11/2026). Trang có 4 khu:
 
 | Khu | Để làm gì |
 |---|---|
@@ -294,7 +294,7 @@ Bản phác mới: `monitor-nhieu-luong-mockup.html` (dữ liệu giả, mở b�
 
 Mỗi tính năng có một màu cố định, dùng thống nhất ở cả 4 khu.
 
-**Cập nhật 16/11/2026:** chủ dự án chọn phong cách **văn phòng pixel-art**. Bản phác chính thức: `monitor-pixel-office.html`, gộp cả 4 khu ở trên vào một cảnh văn phòng:
+**Cập nhật 16/11/2026:** chủ dự án chọn phong cách **văn phòng pixel-art**. Bản phác chính thức: `noi-bo/ban-phac/monitor-pixel-office.html`, gộp cả 4 khu ở trên vào một cảnh văn phòng:
 - màu áo của nhân vật là màu của tính năng họ đang làm;
 - bảng trắng trên tường là bảng luồng thu nhỏ;
 - agent đang chờ đứng ở cây nước;

@@ -20,7 +20,7 @@
 
 **Không có:**
 - Monitor chạy `live_check_cmd` theo lịch, Telegram nhóm theo tính năng (Giai đoạn 2);
-- giao diện monitor nhiều luồng (Giai đoạn 3; bản phác `monitor-nhieu-luong-mockup.html`);
+- giao diện monitor nhiều luồng (Giai đoạn 3; bản phác `noi-bo/ban-phac/monitor-pixel-office.html`);
 - Trò chuyện với Master trên web qua bộ nối công cụ, hội thoại `C-NNN`, đăng nhập và mã dùng một lần (Giai đoạn 3, đề xuất bổ sung 03);
 - tự mở phiên Coder và Tester (Giai đoạn 4).
 

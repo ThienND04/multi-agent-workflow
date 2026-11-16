@@ -225,7 +225,7 @@ Cả hai cách 2 và 3: nếu worktree cũ còn thay đổi chưa commit, `ag` t
 | `ag inbox`, `ag task list` | Giai đoạn 1 | Xem trong terminal |
 | `STATUS.md` | Giai đoạn 2 | Bản tóm tắt tự cập nhật |
 | **Telegram** | Giai đoạn 2 | **Chỉ thông báo, một chiều.** Gửi ngay khi: có câu hỏi chờ chủ dự án, cổng chờ xác nhận, agent mới xin vào, agent bị chặn lâu, lỗi nghiêm trọng, agent im lặng khi đang giữ việc. Các sự kiện trong 2 phút được gom thành một tin. Có bản tóm tắt ngày |
-| **Trang web văn phòng pixel** | Giai đoạn 3 | Văn phòng pixel-art, mỗi agent là một nhân vật ngồi ở bàn. Màu áo là màu tính năng đang làm. Bong bóng trên đầu cho biết trạng thái. Agent đang chờ đứng ở cây nước, agent mới xin vào đứng ở cửa. Bảng trắng trên tường là bảng luồng thu nhỏ. Bên cạnh có khu "Cần bạn", bảng luồng theo tính năng, chi tiết từng agent. Trả lời câu hỏi, xác nhận cổng, nghiệm thu ngay trên web. Bản phác: `monitor-pixel-office.html` |
+| **Trang web văn phòng pixel** | Giai đoạn 3 | Văn phòng pixel-art, mỗi agent là một nhân vật ngồi ở bàn. Màu áo là màu tính năng đang làm. Bong bóng trên đầu cho biết trạng thái. Agent đang chờ đứng ở cây nước, agent mới xin vào đứng ở cửa. Bảng trắng trên tường là bảng luồng thu nhỏ. Bên cạnh có khu "Cần bạn", bảng luồng theo tính năng, chi tiết từng agent. Trả lời câu hỏi, xác nhận cổng, nghiệm thu ngay trên web. Bản phác: `noi-bo/ban-phac/monitor-pixel-office.html` |
 | **Phòng họp với Master** | Giai đoạn 3 | Chat trực tiếp trên web với Master chính (hội thoại "Chung") và từng Master luồng (mỗi tính năng một hội thoại). Monitor chạy công cụ AI qua bộ nối, câu trả lời hiện dần. Câu hỏi, "bắt đầu làm", nghiệm thu hiện thành thẻ có nút ngay trong hội thoại. Công cụ không hỗ trợ thì quay về hộp thư (`ag reply`) |
 
 Trang web mặc định chỉ xem được trên máy hoặc mạng nội bộ. Muốn xem từ xa thì dùng Tailscale hoặc Cloudflare Tunnel, có đăng nhập. Telegram chỉ nhận bản tóm tắt, không nhận mã nguồn, vì nội dung đi qua máy chủ của Telegram.
@@ -451,7 +451,7 @@ Ví dụ đầy đủ từng bước cho đúng kiểu dự án này: [VI-DU-LIC
 - Mỗi agent AI chỉ giữ 1 việc. Muốn nhanh hơn thì mở thêm phiên AI. Bạn (người) giữ được nhiều việc.
 - Nhiều phiên chạy server cùng lúc: mỗi worktree có `AG_SLOT` riêng, nên cổng mạng và cơ sở dữ liệu không đụng nhau.
 - Tính năng A bị chặn (ví dụ chờ đội ngoài): agent tự chuyển sang việc của B. A mở lại thì việc của A lên đầu.
-- Theo dõi: `ag feature list`. Từ Giai đoạn 3 có trang web nhiều luồng, bản phác ở `monitor-nhieu-luong-mockup.html`.
+- Theo dõi: `ag feature list`. Từ Giai đoạn 3 có trang web nhiều luồng, bản phác ở `noi-bo/ban-phac/monitor-pixel-office.html`.
 
 
 ## 12. Tình trạng hiện tại và lộ trình
@@ -461,10 +461,10 @@ Ví dụ đầy đủ từng bước cho đúng kiểu dự án này: [VI-DU-LIC
 | **1** | Lệnh `ag`, khung `.agents/`, hook, tài liệu agent, dự án có sẵn, chế độ gọn, cổng, liên kết hai repo, tiếp quản, bộ skill | Đặc tả đã duyệt, 19 việc chờ giao. **Chưa có code** |
 | **1b** | Tính năng và vòng đời có review, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy song song an toàn, hộp thư Master theo tính năng | Đặc tả đã duyệt (`dac-ta/giai-doan-1b.md`), 8 việc T-020…T-027. **Chưa có code** |
 | **2** | Monitor: `STATUS.md`, Telegram một chiều, liên kết hai repo ở hai máy khác nhau | Đặc tả đã duyệt (`dac-ta/giai-doan-2.md`), 8 việc T-029…T-036. **Chưa có code** |
-| **3** | Trang web văn phòng pixel, Phòng họp chat với Master chính và các Master luồng, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web | Đặc tả đã duyệt (`dac-ta/giai-doan-3.md`), 9 việc T-037…T-045. Bản phác `monitor-pixel-office.html`. **Chưa có code** |
+| **3** | Trang web văn phòng pixel, Phòng họp chat với Master chính và các Master luồng, trả lời câu hỏi, xác nhận cổng và nghiệm thu trên web | Đặc tả đã duyệt (`dac-ta/giai-doan-3.md`), 9 việc T-037…T-045. Bản phác `noi-bo/ban-phac/monitor-pixel-office.html`. **Chưa có code** |
 | **4** | Đóng gói thành mẫu repo, cài bằng một lệnh; tuỳ chọn tự mở phiên Coder và Tester | Chưa đặc tả |
 
-**Trong lúc chưa có `ag`:** repo này đang tự xây chính nó bằng quy trình làm tay. Xem `AGENTS.md` ở gốc repo và `BAT-DAU.md`.
+**Trong lúc chưa có `ag`:** repo này đang tự xây chính nó bằng quy trình làm tay. Xem `AGENTS.md` ở gốc repo và `noi-bo/BAT-DAU.md`.
 
 ## 13. Tra cứu nhanh
 
@@ -576,4 +576,4 @@ Có. `ag` viết bằng Node, không dùng thư viện ngoài. Hook chạy qua G
 
 ---
 
-*Tài liệu gốc chi tiết hơn: `THIET-KE.md` (thiết kế và các quyết định), `dac-ta/giai-doan-1.md` (đặc tả và tiêu chí chấp nhận), `templates/` (luật mà agent đọc).*
+*Tài liệu gốc chi tiết hơn: `noi-bo/THIET-KE.md` (thiết kế và các quyết định), `dac-ta/giai-doan-1.md` (đặc tả và tiêu chí chấp nhận), `templates/` (luật mà agent đọc).*

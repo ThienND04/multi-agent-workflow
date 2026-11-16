@@ -235,7 +235,7 @@ Agent hết token thường **dừng đột ngột, không kịp bàn giao**. V�
 - chạy `ag step` hoặc `ag handoff`,
 - chạy `ag heartbeat`.
 
-**5. Lời nhắn "làm tiếp" chuẩn**, ghi trong `BAT-DAU.md`:
+**5. Lời nhắn "làm tiếp" chuẩn**, ghi trong `noi-bo/BAT-DAU.md`:
 ```text
 Đọc AGENTS.md và làm theo. ID của bạn: coder-01 (làm tiếp phiên trước bị dừng).
 Chạy ag whoami và ag inbox, đọc bàn giao và kế hoạch các bước của việc đang giữ, chạy test để thấy hiện trạng, rồi làm tiếp từ bước chưa xong.

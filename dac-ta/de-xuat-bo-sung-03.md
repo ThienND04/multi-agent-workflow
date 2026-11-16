@@ -1,6 +1,6 @@
 # Đề xuất bổ sung 03: trò chuyện với Master trên web, nhiều phiên theo tính năng
 
-**Trạng thái:** **Đã duyệt toàn bộ 7 điểm** ngày 16/11/2026. Đã đưa vào: `dac-ta/giai-doan-1b.md` mục 8a (việc T-028), THIET-KE.md quyết định 22–26, lộ trình Giai đoạn 3 và 4.
+**Trạng thái:** **Đã duyệt toàn bộ 7 điểm** ngày 16/11/2026. Đã đưa vào: `dac-ta/giai-doan-1b.md` mục 8a (việc T-028), noi-bo/THIET-KE.md quyết định 22–26, lộ trình Giai đoạn 3 và 4.
 
 **Câu hỏi của chủ dự án:** trên trang monitor, làm sao chat với Master để bàn giao việc? Giống ứng dụng Claude đang dùng: mở **nhiều phiên** nói chuyện với Master, mỗi phiên một chủ đề, rồi từ đó triển khai theo luồng.
 
@@ -109,7 +109,7 @@ Cùng bộ nối đó, Monitor có thể **tự mở phiên Coder** khi có vi�
 
 ## 4. Giao diện: khu "Phòng họp"
 
-Bản phác: `monitor-pixel-office.html`, khu **Phòng họp với Master** (ngay dưới cảnh văn phòng).
+Bản phác: `noi-bo/ban-phac/monitor-pixel-office.html`, khu **Phòng họp với Master** (ngay dưới cảnh văn phòng).
 
 | Phần | Nội dung |
 |---|---|

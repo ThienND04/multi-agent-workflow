@@ -2,15 +2,13 @@
 
 Tài liệu thiết kế đầy đủ: mục tiêu, nguyên tắc, vai trò, thiết kế kỹ thuật, lộ trình và **mọi quyết định đã chốt (mục 9)**. Tài liệu tự đủ: người đọc (hoặc AI) không cần xem lại cuộc trò chuyện cũ.
 
-> **Mới clone repo về?** Đọc [README.md](README.md) trước.
+> **Mới clone repo về?** Đọc [README.md](../README.md) trước.
 
 **Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01, 02 và 03 đã duyệt. Giai đoạn 1b (tính năng, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy nhiều luồng, Master luồng) có đặc tả riêng `dac-ta/giai-doan-1b.md`, thêm 9 việc T-020…T-028 (tổng 28 việc). Đặc tả Giai đoạn 2 và 3 cũng đã duyệt (`dac-ta/giai-doan-2.md`, `dac-ta/giai-doan-3.md`), tổng cộng 45 việc. Chưa có mã nguồn.
 
 **File kèm theo:**
-- `monitor-2d-mockup.html`: bản phác trang monitor 2D, dữ liệu giả. Mở bằng trình duyệt.
-- `monitor-nhieu-luong-mockup.html`: bản phác monitor theo dõi nhiều tính năng cùng lúc (khu "Cần bạn", bảng luồng, văn phòng, chi tiết kèm trao đổi với Master). Xem đề xuất bổ sung 02, mục G.
-- `monitor-pixel-office.html`: **bản phác chọn làm hướng chính cho Giai đoạn 3**. Văn phòng pixel-art (nét vẽ tự làm), gộp đủ: nhân vật mặc áo màu tính năng, bong bóng trạng thái, bảng luồng trên tường, agent chờ đứng ở cây nước, agent mới xin vào đứng ở cửa, khu "Cần bạn", bảng luồng, chi tiết và trao đổi với Master theo tính năng.
-- `vi-du-lich-mua-ban/`: các file thật từ dự án thử nghiệm đầu tiên, để tham khảo cách làm cũ.
+- `noi-bo/ban-phac/monitor-pixel-office.html`: **bản phác chọn làm hướng chính cho Giai đoạn 3**. Văn phòng pixel-art (nét vẽ tự làm), gộp đủ: nhân vật mặc áo màu tính năng, bong bóng trạng thái, bảng luồng trên tường, agent chờ đứng ở cây nước, agent mới xin vào đứng ở cửa, khu "Cần bạn", bảng luồng, chi tiết và trao đổi với Master theo tính năng.
+- `noi-bo/vi-du-lich-mua-ban/`: các file thật từ dự án thử nghiệm đầu tiên, để tham khảo cách làm cũ.
 
 ---
 
@@ -32,7 +30,7 @@ Dựng một quy trình để nhiều AI agent cùng xây phần mềm, với ch
 Dự án app Android thống kê cổ phiếu (13–16/11/2026) đã chạy một bản thô của workflow này:
 - Claude làm Master/Điều phối, một AI khác làm Coder, chủ dự án duyệt.
 - Trao đổi qua file: `AGENTS.md`, `hoi-dap/`, `loi/`, `yeu-cau/`, `TIEN-DO.md`.
-- Xem các file mẫu trong `vi-du-lich-mua-ban/`.
+- Xem các file mẫu trong `noi-bo/vi-du-lich-mua-ban/`.
 
 | Chạy tốt | Hỏng hoặc thiếu |
 |---|---|
@@ -233,7 +231,7 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
   3. Điền token và chat ID vào `.env`.
 
 **c) Trang web 2D**
-- Văn phòng 2D, mỗi agent là nhân vật ngồi ở bàn. Xem `monitor-2d-mockup.html`.
+- Văn phòng 2D, mỗi agent là nhân vật ngồi ở bàn. Xem `noi-bo/ban-phac/monitor-pixel-office.html`.
 - Nhân vật hiện tên công cụ AI (Claude, Codex, Gemini…), vì đội có thể trộn nhiều công cụ.
 - Trạng thái thể hiện bằng hình:
 
@@ -277,7 +275,7 @@ Gợi ý: xây chính hệ thống này **bằng workflow này**. Master viết 
 
 ## 7. Bắt đầu từ đâu
 
-Xem [README.md](README.md): chia lối đi theo việc bạn muốn làm (tìm hiểu, xây `ag`, áp dụng cho dự án của mình). Các bước xây `ag` chi tiết: [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md).
+Xem [README.md](../README.md): chia lối đi theo việc bạn muốn làm (tìm hiểu, xây `ag`, áp dụng cho dự án của mình). Các bước xây `ag` chi tiết: [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md).
 
 ## 8. Nguồn tham khảo
 
@@ -326,6 +324,7 @@ Xem [README.md](README.md): chia lối đi theo việc bạn muốn làm (tìm h
 | 31 | Đăng nhập và hành động trên web | Mật khẩu đặt bằng `ag web set-password`, lưu băm ngoài repo. Hành động quan trọng gõ lại mã đối tượng. `ag` nhận lệnh chủ dự án qua TTY **hoặc** mã dùng một lần do Monitor ký (60 giây, đúng hành động và đối tượng) |
 | 32 | Phòng họp | Bộ nối đầu tiên: Claude Code; công cụ khác dùng hộp thư (`ag reply`). Tạo tính năng mới từ web đi qua Master chính. Giới hạn: 1 câu trả lời mỗi hội thoại, tối đa 3 đồng thời, 15 phút, có nút Dừng |
 | 33 | Kiểm thử giao diện | Danh sách kiểm tay có ảnh chụp; dữ liệu và chat kiểm tự động bằng bộ nối giả |
+| 34 | Đóng băng thiết kế và dọn repo (16/11/2026) | Không thêm giai đoạn, đề xuất, đặc tả mới cho tới khi bản làm tay (`bo-khoi-dau-lam-tay/`) được dùng thật. Ghi chỗ vướng vào `noi-bo/PHAN-HOI.md`, rồi thu gọn `ag` bản đầu theo đó. Người dùng chỉ thấy `README.md` và `bo-khoi-dau-lam-tay/`; tài liệu xây `ag` nằm trong `noi-bo/`. Xoá 2 bản phác cũ, giữ bản pixel |
 
 ## 10. Câu hỏi chờ chủ dự án
 
