@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Văn phòng agent (bản phác)</title>
+<style>
+:root{--bg:#f6f5f1;--panel:#ffffff;--floor:#efede6;--fg:#2c2c2a;--fg2:#5f5e5a;--muted:#888780;--line:#d3d1c7;--accent:#185fa5;--ok:#0f6e56;--warn:#854f0b;--bad:#a32d2d}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1b1a;--panel:#252523;--floor:#2c2c2a;--fg:#f1efe8;--fg2:#b4b2a9;--muted:#888780;--line:#444441;--accent:#85b7eb;--ok:#5dcaa5;--warn:#ef9f27;--bad:#f09595}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px max(16px,env(safe-area-inset-left))}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}
+.note{color:var(--fg2);font-size:13px;margin:0 0 16px}
+.wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;max-width:1000px}
+@media (max-width:700px){.wrap{grid-template-columns:1fr}}
+svg{width:100%;height:auto;background:var(--floor);border-radius:12px;border:1px solid var(--line)}
+.ag{cursor:pointer}.ag:focus{outline:none}.ag:focus-visible .desk,.sel .desk{stroke:var(--accent);stroke-width:2}
+.lbl{font-size:12px;fill:var(--fg)}.lbl.off{fill:var(--muted)}
+#pn{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;font-size:14px}
+#pn h2{font-size:17px;font-weight:600;margin:0}
+#pn p{margin:0}.sub{color:var(--fg2);margin-bottom:10px!important}.meta{color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.typing{animation:tp 1s ease-in-out infinite}@keyframes tp{50%{transform:translateY(-2px)}}.pulse{animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.4}}}
+</style>
+</head>
+<body>
+<h1>Văn phòng agent</h1>
+<p class="note">Bản phác giao diện monitor 2D. Dữ liệu là giả. Bấm vào một nhân vật để xem agent đó đang làm gì.</p>
+<div class="wrap">
+<svg viewBox="0 0 420 300" role="img" aria-label="Văn phòng với 4 agent: Master, Coder 1, Coder 2, Tester">
+<rect x="130" y="14" width="160" height="34" rx="4" fill="var(--panel)" stroke="var(--line)"/>
+<text x="210" y="31" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--fg2)">Bảng việc: 3 đang làm · 1 chờ duyệt</text>
+<g class="ag" data-i="0" tabindex="0"><rect class="desk" x="40" y="110" width="110" height="40" rx="4" fill="var(--panel)" stroke="var(--line)"/><circle cx="95" cy="88" r="14" fill="#AFA9EC"/><rect x="80" y="100" width="30" height="16" rx="6" fill="#534AB7"/><g class="pulse"><rect x="104" y="58" width="26" height="22" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width=".5"/><text x="117" y="69" text-anchor="middle" dominant-baseline="central" style="font-size:13px;fill:#633806">?</text></g><text class="lbl" x="95" y="166" text-anchor="middle">Master</text></g>
+<g class="ag" data-i="1" tabindex="0"><rect class="desk" x="270" y="110" width="110" height="40" rx="4" fill="var(--panel)" stroke="var(--line)"/><g class="typing"><circle cx="325" cy="88" r="14" fill="#9FE1CB"/><rect x="310" y="100" width="30" height="16" rx="6" fill="#0F6E56"/></g><rect x="334" y="58" width="40" height="22" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width=".5"/><text x="354" y="69" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:#085041">T-012</text><text class="lbl" x="325" y="166" text-anchor="middle">Coder 1</text></g>
+<g class="ag" data-i="2" tabindex="0"><rect class="desk" x="40" y="220" width="110" height="40" rx="4" fill="var(--panel)" stroke="var(--line)"/><circle cx="95" cy="198" r="14" fill="#D3D1C7"/><rect x="80" y="210" width="30" height="16" rx="6" fill="#888780"/><text x="122" y="184" style="font-size:12px;fill:var(--muted)">z z</text><text class="lbl off" x="95" y="276" text-anchor="middle">Coder 2</text></g>
+<g class="ag" data-i="3" tabindex="0"><rect class="desk" x="270" y="220" width="110" height="40" rx="4" fill="var(--panel)" stroke="var(--line)"/><g class="typing"><circle cx="325" cy="198" r="14" fill="#F5C4B3"/><rect x="310" y="210" width="30" height="16" rx="6" fill="#993C1D"/></g><g class="pulse"><rect x="338" y="168" width="22" height="22" rx="6" fill="#FCEBEB" stroke="#E24B4A" stroke-width=".5"/><text x="349" y="179" text-anchor="middle" dominant-baseline="central" style="font-size:13px;fill:#791F1F">!</text></g><text class="lbl" x="325" y="276" text-anchor="middle">Tester</text></g>
+</svg>
+<div id="pn" aria-live="polite"></div>
+</div>
+<script>
+const A=[
+{n:'Master',r:'Master · Claude Code',s:'Chờ bạn duyệt',c:'var(--warn)',t:'D-007: Duyệt YC-005 (thông báo đẩy)?',h:'2 phút trước',j:['Đã gửi câu hỏi D-007 qua Telegram','Chia YC-005 thành T-012, T-013','Cập nhật đặc tả mục 6.8']},
+{n:'Coder 1',r:'Coder · Codex',s:'Đang làm',c:'var(--ok)',t:'T-012: Gửi thông báo khi test đỏ',h:'30 giây trước',j:['Viết xong notifier.sendMessage()','Thêm 3 unit test, đạt 3/3','Đang làm: nút Duyệt/Cần sửa']},
+{n:'Coder 2',r:'Coder · Gemini',s:'Ngoại tuyến',c:'var(--muted)',t:'Không giữ việc nào',h:'2 giờ trước',j:['Bàn giao T-010, đã qua test','Ghi nhật ký kết thúc phiên','Đã trả lại việc đang giữ']},
+{n:'Tester',r:'Tester · Claude Code',s:'Phát hiện lỗi',c:'var(--bad)',t:'T-011: Kiểm thử bộ lọc trên máy thật',h:'1 phút trước',j:['Mở B-002: lọc T5→T6 bị treo','Đính kèm ảnh chụp và log','Chuyển T-011 về Đang làm']}];
+const pn=document.getElementById('pn');
+function pick(i){
+  document.querySelectorAll('.ag').forEach(g=>g.classList.toggle('sel',+g.dataset.i===i));
+  const a=A[i];pn.replaceChildren();
+  const add=(tag,txt,cls,style)=>{const e=document.createElement(tag);e.textContent=txt;if(cls)e.className=cls;if(style)e.style.cssText=style;pn.append(e);return e;};
+  add('h2',a.n);add('p',a.r,'sub');add('p',a.s,'','color:'+a.c+';font-weight:600');add('p',a.t,'','margin-bottom:10px');
+  add('p','Hoạt động: '+a.h,'meta');add('p','Nhật ký gần nhất','sub','margin-top:10px');
+  a.j.forEach(x=>add('p','· '+x));
+}
+document.querySelectorAll('.ag').forEach(g=>{const i=+g.dataset.i;g.addEventListener('click',()=>pick(i));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(i);}});});
+pick(0);
+</script>
+</body>
+</html>
