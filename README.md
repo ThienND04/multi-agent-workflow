@@ -3,6 +3,7 @@
 Bản xuất ngày 16/11/2026, để tiếp tục trên máy khác. Tài liệu này tự đủ: người đọc (hoặc AI) không cần xem lại cuộc trò chuyện cũ.
 
 > **Mới vào?** Đọc [BAT-DAU.md](BAT-DAU.md) trước: 5 bước để bắt đầu và việc thường ngày của chủ dự án.
+> **Muốn hiểu toàn bộ hoặc tuỳ chỉnh cho mình?** Đọc [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md).
 
 **Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01 (dự án có sẵn, chế độ gọn, cổng xác nhận FE/BE hai repo, skill, làm tiếp khi hết token) đã duyệt và đưa vào đặc tả. Chưa có mã nguồn.
 
@@ -244,6 +245,12 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
 
 - Bấm nhân vật để xem: vai, công cụ, việc đang giữ, nhánh, lần hoạt động cuối, nhật ký gần nhất, link file việc.
 - Bảng việc tổng trên tường. Danh sách câu hỏi chờ chủ dự án, trả lời được ngay trên web.
+- **Hộp thư trao đổi với Master** (chủ dự án chốt ngày 16/11/2026):
+  - Chủ dự án gõ tin nhắn hoặc yêu cầu trên web. Monitor ghi thành `.agents-state/messages/M-NNN.md` (`from: owner`, `to: master`, `status: unread`) và sinh sự kiện `message_received`.
+  - Master thấy tin trong `ag inbox`, xếp trên câu hỏi đang chờ, rồi trả lời bằng `ag reply M-NNN "…"`. Câu trả lời hiện lại trên web dưới dạng một luồng hội thoại.
+  - Tin nhắn **không thay thế đặc tả**. Yêu cầu làm thay đổi phạm vi thì Master chuyển thành bản nháp đặc tả hoặc câu hỏi `D-NNN` để chủ dự án duyệt.
+  - Cách này dùng được với mọi công cụ AI, nhưng không tức thì: phải có một phiên Master đang chạy và kiểm tra `ag inbox`. Web hiện rõ trạng thái "Master đang hoạt động" hoặc "Master ngoại tuyến, tin sẽ được đọc khi có phiên Master".
+  - **Tuỳ chọn chat gần như tức thì:** khai `master_wake_cmd` trong `project.md` (ví dụ `claude -p`, `codex exec`). Khi có tin mới mà Master ngoại tuyến, Monitor chạy lệnh này để mở một phiên Master ngắn: đọc `AGENTS.md`, `ag inbox`, trả lời, rồi dừng. Đây là phần phụ thuộc công cụ, nên không bắt buộc.
 - Kỹ thuật: máy chủ Node nhỏ đẩy cập nhật lên trình duyệt (SSE hoặc WebSocket). Giao diện SVG/CSS. Có thể đổi sang PixiJS nếu muốn pixel-art có hoạt ảnh.
 - Mặc định chỉ xem trên máy hoặc mạng nội bộ. Xem từ xa thì dùng Tailscale hoặc Cloudflare Tunnel, có đăng nhập.
 
@@ -259,7 +266,7 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
 |---|---|---|
 | **1** | Khung `.agents/` + nhánh `agents-state`, lệnh `ag` (init, checkin, claim kèm worktree, heartbeat, log, status, ask/answer/escalate/decide, bug, handoff, merge), hook git, file vai trò, `AGENTS.md` và các file trỏ | Agent nào cũng nhận vai, hỏi đúng cấp và làm tiếp được từ file. **Kiểm chứng bằng ít nhất 2 công cụ AI khác nhau** cùng chạy |
 | **2** | Monitor: `STATUS.md` + Telegram thông báo một chiều | Nhận thông báo khi vắng mặt |
-| **3** | Trang web 2D, trả lời câu hỏi trên web | Nhìn trực quan ai làm gì, duyệt không cần gõ lệnh |
+| **3** | Trang web 2D, trả lời câu hỏi trên web, hộp thư trao đổi với Master (tuỳ chọn đánh thức Master bằng `master_wake_cmd`) | Nhìn trực quan ai làm gì, duyệt và nhắn Master không cần gõ lệnh |
 | **4** | Đóng gói mẫu repo | Dùng lại bằng một lệnh |
 
 Giai đoạn "Telegram hai chiều" trong bản cũ đã bỏ, vì chủ dự án chọn Telegram chỉ thông báo.
@@ -308,6 +315,7 @@ Chỗ nào chưa rõ thì hỏi tôi, không tự quyết.
 | 13 | FE/BE và cổng xác nhận | **Hai repo** (cùng máy ở Giai đoạn 1). Hợp đồng API ở repo BE. Cổng `gate` ở repo FE, chỉ chủ dự án đóng. Mỗi repo một Master. Đọc chéo, không ghi chéo. Chủ dự án tham gia như agent với `tool: human` |
 | 14 | Skill | 24 skill dạng markdown trong `.agents/skills/`, AI nào cũng đọc được |
 | 15 | Làm tiếp khi hết token | `ag plan`/`ag step` ghi tiến độ từng bước; tự commit phần dở khi tiếp quản; `ag reassign` chuyển việc ngay; mở phiên mới cùng ID trong worktree cũ |
+| 16 | Trao đổi với Master trên web | Hộp thư qua file (`messages/M-NNN.md`, `ag reply`) ở Giai đoạn 3, dùng được với mọi công cụ AI. Tuỳ chọn `master_wake_cmd` để đánh thức Master khi có tin mới |
 
 ## 10. Câu hỏi chờ chủ dự án
 

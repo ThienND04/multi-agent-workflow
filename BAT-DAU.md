@@ -112,12 +112,13 @@ Khi T-003 và T-006 xong, Master chạy `ag init` trên chính repo này. Từ �
 - Bạn trả lời câu hỏi bằng lệnh `ag decide D-NNN "…"` trong terminal của bạn. Lệnh này bắt gõ xác nhận, nên AI không chạy thay bạn được.
 - Bạn duyệt AI mới bằng lệnh `ag approve-agent <ID> --role <vai>`.
 
-Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web 2D có ở Giai đoạn 3.
+Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web 2D có ở Giai đoạn 3, kèm hộp thư để nhắn Master ngay trên web. Trước Giai đoạn 3, bạn theo dõi qua các file `dac-ta/viec-gd1/T-NNN.md` và trao đổi với Master trong phiên chat của công cụ AI.
 
 ## Tìm hiểu thêm
 
 | Muốn biết | Đọc |
 |---|---|
+| Toàn bộ workflow và cách tuỳ chỉnh cho dự án, cho đội của bạn | [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) |
 | Vì sao thiết kế như vậy, các quyết định đã chốt | [README.md](README.md) |
 | Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
 | Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md) |
