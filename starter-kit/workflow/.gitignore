@@ -1,0 +1,5 @@
+# Do watch.sh sinh ra, không đưa lên git
+.run/
+logs/
+STATUS.md
+.merging

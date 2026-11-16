@@ -1,0 +1,21 @@
+# Danh sách agent và cách đánh thức. Chủ dự án điền, agent không sửa file này.
+#
+# Mỗi dòng:  <ID>  <vai>  <auto|manual>  <lệnh đánh thức, hoặc ghi chú nếu manual>
+#   auto   : watch.sh tự chạy lệnh, thêm lời nhắn đánh thức vào cuối lệnh
+#   manual : watch.sh chỉ báo (màn hình + Telegram) rằng agent này có việc; bạn tự mở phiên cho nó
+#
+# Ví dụ lệnh (kiểm tra lại theo phiên bản công cụ của bạn):
+#   Claude Code : claude -p --permission-mode acceptEdits
+#   Codex CLI   : codex exec --full-auto
+#   Gemini CLI  : gemini --yolo -p
+# Mỗi công cụ dùng tài khoản đang đăng nhập trên máy. Muốn agent dùng tài khoản hay model khác thì
+# cấu hình trong công cụ đó (ví dụ thêm --model).
+#
+# Agent chạy tự động là chạy KHÔNG có người canh. Chỉ cấp quyền cần thiết (sửa file, chạy git và lệnh test).
+# Không bao giờ cấp quyền push.
+
+# Master: thường để manual. Bạn đang chat với Master trong phiên chính; watch.sh chỉ nhắc bạn bảo Master "xử lý việc đang chờ".
+master-F-001  master  manual  phiên chat chính
+
+coder-01      coder   auto    claude -p --permission-mode acceptEdits
+tester-01     tester  manual  Antigravity (tester độc lập)

@@ -1,45 +1,29 @@
 # Multi-agent workflow
 
-Cách để **nhiều AI** (Claude, Codex, Gemini, Cursor…) **cùng làm một phần mềm mà không loạn**, còn **bạn là người quyết định**:
+Cách để một developer dùng **nhiều AI agent** cùng làm phần mềm:
+- **bạn chỉ làm việc với Master**;
+- Master giao việc cho **Coder** và **Tester**;
+- **không AI nào tự quyết hay tự push**: bạn là người quyết định cuối.
 
-- Mỗi AI một vai: **Master** phân tích và chia việc, **Coder** viết code, **Tester** kiểm tra.
-- AI **không tự đoán**: chỗ nào chưa rõ thì hỏi, câu nào Master không trả lời được thì hỏi bạn.
-- **Người làm không tự nghiệm thu**: Coder xong thì Tester kiểm tra độc lập.
-- **Mọi thứ ghi vào file và git**: AI nào hết token hay bị tắt, AI khác đọc file là làm tiếp được.
-- **Không AI nào tự push code.** Bạn xem rồi mới push.
+## Đọc 2 file
 
----
+| File | Nội dung |
+|---|---|
+| **[HOW-IT-WORKS.md](HOW-IT-WORKS.md)** | Bài toán, các vai, một tính năng đi từ đầu đến cuối, 14 yêu cầu và cách đáp ứng, trang monitor, tối ưu token, chia tài khoản AI |
+| **[SETUP.md](SETUP.md)** | Đưa vào dự án mới hoặc dự án đã có, từng bước, có lời nhắn dán sẵn |
 
-## Dùng ngay: 3 bước
+Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-kit/](starter-kit/)**.
 
-1. Chép file [bo-khoi-dau-lam-tay/AGENTS.md](bo-khoi-dau-lam-tay/AGENTS.md) vào **thư mục gốc** dự án của bạn.
-2. Mở một công cụ AI tại thư mục dự án, dán (điền yêu cầu thật của bạn):
-   ```text
-   Đọc AGENTS.md và làm theo. ID của bạn: master. Vai: Master.
-   Yêu cầu của tôi: <bạn muốn xây gì, cho ai, chạy trên đâu>.
-   Hỏi tôi đến khi đủ để viết đặc tả. Không tự quyết.
-   ```
-3. Làm tiếp theo [bo-khoi-dau-lam-tay/HUONG-DAN.md](bo-khoi-dau-lam-tay/HUONG-DAN.md): duyệt đặc tả, mở phiên Coder, mở phiên Tester, gộp và push. Một trang, có lời nhắn dán sẵn.
+## Tình trạng
 
-Không cần cài gì. Chỉ cần Git và 2–3 phiên AI chạy được lệnh trong terminal.
-
----
-
-## Đang làm gì tiếp
-
-Đây là **bản làm tay**: đủ các ý chính, nhưng AI làm sai luật thì không có gì tự động chặn lại, bạn phải để ý.
-
-Bản đầy đủ sẽ có công cụ dòng lệnh **`ag`** làm hàng rào: chặn sai vai, chặn tự nghiệm thu, chặn push. Công cụ này **đang được xây** và sẽ được thu gọn dựa trên phản hồi từ việc dùng bản làm tay. Bấm **Watch → Releases** trên GitHub để được báo khi có bản dùng được.
-
----
+- **Bản làm tay:** dùng được ngay hôm nay.
+- **Bản có công cụ** (trang monitor, Telegram, chặn tự động): đang xây. Bấm Watch → Releases trên GitHub để được báo.
 
 ## Repo này có gì
 
-| Thư mục / file | Dành cho |
+| | Dành cho |
 |---|---|
-| `bo-khoi-dau-lam-tay/` | **Bạn**: dùng workflow cho dự án của mình |
-| `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `dac-ta/`, `templates/`, `noi-bo/` | Người **xây công cụ `ag`**. Người dùng không cần đọc. Bắt đầu từ [noi-bo/README.md](noi-bo/README.md) |
+| `README.md`, `HOW-IT-WORKS.md`, `SETUP.md`, `starter-kit/` (gồm `AGENTS.md`, `CLAUDE.md`, `.claude/`, `workflow/watch.sh`, `notify.sh`, `agents.txt`) | **Người dùng** |
+| `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `specs/`, `templates/`, `internal/` | Người **xây công cụ**. Người dùng không cần đọc. Xem [internal/README.md](internal/README.md) |
 
-**Lưu ý:** đừng chép `AGENTS.md` ở gốc repo này sang dự án của bạn. File đó là luật cho các AI đang xây chính repo này. File để chép là `bo-khoi-dau-lam-tay/AGENTS.md`.
-
-Góp ý: mở issue trên GitHub.
+**Lưu ý:** đừng chép `AGENTS.md` ở gốc repo này. Thứ để chép là nội dung thư mục `starter-kit/`.
