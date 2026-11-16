@@ -12,7 +12,7 @@ Dự án dùng workflow multi-agent:
 
 | Vai | ID | Làm | Không được |
 |---|---|---|---|
-| **Master** | `master-F-NNN` (mỗi tính năng một Master) | Cùng chủ dự án làm rõ yêu cầu, viết `SPEC.md`, chia việc, trả lời câu hỏi, gộp code, báo cáo | Viết code sản phẩm. Tự quyết khi không có nguồn. Push |
+| **Master** | `master-NN` (mỗi phiên chat một Master; một phiên làm lần lượt nhiều tính năng) | Cùng chủ dự án làm rõ yêu cầu, viết `SPEC.md`, chia việc, trả lời câu hỏi, gộp code, báo cáo | Viết code sản phẩm. Tự quyết khi không có nguồn. Push |
 | **Coder** | `coder-NN` | Khảo sát việc được giao, hỏi chỗ chưa rõ, code kèm test, sửa lỗi | Sửa `SPEC.md`. Tự nghiệm thu. Push |
 | **Tester** | `tester-NN` | Khảo sát, viết kế hoạch kiểm thử, kiểm tra, báo lỗi | Sửa code. Push |
 
@@ -55,7 +55,7 @@ id: F-001
 title: …
 status: draft          # draft | review | in_dev | acceptance | done
 to: owner
-master: master-F-001
+master: master-01
 ---
 ```
 
@@ -85,7 +85,7 @@ can_doc: []            # đúng những mục cần đọc, ví dụ [SPEC.md#3]
 id: D-01
 title: <câu hỏi một dòng>
 from: coder-01
-to: master-F-001
+to: master-01
 status: open           # open | answered | closed
 task: T-01
 ---
@@ -121,13 +121,14 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
 
 ### Master
 - **Làm rõ trước khi viết.** Hỏi tới khi đủ: đầu vào, đầu ra, trường hợp lỗi, cái gì **không** làm. Không điền chỗ trống bằng giả định.
+- **ID của bạn** là ID chủ dự án nêu khi mở phiên; không nêu thì là `master-01`. Phiên của bạn làm xong tính năng này rồi sang tính năng khác vẫn **giữ nguyên ID**. Tính năng làm song song ở phiên chat khác thì phiên đó có ID khác (`master-02`…), và chủ dự án thêm một dòng cho nó trong `agents.txt`.
 - **Lần đầu trong dự án:**
   - hỏi chủ dự án trước khi `git init -b main` (nếu chưa là repo git);
   - tạo `DECISIONS.md` và `journal/`;
   - nhánh `main` chưa có commit nào thì xin chủ dự án cho tạo commit đầu tiên (bộ khởi đầu và `workflow/`), vì Coder cần ít nhất một commit mới tạo được worktree;
   - dự án đã có code thì khảo sát (cấu trúc, build, test, quy ước), ghi vào `DECISIONS.md`.
 - **Mỗi tính năng:**
-  - tạo thư mục `F-NNN-short-name/` với số kế tiếp; ID của bạn là `master-F-NNN`;
+  - tạo thư mục `F-NNN-short-name/` với số kế tiếp, ghi `master: <ID của bạn>` trong `SPEC.md`;
   - `SPEC.md` có tiêu chí **kiểm được** và mục **"Cách thử"**;
   - chia việc nhỏ, ghi `assignee`, `tester`, `files`, `can_doc`. Việc chạy song song thì `files` không chồng nhau. Chọn assignee theo `agents.txt` (ví dụ việc khó cho agent dùng model mạnh);
   - tạo thêm một việc **"Kế hoạch kiểm thử"** cho Tester (`assignee` là Tester), để Tester khảo sát và viết các ca kiểm thử ở bước 3.

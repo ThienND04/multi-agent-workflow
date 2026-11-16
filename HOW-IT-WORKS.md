@@ -48,11 +48,11 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
 ```
 ① Bạn + Master làm rõ yêu cầu → Master viết SPEC.md, chia việc → bạn nói "duyệt"
 ② Master giao việc (to: coder-01, to: tester-01) → Master gọi họ (hoặc watch.sh đánh thức) → họ KHẢO SÁT
-③ Chưa rõ → họ ghi câu hỏi (to: master-F-001) → Master trả lời nếu có nguồn;
+③ Chưa rõ → họ ghi câu hỏi (to: master-01) → Master trả lời nếu có nguồn;
    KHÔNG chắc → câu hỏi chuyển sang to: owner → watch.sh báo bạn → bạn bàn với Master, chốt
 ④ Rõ hết → Master mở cho làm (to: coder-01) → Coder code → to: tester-01 → Tester kiểm tra
    ⇄ có lỗi thì to: coder-01 để sửa
-⑤ Đạt → to: master-F-001 → Master viết báo cáo → to: owner → watch.sh báo bạn
+⑤ Đạt → to: master-01 → Master viết báo cáo → to: owner → watch.sh báo bạn
 ⑥ Bạn thử → "đạt": Master gộp code, BẠN push   /   "chưa đạt": quay lại ④
 ```
 
@@ -78,7 +78,7 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 | 9 | Tối ưu context và token | Mục 5 |
 | 10 | Tôi chỉ làm việc với Master | Đúng. Các agent khác do Master gọi (chế độ `subagent`) hoặc do `watch.sh` đánh thức (chế độ `auto`); bạn không chat với họ |
 | 13 | Chọn AI và model cho từng agent | Mỗi agent một dòng trong `workflow/agents.txt`: chế độ (`subagent`, `auto`, `manual`), công cụ, model, tài khoản tuỳ bạn. Master chọn agent phù hợp cho từng việc |
-| 14 | Nhiều tính năng cùng lúc, không phải chờ | Mỗi tính năng một thư mục và một Master (`master-F-001`, `master-F-002`). Một `watch.sh` đánh thức agent cho mọi tính năng |
+| 14 | Nhiều tính năng cùng lúc, không phải chờ | Mỗi tính năng một thư mục. Mỗi phiên chat là một Master (`master-01`); làm song song thì mở thêm phiên `master-02`. Một `watch.sh` đánh thức agent cho mọi tính năng |
 
 ## 5. Tối ưu context và token (yêu cầu 9)
 
@@ -99,18 +99,19 @@ Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **ht
 ```
 ┌─ tường: tủ sách · cửa (mở khi có việc chờ bạn) · bảng các tính năng · cây nước ─┐
 │                                                                                 │
-│  ┌─ F-001 · Đặt hàng [in_dev] ───────────────────────────────────────────────┐  │
-│  │  [bàn lớn] master-F-001    [bàn] coder-01 …    [bàn] tester-01 1          │  │
+│  ┌─ F-001 · Đặt hàng [đang làm] ─────────────────────────────────────────────┐  │
+│  │  [bàn lớn] master-01       [bàn] coder-01 …    [bàn] tester-01 1          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
-│  ┌─ F-003 · Thông báo [in_dev] ──────────────────────────────────────────────┐  │
-│  │  master-F-003   coder-01  coder-02  coder-03 …  coder-04  coder-05        │  │
+│  ┌─ F-003 · Thông báo [đang làm] ────────────────────────────────────────────┐  │
+│  │  master-02      coder-01  coder-02  coder-03 …  coder-04  coder-05        │  │
 │  │                 tester-02            (dãy dài thì tự xuống hàng)          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Văn phòng pixel, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy.
-- **Bong bóng trên đầu:** `…` đang chạy, số là số việc đang chờ, `z` là rảnh. Agent rảnh đứng ở cây nước. Cửa mở nghĩa là có việc chờ bạn.
+- **Văn phòng pixel, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy. Tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
+- **Bong bóng trên đầu:** `…` đang chạy, số là số việc đang chờ, `z` là rảnh, `!` là Master đang chờ bạn, `?` là ID chưa khai trong `agents.txt`. Agent rảnh đứng ở cây nước. Cửa mở nghĩa là có việc chờ bạn.
+- **Mục "Cần bạn"** (tô vàng khi có việc): ghi rõ bạn cần làm gì (duyệt, trả lời, nghiệm thu), câu cần nói với Master, và hiện sẵn mục "Cách thử" của tính năng chờ nghiệm thu.
 - **Bấm vào một agent:** xem file đang chờ nó và log gần nhất.
 - **Chỉ đọc**, tự làm mới 3 giây một lần, chỉ mở trên máy bạn. Trang đọc đúng các file mà `watch.sh` đọc, và không cần cài thư viện nào.
 
@@ -130,7 +131,7 @@ Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **ht
 
 **Khi cần tách hạn mức:** cài Claude Code dòng lệnh, đăng nhập tài khoản 2 vào thư mục cấu hình riêng (biến `CLAUDE_CONFIG_DIR`), rồi chuyển Coder sang chế độ `auto`. Coder khi đó chạy bằng tài khoản 2, không ăn vào hạn mức của Master. Cách làm từng bước ở `SETUP.md`, bước 3 và 4.
 
-Tính năng thứ hai làm song song: mở thêm một phiên Master (tài khoản 1 hoặc 2).
+Tính năng thứ hai làm song song: mở thêm một phiên Master `master-02` (tài khoản 1 hoặc 2). Làm lần lượt thì cứ giao tiếp trong phiên cũ.
 
 ---
 

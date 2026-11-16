@@ -271,13 +271,16 @@ const cut=(t,n)=>t.length>n?t.slice(0,Math.max(1,n-1))+'…':t;
 const W=320, COL0=66, STEP=50, PER_ROW=5, ROW_H=58, HEAD=13;
 function build(){
  const byId=Object.fromEntries(S.agents.map(a=>[a.id,a]));
- const blocks=S.features.map((f,i)=>{
+ // tính năng đã xong rời văn phòng (chỉ còn trên bảng trắng); màu giữ theo thứ tự gốc
+ const blocks=S.features.map((f,i)=>[f,i]).filter(([f])=>f.status!=='done').map(([f,i])=>{
   const ms=f.members.filter(m=>m===f.master);
   const others=f.members.filter(m=>m!==f.master).sort((a,b)=>{const ra=(byId[a]||{}).role||'',rb=(byId[b]||{}).role||'';return ra===rb?a.localeCompare(b):(ra==='coder'?-1:rb==='coder'?1:ra.localeCompare(rb))});
   const rows=Math.max(1,Math.ceil(others.length/PER_ROW));
   return{f,color:COLORS[i%COLORS.length],master:ms[0]||f.master||'',others,rows,h:HEAD+rows*ROW_H+4};
  });
- const free=S.agents.filter(a=>!a.features.length);
+ const busy=new Set(blocks.flatMap(b=>[b.master,...b.others]));
+ const free=S.agents.filter(a=>!busy.has(a.id));
+ const done=S.features.filter(f=>f.status==='done');
  const top=60;let H=top+blocks.reduce((s,b)=>s+b.h+6,0)+4;if(!blocks.length)H=top+50;
  let s=defs();
  // tường
@@ -289,10 +292,11 @@ function build(){
  // bảng trắng: các tính năng
  s+=R(182,6,74,46,'#6e4a30')+R(184,8,70,42,'#f8f8f2')+T(219,13.5,4,'#3b2a20','CÁC TÍNH NĂNG');
  // mỗi tính năng 2 dòng: tên, rồi trạng thái; tối đa 4 tính năng
- blocks.slice(0,4).forEach((b,i)=>{const y=16+i*8.5;
+ const board=blocks.map(b=>({f:b.f,color:b.color})).concat(done.slice().reverse().map(f=>({f,color:'#b9b0a3'})));
+ board.slice(0,4).forEach((b,i)=>{const y=16+i*8.5;
   s+=R(187,y,3,3,b.color)+T(192,y+2.8,3.4,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(60/(CW*3.4))),'start')+T(192,y+6.6,3.1,b.f.to==='owner'?'#b23030':'#6b5c4e',stVi(b.f.status),'start')});
- if(blocks.length>4)s+=T(252,49,3,'#6b5c4e','+'+(blocks.length-4)+' nữa','end');
- if(!blocks.length)s+=T(219,30,3.6,'#6b5c4e','(chưa có)');
+ if(board.length>4)s+=T(252,49,3,'#6b5c4e','+'+(board.length-4)+' nữa','end');
+ if(!board.length)s+=T(219,30,3.6,'#6b5c4e','(chưa có)');
  // cây nước + agent rảnh đứng quanh
  s+=R(298,22,12,15,'#7fc6ea')+R(300,24,2,10,'#c9ecff')+R(296,37,16,21,'#96a0b4')+R(296,37,16,2,'#b6bfd0')+R(300,44,2,2,'#d64545')+R(305,44,2,2,'#3f78d6');
  free.slice(0,3).forEach((a,k)=>{const cx=286-k*13,y=40;const st=stateOf(a,'');
@@ -319,18 +323,18 @@ function build(){
     +bubble(cx,rowTop(r)+1,st.txt,st.kind)+nameTag(cx,Y+31,id)+'</g>'});
   y+=b.h+6;
  });
- if(!blocks.length)s+=T(W/2,top+26,5,'#3b2a20','Chưa có tính năng nào (workflow/F-*)');
+ if(!blocks.length)s+=T(W/2,top+26,5,'#3b2a20',done.length?'Không có tính năng nào đang làm':'Chưa có tính năng nào (workflow/F-*)');
  const svg=$('#office');svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML=s;
  svg.querySelectorAll('.ag').forEach(g=>{const go=()=>{openId=g.dataset.id;build();showDetail()};g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
  const lg=$('#legend');lg.replaceChildren();
- lg.append(el('span',null,'Bong bóng: … đang chạy · số = số việc đang chờ · z rảnh · ? chưa khai báo · cửa mở = có việc chờ bạn'));
+ lg.append(el('span',null,'Bong bóng: … đang chạy · số = số việc đang chờ · ! = Master chờ bạn · z rảnh · ? chưa khai trong agents.txt · cửa mở = có việc chờ bạn'));
  if(free.length>3)lg.append(el('span',null,'Rảnh, không hiện hết: '+free.slice(3).map(a=>a.id).join(', ')));
 }
 
 /* ---------- các khu HTML ---------- */
 function render(){
  $('#proj').textContent='VĂN PHÒNG AGENT · '+S.project;
- $('#bFeat').textContent=S.features.length+' TÍNH NĂNG';
+ {const d=S.features.filter(f=>f.status==='done').length;$('#bFeat').textContent=(S.features.length-d)+' ĐANG LÀM · '+d+' XONG'}
  $('#bRun').textContent=S.agents.filter(a=>a.running).length+'/'+S.agents.length+' ĐANG CHẠY';
  $('#bNeed').textContent=S.owner.length+' CHỜ BẠN';
  document.title=(S.owner.length?'('+S.owner.length+') Chờ bạn · ':'')+'Văn phòng agent';
@@ -348,7 +352,7 @@ function render(){
   need.append(box)});
  build();
  const files=$('#files');files.replaceChildren();
- S.features.forEach((f,i)=>{const d=el('details');const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' ('+f.items.length+' file)');d.append(sm);
+ S.features.forEach((f,i)=>{const d=el('details');const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' · '+stVi(f.status)+' ('+f.items.length+' file)');d.append(sm);
   const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,stVi(it.status)),el('td',null,'→ '+(it.to==='owner'?'bạn':it.to==='none'?'không ai':it.to)));t.append(tr)});d.append(t);files.append(d)});
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
  if(openId)showDetail();

@@ -103,7 +103,7 @@ Mỗi dòng một agent: `<ID> <vai> <chế độ> <lệnh, tên subagent, hoặ
 
 **Mặc định trong bộ khởi đầu** (chỉ cần ứng dụng Claude desktop):
 ```
-master-F-001  master  manual    phiên chat chính
+master-01     master  manual    phiên chat chính
 coder-01      coder   subagent  coder
 tester-01     tester  subagent  tester
 ```
@@ -189,7 +189,7 @@ Từ đây:
 |---|---|
 | Master hỏi để làm rõ | Bạn trả lời. Đọc `SPEC.md`, rồi nói **"duyệt"** |
 | Coder, Tester khảo sát, hỏi, code, test | **Tự chạy**: chế độ `subagent` thì Master tự gọi; chế độ `auto` thì `watch.sh` đánh thức. Nếu Master dừng giữa chừng, nói *"Tiếp tục"* |
-| Có việc chờ Master (`to: master-F-001`) | `watch.sh` báo. Bạn nói với Master: *"Xử lý việc đang chờ."* |
+| Có việc chờ Master (`to: master-01`) | `watch.sh` báo. Bạn nói với Master: *"Xử lý việc đang chờ."* |
 | Có câu Master không chắc (`to: owner`) | `watch.sh` báo, kể cả qua Telegram. Bạn trả lời Master và bàn tới khi chốt |
 | Có việc cho agent đánh thức tay | `watch.sh` báo. Bạn mở phiên cho agent đó và dán lời nhắn bên dưới |
 | Báo cáo xong (`SPEC.md` có `to: owner`) | Bạn tự thử theo mục "Cách thử", rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt |
@@ -203,7 +203,20 @@ Xử lý các file trong workflow/ có dòng "to: tester-01". Xong phần của 
 
 ## 8. Làm nhiều tính năng cùng lúc
 
-Mở thêm một phiên Master tại cùng thư mục dự án và làm lại bước 7 với tính năng khác. Master đó có ID `master-F-002`; thêm một dòng cho nó trong `agents.txt`. Một `watch.sh` lo đánh thức agent cho mọi tính năng.
+**Làm lần lượt:** tính năng trước xong thì giao tính năng sau **ngay trong phiên Master cũ**. Master vẫn là `master-01`, không cần khai báo gì thêm. Trên trang monitor, tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
+
+**Làm song song:**
+1. Thêm một dòng vào `agents.txt`:
+   ```
+   master-02     master  manual    phiên chat thứ hai
+   ```
+2. Mở thêm một phiên Master tại cùng thư mục dự án, câu đầu tiên dán:
+   ```text
+   Đọc AGENTS.md và làm theo. Bạn là Master, ID master-02.
+   ```
+3. Làm lại bước 7 với tính năng khác.
+
+Một `watch.sh` lo cho mọi tính năng. Phiên mới cũng dùng chung hạn mức tài khoản, nên chỉ mở khi thật sự cần làm song song.
 
 ## 9. Khi một phiên bị dừng
 
@@ -211,8 +224,8 @@ Mở thêm một phiên Master tại cùng thư mục dự án và làm lại b�
 - **Agent `auto`:** không cần làm gì. Lần tới file của nó thay đổi, nó được đánh thức lại. Nếu `STATUS.md` hoặc trang monitor báo *"đã đánh thức nhưng chưa xử lý xong"*, hãy xem log trong `workflow/logs/`.
 - **Master:** mở phiên mới tại thư mục dự án, dán:
   ```text
-  Đọc AGENTS.md và làm theo. Bạn là master-F-001, làm tiếp.
-  Đọc SPEC.md của F-001 và các file có "to: master-F-001".
+  Đọc AGENTS.md và làm theo. Bạn là Master, ID master-01, làm tiếp.
+  Đọc SPEC.md của tính năng đang làm và các file có "to: master-01".
   ```
 
 ## 10. Thử nhanh cơ chế đánh thức (không tốn token)
