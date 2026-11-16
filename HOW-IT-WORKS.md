@@ -68,7 +68,7 @@ Mỗi lần đều có thông báo.
 | 1 | Master cùng tôi làm rõ, viết tài liệu, chia việc cho cấp 2 | Master hỏi tới khi đủ, viết `SPEC.md` (tiêu chí kiểm được, "Cách thử") và các file việc nhỏ |
 | 2 | Cấp 2 khảo sát, hỏi chỗ chưa rõ; Master giải quyết; không chắc thì hỏi tôi | Bước ② ③. Câu hỏi là file `questions/D-NN.md`, đi qua `to:` |
 | 3 | Rõ mới code; test lỗi thì Coder sửa; pass thì báo Master, Master báo tôi; tôi quyết và push | Bước ④ ⑤ ⑥. Không agent nào được push (file quyền chặn `git push`) |
-| 4, 11 | Theo dõi mọi agent: trạng thái, việc đang làm | **Hôm nay:** `workflow/STATUS.md`, do `watch.sh` tự sinh. **Sau này:** trang web văn phòng (mục 6) |
+| 4, 11 | Theo dõi mọi agent: trạng thái, việc đang làm | **Trang web local** `node workflow/monitor.js`: gom agent theo tính năng, tự làm mới (mục 6). Thêm `workflow/STATUS.md` dạng bảng |
 | 5, 12 | Thông báo qua Telegram, chỉ một chiều | `watch.sh` gọi `notify.sh` khi có việc chờ bạn hoặc chờ một agent đánh thức tay. Bot chỉ gửi |
 | 6 | Không tự quyết theo phán đoán | Mọi câu trả lời phải kèm **nguồn**. Không có nguồn thì `to: owner` |
 | 7 | Mỗi vai có skill riêng | Luật từng vai trong `AGENTS.md`. Với Claude Code có thêm file vai trong `.claude/agents/` và skill trong `.claude/skills/` |
@@ -90,11 +90,28 @@ Mỗi lần đều có thông báo.
 | **`AGENTS.md` ổn định** | Ít sửa thì công cụ dùng lại được bộ nhớ đệm prompt, rẻ hơn |
 | **Tính năng có sẵn của công cụ** | Claude Code: `/compact`, `/clear`, tắt MCP không dùng (`/mcp`); xem mức dùng bằng `/cost` hoặc `/usage` (tuỳ phiên bản) |
 
-## 6. Trang monitor (sau này)
+## 6. Trang monitor
 
-Trang web chạy trên máy bạn, vẽ một văn phòng pixel, đọc chính các file ở trên. **Mỗi tính năng là một khối (một phòng)** có viền màu, chứa Master và các agent đang làm cho nó. Có khu "Cần bạn", và chat với Master ngay trên trang.
+**Hôm nay:** chạy `node workflow/monitor.js`, rồi mở **http://localhost:4300**.
 
-Hôm nay, `STATUS.md` cho bạn cùng thông tin đó dưới dạng bảng.
+```
+┌──────────────── tường: tủ sách · cửa (mở khi có việc chờ bạn) · bảng các tính năng · cây nước ─┐
+│ ┌ F-001 · Đặt hàng [in_dev] ─────────────────────────────────────────────┐ │
+│ │ [bàn lớn] master-F-001   [bàn] coder-01 …   [bàn] tester-01 ?         │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+│ ┌ F-003 · Thông báo [in_dev] ─────────────────────────────────────────────┐ │
+│ │ master-F-003   coder-01  coder-02  coder-03 …  coder-04  coder-05       │ │
+│ │                tester-02  (dãy dài thì xuống hàng)                      │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Văn phòng pixel, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy.
+- **Bong bóng trên đầu:** `…` đang chạy, số là số việc đang chờ, `z` rảnh. Agent rảnh đứng ở cây nước. Cửa mở là có việc chờ bạn.
+- **Bấm vào agent:** xem file đang chờ nó và log gần nhất.
+- **Chỉ đọc**, tự làm mới 3 giây một lần, chỉ mở trên máy bạn. Đọc đúng các file mà `watch.sh` đọc. Không cần cài thư viện nào, chỉ cần Node.js.
+
+**Sau này:** chat với Master và bấm duyệt ngay trên trang (thiết kế trong `specs/phase-3.md`, bản phác trong `internal/mockups/`).
 
 ## 7. Chia tài khoản: 2 Claude và 1 Antigravity
 

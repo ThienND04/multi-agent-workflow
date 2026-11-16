@@ -18,7 +18,7 @@
 - `STATUS.md`;
 - Telegram một chiều.
 
-**Chưa có:** trang web monitor.
+**Trang monitor:** bản tối giản (gom agent theo tính năng, chỉ đọc) dùng được ngay, cần Node.js 18 trở lên. Bản văn phòng pixel đầy đủ, chat với Master trên web: chưa có.
 
 ## 1. Chép bộ khởi đầu vào dự án
 
@@ -34,6 +34,7 @@ workflow/
   agents.txt               danh sách agent, bạn điền ở bước 3
   watch.sh                 script theo dõi và đánh thức
   notify.sh                gửi Telegram
+  monitor.js               trang theo dõi local (cần Node.js)
   .gitignore               bỏ qua các file watch.sh sinh ra
 ```
 
@@ -112,7 +113,20 @@ sh workflow/watch.sh
 
 - `--interval 60`: quét mỗi 60 giây (mặc định 30).
 - `--once`: quét đúng một lần.
-- **Theo dõi:** mở `workflow/STATUS.md`.
+- **Theo dõi bằng file:** mở `workflow/STATUS.md`. Trong VS Code, bản xem trước Markdown (`Ctrl+Shift+V`) tự cập nhật khi file đổi.
+- **Theo dõi bằng trang web:** mở thêm một terminal tại thư mục dự án, chạy:
+  ```bash
+  node workflow/monitor.js
+  ```
+  rồi mở **http://localhost:4300**. Đổi cổng bằng `--port 5000`.
+
+  Trang có:
+  - khu **"Cần bạn"**;
+  - **văn phòng pixel**: mỗi tính năng là **một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp; dãy dài thì tự xuống hàng;
+  - bong bóng trên đầu: `…` đang chạy, số là số việc đang chờ, `z` rảnh. Agent rảnh đứng ở cây nước; cửa mở là có việc chờ bạn;
+  - **bấm vào agent** để xem file đang chờ nó và log gần nhất.
+
+  Trang tự làm mới 3 giây một lần. **Chỉ đọc**, chỉ mở trên máy bạn: máy khác trong mạng không vào được.
 - **Xem agent tự động đã làm gì:** đọc log trong `workflow/logs/`.
 
 ## 6. Làm một tính năng

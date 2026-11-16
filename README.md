@@ -16,14 +16,20 @@ Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-ki
 
 ## Tình trạng
 
-- **Bản làm tay:** dùng được ngay hôm nay.
-- **Bản có công cụ** (trang monitor, Telegram, chặn tự động): đang xây. Bấm Watch → Releases trên GitHub để được báo.
+**Dùng được ngay hôm nay:**
+- Master, Coder, Tester trao đổi qua file;
+- `watch.sh` tự đánh thức agent có việc;
+- trang monitor local (`node workflow/monitor.js`);
+- thông báo Telegram một chiều;
+- chặn push cho Claude Code.
+
+**Đang xây:** trang văn phòng pixel có chat với Master, và bộ công cụ `ag` với hàng rào tự động đầy đủ. Bấm Watch → Releases trên GitHub để được báo.
 
 ## Repo này có gì
 
 | | Dành cho |
 |---|---|
-| `README.md`, `HOW-IT-WORKS.md`, `SETUP.md`, `starter-kit/` (gồm `AGENTS.md`, `CLAUDE.md`, `.claude/`, `workflow/watch.sh`, `notify.sh`, `agents.txt`) | **Người dùng** |
+| `README.md`, `HOW-IT-WORKS.md`, `SETUP.md`, `starter-kit/` (gồm `AGENTS.md`, `CLAUDE.md`, `.claude/`, `workflow/watch.sh`, `monitor.js`, `notify.sh`, `agents.txt`) | **Người dùng** |
 | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `specs/`, `templates/`, `internal/` | Người **xây công cụ**. Người dùng không cần đọc. Xem [internal/README.md](internal/README.md) |
 
 **Lưu ý:** đừng chép `AGENTS.md` ở gốc repo này. Thứ để chép là nội dung thư mục `starter-kit/`.
