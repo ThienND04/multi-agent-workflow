@@ -294,7 +294,7 @@ Khi T-013 `done`:
    git push origin main --tags
    ```
 2. Bước tiếp theo theo lộ trình:
-   - dùng `ag` cho dự án thật đầu tiên (ví dụ app Lịch mua bán, theo kịch bản 11.8 trong `HUONG-DAN-WORKFLOW.md`);
+   - dùng `ag` cho dự án thật đầu tiên: app Lịch mua bán, theo [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-MUA-BAN.md);
    - song song, Master viết đặc tả Giai đoạn 2 (Monitor và Telegram).
 
 ## 7. Khi có sự cố

@@ -420,6 +420,8 @@ Xem mục 7. Cách nhanh nhất: mở phiên mới trong đúng worktree cũ v�
 3. Test thường chỉ chạy trên dữ liệu mẫu, nên kết quả cố định và không tốn hạn mức gọi.
 4. `ag ext check` (chạy `live_check_cmd`) kiểm tra API thật có đổi không. Có thay đổi thì bạn được hỏi.
 
+Ví dụ đầy đủ từng bước cho đúng kiểu dự án này: [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-MUA-BAN.md).
+
 ### 11.9 Làm nhiều tính năng cùng lúc
 
 - Mỗi tính năng có độ ưu tiên (1 cao nhất). Agent rảnh nhận việc của tính năng ưu tiên cao trước.

@@ -146,6 +146,7 @@ Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pix
 | Muốn biết | Đọc |
 |---|---|
 | **Làm từng bước Giai đoạn 1 và 1b**: mở phiên nào, dán gì, kiểm tra gì, mốc chuyển sang `ag` | [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md) |
+| **Ví dụ đầy đủ: xây app Lịch mua bán** bằng workflow (cần chuẩn bị gì, từng bước) | [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-MUA-BAN.md) |
 | Toàn bộ workflow và cách tuỳ chỉnh cho dự án, cho đội của bạn | [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) |
 | Vì sao thiết kế như vậy, các quyết định đã chốt | [README.md](README.md) |
 | Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE hai repo, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
