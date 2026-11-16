@@ -2,7 +2,7 @@
 
 **Trạng thái:** **Đã duyệt** ngày 16/11/2026 (chủ dự án duyệt toàn bộ 10 điểm ở mục 12). Viết bởi vai Master.
 **Nguồn:**
-- README mục 5.6c và các quyết định 16, 23–26;
+- THIET-KE.md mục 5.6c và các quyết định 16, 23–26;
 - đề xuất bổ sung 02 mục G (4 khu của giao diện), đề xuất bổ sung 03 (chat qua bộ nối, Master luồng, hành động của chủ dự án trên web);
 - bản phác `monitor-pixel-office.html` (hướng giao diện chính).
 

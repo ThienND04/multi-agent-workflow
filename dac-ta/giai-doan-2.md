@@ -1,7 +1,7 @@
 # Đặc tả Giai đoạn 2: Monitor, STATUS.md và thông báo Telegram
 
 **Trạng thái:** **Đã duyệt** ngày 16/11/2026 (chủ dự án duyệt toàn bộ 8 điểm ở mục 11). Viết bởi vai Master.
-**Nguồn:** README mục 5.6 và các quyết định 4, 13, 16, 20 (Telegram chỉ thông báo, không giờ yên lặng, liên kết hai repo khác máy để Giai đoạn 2), đề xuất bổ sung 02 mục D (kiểm tra API ngoài theo lịch).
+**Nguồn:** THIET-KE.md mục 5.6 và các quyết định 4, 13, 16, 20 (Telegram chỉ thông báo, không giờ yên lặng, liên kết hai repo khác máy để Giai đoạn 2), đề xuất bổ sung 02 mục D (kiểm tra API ngoài theo lịch).
 **Nền:** mọi quy ước của `dac-ta/giai-doan-1.md` (mục 2: môi trường, mã thoát, không thư viện ngoài; mục 3: dữ liệu; mục 7: định nghĩa "xong") áp dụng nguyên cho file này.
 **Các việc:** T-029 … T-036 trong `dac-ta/viec-gd1/`, đã chuyển sang `approved`.
 
@@ -191,7 +191,7 @@ Ví dụ:
 
 Giai đoạn 1b chỉ cho repo FE **đọc** trạng thái của repo BE trên **cùng máy**. Khác máy thì trạng thái của repo BE phải đi qua remote, tức là phải push nhánh `agents-state`. Việc này đụng luật **"không tự push"** (quyết định 10).
 
-Ngoại lệ có kiểm soát (đã duyệt, quyết định 29 trong README), **tắt mặc định**:
+Ngoại lệ có kiểm soát (đã duyệt, quyết định 29 trong THIET-KE.md), **tắt mặc định**:
 - Bạn bật `state_push: true` trong `project.md` của repo BE, và **gõ xác nhận một lần** (`ag state-push enable`, cần TTY). Lần bật được ghi vào sự kiện `state_push_enabled`.
 - Khi bật, Monitor của repo BE tự push **duy nhất nhánh `agents-state`** lên remote sau mỗi thay đổi (gom 2 phút một lần). Nhánh này chỉ có trạng thái: việc, câu hỏi, lỗi, sự kiện, nhật ký. **Không có mã nguồn.**
 - Hook `pre-push` cho phép đúng trường hợp này: nhánh `agents-state`, do Monitor push, kèm mã dùng một lần của Monitor. Mọi nhánh khác vẫn bị chặn như cũ.

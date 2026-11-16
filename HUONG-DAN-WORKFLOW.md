@@ -576,4 +576,4 @@ Có. `ag` viết bằng Node, không dùng thư viện ngoài. Hook chạy qua G
 
 ---
 
-*Tài liệu gốc chi tiết hơn: `README.md` (thiết kế và các quyết định), `dac-ta/giai-doan-1.md` (đặc tả và tiêu chí chấp nhận), `templates/` (luật mà agent đọc).*
+*Tài liệu gốc chi tiết hơn: `THIET-KE.md` (thiết kế và các quyết định), `dac-ta/giai-doan-1.md` (đặc tả và tiêu chí chấp nhận), `templates/` (luật mà agent đọc).*

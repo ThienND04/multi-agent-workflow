@@ -45,7 +45,7 @@ Dán vào một phiên AI bất kỳ (Claude Code, Codex, Gemini CLI…) mở t�
 Đọc AGENTS.md trong thư mục này và làm theo.
 ID của bạn: coder-01. Vai: Coder. Việc được giao: T-001 (dac-ta/viec-gd1/T-001.md).
 Công cụ của bạn: <tên công cụ>.
-Đọc README.md mục 3, 4, 9 và dac-ta/giai-doan-1.md mục 2, 3, 7 trước khi viết code.
+Đọc THIET-KE.md mục 3, 4, 9 và dac-ta/giai-doan-1.md mục 2, 3, 7 trước khi viết code.
 Chỗ nào chưa rõ thì tạo câu hỏi theo AGENTS.md mục 4, không tự quyết.
 Khi xong, đặt việc sang in_test và ghi bàn giao. Không tự đánh dấu verified hay done.
 ```
@@ -66,4 +66,4 @@ Không sửa code.
 
 ## Sau đó: Master gộp
 
-Mở lại phiên Master (phiên này, hoặc một AI bất kỳ với lời nhắn ở README mục 7), nói: *"T-001 đã verified, gộp đi"*.
+Mở lại phiên Master (phiên này, hoặc một AI bất kỳ với lời nhắn ở HUONG-DAN-THUC-HIEN.md mục 1.3), nói: *"T-001 đã verified, gộp đi"*.

@@ -1,7 +1,7 @@
 # Đặc tả Giai đoạn 1: khung `.agents/` và lệnh `ag`
 
 **Trạng thái:** **Đã duyệt** ngày 16/11/2026 (chủ dự án duyệt toàn bộ 8 điểm ở mục 9). Viết bởi vai Master.
-**Nguồn:** `README.md` (thiết kế tổng thể, các quyết định ở mục 9).
+**Nguồn:** `THIET-KE.md` (thiết kế tổng thể, các quyết định ở mục 9).
 **Các việc:** `dac-ta/viec-gd1/T-001.md` … `T-013.md`, đã chuyển sang `approved` ngày 16/11/2026 (Master duyệt theo điểm 6, mục 9).
 
 Mọi đề xuất trong bản nháp đã được chủ dự án duyệt (mục 9). Thay đổi về sau phải ghi vào mục 10 "Lịch sử thay đổi" và được chủ dự án duyệt lại.
@@ -99,7 +99,7 @@ id, role, tool, status (pending | active | offline), worktree, checked_in_at, la
 ```
 Phần thân là danh sách quyền: được ghi đường dẫn nào, bị cấm đường dẫn nào. Lấy từ file vai trò và `project.md`.
 
-**`board/T-NNN.md`**: theo mẫu ở mục 5.2 của README, thêm khoá `handoff_at`.
+**`board/T-NNN.md`**: theo mẫu ở mục 5.2 của THIET-KE.md, thêm khoá `handoff_at`.
 
 **`decisions/D-NNN.md`**:
 ```
@@ -138,11 +138,11 @@ options, urgent             (tuỳ chọn)
 
 `ag decide`, `ag approve-agent`, `ag status … approved` cho việc ngoài đặc tả. Các lệnh này yêu cầu **xác nhận tương tác**: terminal phải là TTY, người dùng gõ lại số hiệu (ví dụ gõ `D-007`). Gọi từ shell không tương tác thì báo lỗi mã 2.
 
-Lý do: công cụ AI chạy lệnh qua shell không tương tác, nên cách này chặn được việc AI vô tình chạy lệnh của chủ dự án. Không chặn được AI cố tình giả mạo (giới hạn đã nêu ở README mục 5.5).
+Lý do: công cụ AI chạy lệnh qua shell không tương tác, nên cách này chặn được việc AI vô tình chạy lệnh của chủ dự án. Không chặn được AI cố tình giả mạo (giới hạn đã nêu ở THIET-KE.md mục 5.5).
 
 ### 4.3 Ma trận đổi trạng thái việc
 
-Thêm trạng thái mới **`verified`**: Tester đã kiểm tra đạt, chờ Master gộp nhánh. Bản README chỉ có `in_test → done`, nên không phân biệt được "Tester đạt" với "đã gộp".
+Thêm trạng thái mới **`verified`**: Tester đã kiểm tra đạt, chờ Master gộp nhánh. Bản thiết kế (THIET-KE.md) chỉ có `in_test → done`, nên không phân biệt được "Tester đạt" với "đã gộp".
 
 | Từ → Đến | Ai | Điều kiện |
 |---|---|---|
@@ -287,7 +287,7 @@ Chạy trong một repo git có ít nhất 1 commit. Lệnh làm các việc sau
 - **A-DOC-1** `AGENTS.md` dưới 150 dòng, gồm:
   - 6 bước khởi động: đọc `WORKFLOW.md` → đọc file vai → `ag checkin` → `ag inbox` → `ag claim` → làm việc;
   - bảng lệnh `ag`;
-  - nguyên tắc không tự quyết, kèm ranh giới đã chốt (README mục 9, dòng 6);
+  - nguyên tắc không tự quyết, kèm ranh giới đã chốt (THIET-KE.md mục 9, dòng 6);
   - điều cấm (`--no-verify`, sửa file trạng thái bằng tay, tự nhận vai).
 - **A-DOC-2** `roles/master.md`, `coder.md`, `tester.md`: mỗi file có các mục **Phải làm**, **Không được**, **Khi chưa rõ**, **Khi dừng giữa chừng**.
 - **A-DOC-3** Mọi lệnh nhắc trong tài liệu đều có thật. Có test tự quét tài liệu tìm `ag <lệnh>` rồi đối chiếu với `src/commands/`.

@@ -1,6 +1,6 @@
 # Bắt đầu từ đây
 
-Hướng dẫn cho **chủ dự án** (con người). Đọc trong khoảng 5 phút.
+Hướng dẫn cho **chủ repo** (người duyệt và giao việc). Đọc trong khoảng 5 phút. Mới clone về và chưa biết mình thuộc nhóm nào thì đọc [README.md](README.md) trước.
 
 ## Đây là gì
 
@@ -148,7 +148,7 @@ Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pix
 | **Làm từng bước Giai đoạn 1 và 1b**: mở phiên nào, dán gì, kiểm tra gì, mốc chuyển sang `ag` | [HUONG-DAN-THUC-HIEN.md](HUONG-DAN-THUC-HIEN.md) |
 | **Ví dụ đầy đủ: xây app Lịch mua bán** bằng workflow (cần chuẩn bị gì, từng bước) | [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-MUA-BAN.md) |
 | Toàn bộ workflow và cách tuỳ chỉnh cho dự án, cho đội của bạn | [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md) |
-| Vì sao thiết kế như vậy, các quyết định đã chốt | [README.md](README.md) |
+| Vì sao thiết kế như vậy, các quyết định đã chốt | [THIET-KE.md](THIET-KE.md) |
 | Áp dụng cho dự án có sẵn, chế độ 1 agent, cổng xác nhận FE/BE hai repo, skill từng vai, làm tiếp khi hết token (đã duyệt) | [dac-ta/de-xuat-bo-sung-01.md](dac-ta/de-xuat-bo-sung-01.md) |
 | FE/BE cùng repo, BE đội khác, API có sẵn, nhiều tính năng cùng lúc, luồng có review (đã duyệt) | [dac-ta/de-xuat-bo-sung-02.md](dac-ta/de-xuat-bo-sung-02.md) |
 | Chat với Master trên web, Master chính và Master luồng (đã duyệt) | [dac-ta/de-xuat-bo-sung-03.md](dac-ta/de-xuat-bo-sung-03.md) |

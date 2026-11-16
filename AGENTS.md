@@ -6,7 +6,7 @@ File này áp dụng cho **mọi AI** (Claude, Codex, Gemini, Cursor, Copilot…
 
 ## 1. Đọc trước khi làm bất cứ việc gì
 
-1. `README.md`: thiết kế tổng thể. Mục 3 (nguyên tắc), mục 4 (vai trò và chuỗi hỏi), mục 9 (các quyết định đã chốt).
+1. `THIET-KE.md`: thiết kế tổng thể. Mục 3 (nguyên tắc), mục 4 (vai trò và chuỗi hỏi), mục 9 (các quyết định đã chốt).
 2. `dac-ta/giai-doan-1.md`: **đặc tả đã duyệt. Luôn là bản đúng nhất.**
 3. File việc bạn được giao: `dac-ta/viec-gd1/T-NNN.md`.
 
@@ -20,8 +20,8 @@ Chủ dự án cho bạn **ID, vai và việc** ngay trong lời nhắn mở phi
 
 | Vai | Được sửa | Không được |
 |---|---|---|
-| Master | `README.md`, `AGENTS.md`, `dac-ta/**`, `templates/**` (tài liệu) | Sửa code `src/`, `bin/`, `test/`. Tự quyết thay chủ dự án |
-| Coder | Đúng các file trong `files:` của việc được giao, **trên nhánh riêng** | Sửa đặc tả, `README.md`, file việc của người khác. Thêm thư viện ngoài. Tự đánh dấu việc xong |
+| Master | `THIET-KE.md`, `AGENTS.md`, `dac-ta/**`, `templates/**` (tài liệu) | Sửa code `src/`, `bin/`, `test/`. Tự quyết thay chủ dự án |
+| Coder | Đúng các file trong `files:` của việc được giao, **trên nhánh riêng** | Sửa đặc tả, `THIET-KE.md`, file việc của người khác. Thêm thư viện ngoài. Tự đánh dấu việc xong |
 | Tester | `test/e2e/**` và file trong `files:` của việc loại `test` | Sửa `src/`, đặc tả |
 
 ## 3. Quy trình (thay cho lệnh `ag` trong lúc chờ)
@@ -58,7 +58,7 @@ Gọi `<repo>` là thư mục chứa file này, nhánh `main`.
 
 ## 4. Không tự quyết: hỏi theo cấp
 
-Ranh giới đã chốt (README mục 9, dòng 6):
+Ranh giới đã chốt (THIET-KE.md mục 9, dòng 6):
 - **Không cần hỏi:** chi tiết bên trong việc, không đổi hành vi hay giao diện (tên biến cục bộ, cách tách hàm, thứ tự code), theo đúng quy ước.
 - **Bắt buộc hỏi:** hành vi, giao diện, định dạng dữ liệu, API, thêm thư viện, đổi cấu trúc thư mục, và mọi chỗ đặc tả mơ hồ hoặc mâu thuẫn.
 
