@@ -8,10 +8,10 @@ Trạng thái: Đã trả lời
 
 1. **JDK 17: Eclipse Temurin**, bản ZIP cho Windows x64.
    - Chỉ tải từ trang chính thức: `adoptium.net` / `github.com/adoptium`.
-   - Giải nén vào `C:\Users\phamngochoan\AppData\Local\Programs\Temurin\jdk-17`. Không dùng bộ cài MSI, không cần quyền quản trị.
+   - Giải nén vào `C:\Users\<tên-người-dùng>\AppData\Local\Programs\Temurin\jdk-17`. Không dùng bộ cài MSI, không cần quyền quản trị.
 2. **Android SDK command-line tools**.
    - Chỉ tải từ `developer.android.com` / `dl.google.com`.
-   - Đặt tại `C:\Users\phamngochoan\AppData\Local\Android\Sdk\cmdline-tools\latest`.
+   - Đặt tại `C:\Users\<tên-người-dùng>\AppData\Local\Android\Sdk\cmdline-tools\latest`.
 3. Qua `sdkmanager`, chỉ cài các gói cần để build: `platform-tools`, `platforms;android-<targetSdk>`, `build-tools;<bản tương ứng>`.
    - Chấp nhận giấy phép SDK của Google (`sdkmanager --licenses`) là được phép.
    - **Không** cài emulator hay system image. App sẽ được chạy thử trên điện thoại thật.
