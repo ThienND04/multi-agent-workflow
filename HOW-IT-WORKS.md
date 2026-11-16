@@ -38,7 +38,8 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
 
 **Script `watch.sh`** quét các file đó vài chục giây một lần:
 - **Không tốn token**, vì chỉ là script đọc file.
-- File chờ một agent **tự động** (Claude Code, Codex, Gemini CLI): script mở cho agent đó một phiên mới bằng lệnh không tương tác, kèm danh sách file cần xử lý.
+- File chờ một agent chế độ **`subagent`**: script không làm gì, vì **Master tự gọi** agent đó ngay trong phiên chat. Đây là chế độ mặc định, chỉ cần ứng dụng Claude desktop.
+- File chờ một agent chế độ **`auto`** (Claude Code, Codex, Gemini CLI dòng lệnh): script mở cho agent đó một phiên mới bằng lệnh không tương tác, kèm danh sách file cần xử lý.
 - File chờ một agent **đánh thức tay** (ví dụ Antigravity, không chạy được bằng lệnh) hoặc chờ **bạn**: script báo lên màn hình và qua Telegram.
 - Sinh **`STATUS.md`**: bảng ai đang làm gì, ai đang chờ gì.
 
@@ -46,7 +47,7 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
 
 ```
 ① Bạn + Master làm rõ yêu cầu → Master viết SPEC.md, chia việc → bạn nói "duyệt"
-② Master giao việc (to: coder-01, to: tester-01) → watch.sh đánh thức → họ KHẢO SÁT
+② Master giao việc (to: coder-01, to: tester-01) → Master gọi họ (hoặc watch.sh đánh thức) → họ KHẢO SÁT
 ③ Chưa rõ → họ ghi câu hỏi (to: master-F-001) → Master trả lời nếu có nguồn;
    KHÔNG chắc → câu hỏi chuyển sang to: owner → watch.sh báo bạn → bạn bàn với Master, chốt
 ④ Rõ hết → Master mở cho làm (to: coder-01) → Coder code → to: tester-01 → Tester kiểm tra
@@ -75,8 +76,8 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 | 7 | Mỗi vai có skill riêng | Luật riêng cho từng vai trong `AGENTS.md`. Với Claude Code có thêm file vai trong `.claude/agents/`; skill dùng chung có thể đặt thêm trong `.claude/skills/` |
 | 8 | Lưu phiên, agent lỗi thì agent khác làm tiếp | Mọi trạng thái nằm trong file (`to:`, `status:`, bàn giao) và trong commit. Mỗi lần đánh thức là một phiên mới, đọc file là làm tiếp được |
 | 9 | Tối ưu context và token | Mục 5 |
-| 10 | Tôi chỉ làm việc với Master | Đúng. Các agent khác được `watch.sh` gọi; bạn không chat với họ |
-| 13 | Chọn AI và model cho từng agent | Mỗi agent một dòng trong `workflow/agents.txt`: công cụ, lệnh, model, tài khoản tuỳ bạn. Master chọn agent phù hợp cho từng việc |
+| 10 | Tôi chỉ làm việc với Master | Đúng. Các agent khác do Master gọi (chế độ `subagent`) hoặc do `watch.sh` đánh thức (chế độ `auto`); bạn không chat với họ |
+| 13 | Chọn AI và model cho từng agent | Mỗi agent một dòng trong `workflow/agents.txt`: chế độ (`subagent`, `auto`, `manual`), công cụ, model, tài khoản tuỳ bạn. Master chọn agent phù hợp cho từng việc |
 | 14 | Nhiều tính năng cùng lúc, không phải chờ | Mỗi tính năng một thư mục và một Master (`master-F-001`, `master-F-002`). Một `watch.sh` đánh thức agent cho mọi tính năng |
 
 ## 5. Tối ưu context và token (yêu cầu 9)
@@ -117,15 +118,19 @@ Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **ht
 
 ## 7. Chia tài khoản: 2 tài khoản Claude và 1 tài khoản Antigravity
 
-| Agent | Công cụ, tài khoản | Đánh thức |
-|---|---|---|
-| Master (tính năng A) | Ứng dụng Claude desktop, tài khoản 1 | Bạn chat trực tiếp |
-| Coder | Claude Code dòng lệnh (`claude -p`), tài khoản 2 | **Tự động** |
-| Tester | Antigravity | **Tay**: `watch.sh` báo, bạn mở phiên |
-| Master (tính năng B) | Một phiên Claude khác, tài khoản 1 hoặc 2 | Bạn chat trực tiếp |
+**Bắt đầu (chỉ cần ứng dụng Claude desktop):**
 
-- **Vì sao chia như vậy:** Master và Coder ở hai tài khoản nên không ăn chung hạn mức. Tester dùng một AI khác hẳn, nên kiểm tra thật sự độc lập.
-- **Tách tài khoản:** Claude Code dòng lệnh dùng một thư mục cấu hình riêng (biến `CLAUDE_CONFIG_DIR`) cho tài khoản 2. Mỗi thư mục cấu hình giữ một lần đăng nhập riêng. Cách làm từng bước ở `SETUP.md`, bước 3.
+| Agent | Chạy ở đâu | Đánh thức |
+|---|---|---|
+| Master | Ứng dụng Claude desktop, tài khoản 1 | Bạn chat trực tiếp |
+| Coder, Tester | Subagent trong phiên của Master, cùng tài khoản 1 | **Master tự gọi** |
+| Tester độc lập (tuỳ chọn) | Antigravity | **Tay**: `watch.sh` báo, bạn mở phiên |
+
+Ở cách này, Coder và Tester **dùng chung hạn mức** với Master.
+
+**Khi cần tách hạn mức:** cài Claude Code dòng lệnh, đăng nhập tài khoản 2 vào thư mục cấu hình riêng (biến `CLAUDE_CONFIG_DIR`), rồi chuyển Coder sang chế độ `auto`. Coder khi đó chạy bằng tài khoản 2, không ăn vào hạn mức của Master. Cách làm từng bước ở `SETUP.md`, bước 3 và 4.
+
+Tính năng thứ hai làm song song: mở thêm một phiên Master (tài khoản 1 hoặc 2).
 
 ---
 

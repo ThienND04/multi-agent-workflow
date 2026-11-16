@@ -1,27 +1,33 @@
 # Danh sách agent và cách đánh thức. Chủ dự án điền; agent không sửa file này.
 #
-# Mỗi dòng:  <ID>  <vai>  <auto|manual>  <lệnh đánh thức, hoặc ghi chú nếu manual>
-#   auto   : watch.sh tự chạy lệnh và thêm lời nhắn đánh thức vào cuối lệnh
-#   manual : watch.sh chỉ báo (màn hình và Telegram) rằng agent này có việc; bạn tự mở phiên cho nó
+# Mỗi dòng:  <ID>  <vai>  <chế độ>  <lệnh, tên subagent, hoặc ghi chú>
 #
-# Lệnh mẫu (kiểm tra lại theo phiên bản công cụ bạn cài):
+# Ba chế độ:
+#   subagent : Master tự gọi subagent này ngay trong phiên chat của Master (Claude Code, ứng dụng desktop
+#              hoặc dòng lệnh). Cột cuối là tên subagent trong .claude/agents/ (coder, coder-pro, tester).
+#              Không cần cài thêm gì. watch.sh không đánh thức, không báo.
+#   auto     : watch.sh tự chạy lệnh và thêm lời nhắn đánh thức vào cuối lệnh. Cần công cụ AI chạy được
+#              bằng lệnh (xem SETUP.md, bước 3). Agent chạy KHÔNG có người canh: chỉ cấp quyền cần thiết,
+#              không bao giờ cấp quyền push.
+#   manual   : watch.sh chỉ báo (màn hình và Telegram) rằng agent này có việc; bạn tự mở phiên cho nó.
+#              Hợp với công cụ không chạy được bằng lệnh, ví dụ Antigravity.
+#
+# Lệnh mẫu cho chế độ auto (kiểm tra lại theo phiên bản công cụ bạn cài):
 #   Claude Code : claude -p --permission-mode acceptEdits --model sonnet
 #   Codex CLI   : codex exec --full-auto
 #   Gemini CLI  : gemini --yolo -p
+#   Tài khoản Claude thứ hai:
+#     env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
 #
-# Dùng tài khoản Claude thứ hai: đặt thư mục cấu hình riêng cho lệnh claude (xem SETUP.md, bước 3), ví dụ
-#   coder-01  coder  auto  env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
-#
-# Agent tự động chạy KHÔNG có người canh. Chỉ cấp quyền cần thiết (sửa file, chạy git, chạy lệnh build và test).
-# Không bao giờ cấp quyền push.
-#
-# Master: mặc định để manual, vì bạn đang chat với Master trong phiên chính. Khi có việc chờ Master,
-# watch.sh báo bạn; bạn nói với Master "Xử lý việc đang chờ".
-# Muốn Master tự trả lời những câu có nguồn khi bạn vắng mặt: đổi sang auto với lệnh claude -p dùng tài khoản
-# của Master. Câu nào Master không chắc vẫn được chuyển sang to: owner để bạn quyết. Khi đã để auto, đừng
-# chat với Master của cùng tính năng vào lúc watch.sh đang đánh thức nó, để hai phiên không sửa cùng một file.
+# Master: để manual, vì bạn đang chat với Master trong phiên chính. Khi có việc chờ Master, watch.sh báo bạn;
+# bạn nói với Master "Xử lý việc đang chờ".
 
-master-F-001  master  manual  phiên chat chính
+master-F-001  master  manual    phiên chat chính
 
-coder-01      coder   auto    claude -p --permission-mode acceptEdits --model sonnet
-tester-01     tester  manual  Antigravity (tester độc lập)
+coder-01      coder   subagent  coder
+tester-01     tester  subagent  tester
+
+# Ví dụ khác:
+# coder-02    coder   subagent  coder-pro          (việc khó, model mạnh hơn)
+# coder-03    coder   auto      claude -p --permission-mode acceptEdits --model sonnet
+# tester-02   tester  manual    Antigravity (tester độc lập, mở trang bằng trình duyệt)

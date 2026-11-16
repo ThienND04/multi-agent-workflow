@@ -16,7 +16,7 @@ Dự án dùng workflow multi-agent:
 | **Coder** | `coder-NN` | Khảo sát việc được giao, hỏi chỗ chưa rõ, code kèm test, sửa lỗi | Sửa `SPEC.md`. Tự nghiệm thu. Push |
 | **Tester** | `tester-NN` | Khảo sát, viết kế hoạch kiểm thử, kiểm tra, báo lỗi | Sửa code. Push |
 
-ID của bạn có trong lời nhắn mở phiên, hoặc trong lời nhắn đánh thức của `watch.sh`. Danh sách agent và cách đánh thức từng agent nằm trong `workflow/agents.txt`.
+ID của bạn có trong lời nhắn mở phiên, trong lời nhắn đánh thức của `watch.sh`, hoặc trong lời gọi của Master (khi bạn chạy dưới dạng subagent). Danh sách agent và cách đánh thức từng agent nằm trong `workflow/agents.txt`.
 
 ## 2. Kênh trao đổi: trường `to:`
 
@@ -137,7 +137,7 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
   - xoá khoá và các worktree đã xong;
   - commit. **Không push.**
 - **Chỉ sửa** trong thư mục tính năng của mình, cộng `DECISIONS.md` khi chủ dự án đồng ý.
-- **Dùng Claude Code** thì có thể gọi subagent trong `.claude/agents/` cho việc nhỏ cần nhanh. Luồng chính vẫn đi qua file như trên.
+- **Gọi agent chế độ `subagent`** (xem `workflow/agents.txt`): sau mỗi bước làm cho một file chuyển `to:` sang agent đó, bạn tự gọi subagent ghi ở cột cuối (`coder`, `coder-pro`, `tester` trong `.claude/agents/`). Lời gọi gồm: **ID của agent** (ví dụ `coder-01`), danh sách file đang chờ nó, và câu *"Làm theo AGENTS.md mục 4 và 5"*. Subagent làm xong thì đổi `to:` như agent thường; bạn đọc lại file rồi đi tiếp. Các việc không chồng `files` thì gọi song song được.
 
 ### Coder
 - **Khảo sát:** đọc `SPEC.md` và đúng những gì `can_doc` chỉ tới. Chưa rõ thì hỏi (bước 3).

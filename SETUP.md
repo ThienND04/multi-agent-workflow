@@ -8,8 +8,8 @@
 |---|---|
 | **Git**, kèm **Git Bash** nếu dùng Windows | Chạy `watch.sh` và `notify.sh` |
 | **Node.js 18 trở lên** (tuỳ chọn) | Chạy trang monitor `monitor.js` |
-| **Claude Code**: ứng dụng desktop (tab Code) hoặc bản dòng lệnh | Phiên chat với Master |
-| Ít nhất một công cụ AI **chạy được bằng lệnh** | Agent đánh thức tự động, ví dụ Claude Code dòng lệnh (`claude`), Codex CLI (`codex`), Gemini CLI (`gemini`) |
+| **Claude Code**: ứng dụng desktop (tab Code) hoặc bản dòng lệnh | Phiên chat với Master. Master tự gọi Coder, Tester dưới dạng **subagent**, không cần cài thêm gì |
+| Công cụ AI **chạy được bằng lệnh** (tuỳ chọn) | Agent đánh thức tự động, ví dụ Claude Code dòng lệnh (`claude`), Codex CLI (`codex`), Gemini CLI (`gemini`) |
 | `curl` (tuỳ chọn) | Gửi Telegram. Có sẵn trên Windows 10 trở lên, macOS, Linux |
 | Công cụ AI khác, ví dụ Antigravity (tuỳ chọn) | Agent đánh thức tay, hợp với vai Tester độc lập |
 
@@ -32,7 +32,7 @@ CLAUDE.md                  Claude Code tự đọc: phiên chính là Master
 .gitattributes             giữ script .sh xuống dòng LF
 .claude/
   settings.json            quyền cho Claude Code: chặn git push, chặn đọc .env
-  agents/                  (tuỳ chọn) subagent để Master làm nhanh việc nhỏ
+  agents/                  subagent Coder, Tester mà Master tự gọi
 workflow/
   agents.txt               danh sách agent và cách đánh thức (bạn điền ở bước 4)
   watch.sh                 theo dõi file, đánh thức agent, sinh STATUS.md
@@ -56,14 +56,17 @@ workflow/
    TELEGRAM_BOT_TOKEN=<token>
    TELEGRAM_CHAT_ID=<chat id>
    ```
+   Thay cả cụm `<token>` và `<chat id>` bằng giá trị thật, **bỏ luôn dấu `< >`**, không để khoảng trắng. Ví dụ dạng đúng: `TELEGRAM_BOT_TOKEN=123456789:AAH...`, `TELEGRAM_CHAT_ID=987654321`.
 5. Thử:
    ```bash
    sh workflow/notify.sh "Thử thông báo"
    ```
 
-## 3. Cài công cụ AI chạy bằng lệnh
+## 3. Cài công cụ AI chạy bằng lệnh (tuỳ chọn)
 
-Agent đánh thức tự động cần một công cụ AI chạy được bằng lệnh. Ứng dụng Claude desktop **không** tạo lệnh này, nên cần cài thêm.
+**Bỏ qua bước này** nếu bạn để Coder, Tester ở chế độ `subagent` (mặc định trong `agents.txt`).
+
+Chỉ cần bước này khi muốn agent chạy ở chế độ `auto`: `watch.sh` tự đánh thức nó, kể cả khi bạn không chat với Master, và có thể dùng tài khoản riêng. Ứng dụng Claude desktop **không** tạo lệnh này, nên cần cài thêm.
 
 **Claude Code dòng lệnh (lệnh `claude`):**
 - Windows, trong PowerShell:
@@ -90,25 +93,37 @@ Nếu máy có biến môi trường `ANTHROPIC_API_KEY`, Claude Code sẽ dùng
 
 ## 4. Khai báo agent: `workflow/agents.txt`
 
-Mỗi dòng một agent: `<ID> <vai> <auto|manual> <lệnh đánh thức, hoặc ghi chú>`. Ví dụ với hai tài khoản Claude và một tài khoản Antigravity:
+Mỗi dòng một agent: `<ID> <vai> <chế độ> <lệnh, tên subagent, hoặc ghi chú>`. Có 3 chế độ:
+
+| Chế độ | Ai đánh thức agent | Cần cài thêm | Hợp với |
+|---|---|---|---|
+| **`subagent`** (mặc định) | **Master tự gọi** ngay trong phiên chat | Không | Bắt đầu nhanh, chỉ có ứng dụng Claude desktop |
+| **`auto`** | `watch.sh` tự chạy lệnh | Công cụ AI dòng lệnh (bước 3) | Agent làm cả khi bạn không chat; dùng tài khoản hay công cụ khác |
+| **`manual`** | Bạn mở phiên, sau khi `watch.sh` báo | Không | Công cụ không chạy được bằng lệnh, ví dụ Antigravity |
+
+**Mặc định trong bộ khởi đầu** (chỉ cần ứng dụng Claude desktop):
 ```
-master-F-001  master  manual  phiên chat chính (Claude, tài khoản 1)
-coder-01      coder   auto    env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
-tester-01     tester  manual  Antigravity
+master-F-001  master  manual    phiên chat chính
+coder-01      coder   subagent  coder
+tester-01     tester  subagent  tester
 ```
+Với chế độ `subagent`, cột cuối là tên file trong `.claude/agents/`: `coder` (model nhanh), `coder-pro` (model mạnh, cho việc khó), `tester`.
 
-- **`auto`:** `watch.sh` tự chạy lệnh, thêm lời nhắn đánh thức vào cuối lệnh. Một số lệnh mẫu (kiểm tra lại theo phiên bản bạn cài):
-  - Claude Code: `claude -p --permission-mode acceptEdits`, thêm `--model sonnet` hoặc `--model opus` tuỳ việc;
-  - Codex CLI: `codex exec --full-auto`;
-  - Gemini CLI: `gemini --yolo -p`.
-- **`manual`:** `watch.sh` chỉ báo bạn. Bạn mở phiên cho agent đó và dán lời nhắn ở bước 7.
-- **Master** nên để `manual`, vì bạn đang chat với nó. Khi có câu hỏi chờ Master, `watch.sh` báo bạn và bạn nói với Master một câu *"Xử lý việc đang chờ"*. Muốn Master tự xử lý cả khi bạn vắng mặt thì xem ghi chú trong `agents.txt`.
+**Ví dụ có thêm công cụ khác:**
+```
+coder-02      coder   auto      env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
+tester-02     tester  manual    Antigravity
+```
+Lệnh mẫu cho chế độ `auto` (kiểm tra lại theo phiên bản bạn cài):
+- Claude Code: `claude -p --permission-mode acceptEdits`, thêm `--model sonnet` hoặc `--model opus` tuỳ việc;
+- Codex CLI: `codex exec --full-auto`;
+- Gemini CLI: `gemini --yolo -p`.
 
-**Agent tự động chạy không có người canh.** Cấp đủ quyền để nó làm việc, và không hơn:
-- **Claude Code:** thêm lệnh build và test của dự án vào danh sách `allow` trong `.claude/settings.json`, ví dụ `"Bash(npm test:*)"` hoặc `"Bash(./gradlew test:*)"`. `git push` đã bị chặn sẵn.
-- **Công cụ khác:** dùng cơ chế sandbox hoặc phê duyệt của công cụ đó.
+**Master** luôn để `manual`, vì bạn đang chat với nó. Khi có việc chờ Master, `watch.sh` báo bạn và bạn nói với Master một câu *"Xử lý việc đang chờ"*.
 
-**Thử agent tự động có chạy đúng tài khoản không** (tại thư mục dự án):
+**Cấp quyền cho agent** (cả `subagent` lẫn `auto`) để nó chạy được lệnh build và test của dự án: thêm vào danh sách `allow` trong `.claude/settings.json`, ví dụ `"Bash(npm test:*)"` hoặc `"Bash(./gradlew test:*)"`. `git push` đã bị chặn sẵn. Agent `auto` chạy không có người canh, nên chỉ cấp đúng những gì cần.
+
+**Thử một agent `auto` có chạy đúng tài khoản không** (tại thư mục dự án):
 ```bash
 CLAUDE_CONFIG_DIR="$HOME/.claude-acc2" claude -p "Trả lời đúng một chữ: sẵn sàng" --model sonnet
 ```
@@ -173,7 +188,7 @@ Từ đây:
 | Khi | Ai làm gì |
 |---|---|
 | Master hỏi để làm rõ | Bạn trả lời. Đọc `SPEC.md`, rồi nói **"duyệt"** |
-| Coder, Tester khảo sát, hỏi, code, test | **Tự chạy**: `watch.sh` đánh thức họ qua `to:` |
+| Coder, Tester khảo sát, hỏi, code, test | **Tự chạy**: chế độ `subagent` thì Master tự gọi; chế độ `auto` thì `watch.sh` đánh thức. Nếu Master dừng giữa chừng, nói *"Tiếp tục"* |
 | Có việc chờ Master (`to: master-F-001`) | `watch.sh` báo. Bạn nói với Master: *"Xử lý việc đang chờ."* |
 | Có câu Master không chắc (`to: owner`) | `watch.sh` báo, kể cả qua Telegram. Bạn trả lời Master và bàn tới khi chốt |
 | Có việc cho agent đánh thức tay | `watch.sh` báo. Bạn mở phiên cho agent đó và dán lời nhắn bên dưới |
@@ -192,7 +207,8 @@ Mở thêm một phiên Master tại cùng thư mục dự án và làm lại b�
 
 ## 9. Khi một phiên bị dừng
 
-- **Agent tự động:** không cần làm gì. Lần tới file của nó thay đổi, nó được đánh thức lại. Nếu `STATUS.md` hoặc trang monitor báo *"đã đánh thức nhưng chưa xử lý xong"*, hãy xem log trong `workflow/logs/`.
+- **Agent `subagent`:** nói với Master *"Tiếp tục"*; Master gọi lại subagent, subagent đọc bàn giao rồi làm tiếp.
+- **Agent `auto`:** không cần làm gì. Lần tới file của nó thay đổi, nó được đánh thức lại. Nếu `STATUS.md` hoặc trang monitor báo *"đã đánh thức nhưng chưa xử lý xong"*, hãy xem log trong `workflow/logs/`.
 - **Master:** mở phiên mới tại thư mục dự án, dán:
   ```text
   Đọc AGENTS.md và làm theo. Bạn là master-F-001, làm tiếp.

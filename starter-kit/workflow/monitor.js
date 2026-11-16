@@ -196,6 +196,8 @@ const $=s=>document.querySelector(s);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let S=null,openId=null;
+const MODE_NAME={auto:'đánh thức tự động',manual:'đánh thức tay',subagent:'subagent, Master tự gọi'};
+const MODE_WAIT={auto:'Có việc, chờ watch.sh đánh thức',manual:'Có việc, cần mở phiên tay',subagent:'Có việc, chờ Master gọi'};
 const hashN=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
 
 /* ---------- vẽ pixel ---------- */
@@ -225,7 +227,7 @@ function stateOf(a,dir){
  if(!a)return{kind:'bad',txt:'?',label:'Chưa khai báo trong agents.txt',on:false};
  const here=a.pending.filter(p=>p.indexOf(dir+'/')===0).length;
  if(a.running)return{kind:'run',txt:'…',label:'Đang chạy',on:true};
- if(here)return{kind:'wait',txt:String(here),label:a.mode==='auto'?'Có việc, chờ watch.sh đánh thức':'Có việc, cần mở phiên tay',on:true};
+ if(here)return{kind:'wait',txt:String(here),label:MODE_WAIT[a.mode]||'Có việc, cần mở phiên tay',on:true};
  return{kind:'idle',txt:'z',label:'Rảnh',on:false};
 }
 
@@ -304,7 +306,7 @@ function showDetail(){
  const d=$('#detail');const a=S.agents.find(x=>x.id===openId);d.replaceChildren();d.style.display='block';
  const close=el('button',null,'Đóng');close.onclick=()=>{openId=null;d.style.display='none';build()};d.append(close,el('h2',null,openId));
  if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
- d.append(el('p',null,a.role+' · '+(a.mode==='auto'?'đánh thức tự động':'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.running?'Đang chạy':'Không chạy'));
+ d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.running?'Đang chạy':'Không chạy'));
  d.append(el('h2',null,'File đang chờ'));
  if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
  d.append(el('h2',null,'Log gần nhất'));

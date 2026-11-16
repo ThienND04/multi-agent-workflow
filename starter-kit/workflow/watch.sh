@@ -9,6 +9,7 @@
 # Quy tắc: file nào có dòng `to: <ID>` ở đầu là đang chờ agent đó.
 #   - Agent "auto" trong agents.txt: chạy lệnh đánh thức (một phiên mới, không tương tác).
 #   - Agent "manual": chỉ báo ra màn hình và qua Telegram (nếu đã cấu hình).
+#   - Agent "subagent": không làm gì; Master tự gọi subagent đó trong phiên chat của nó.
 #   - `to: owner`: báo chủ dự án.
 # Script không tốn token khi không có việc: chỉ đọc file và so sánh.
 # Một agent chỉ được đánh thức lại khi các file chờ nó THAY ĐỔI, để tránh vòng lặp.
@@ -137,6 +138,8 @@ tick() {
   data=$(scan)
   # Agent trong agents.txt
   grep -v '^[[:space:]]*#' "$AGENTS" | grep -v '^[[:space:]]*$' | while read -r id role mode cmd; do
+    # subagent: Master tự gọi trong phiên chat của nó, watch.sh không đánh thức và không báo
+    [ "$mode" = "subagent" ] && continue
     files=$(echo "$data" | awk -F'|' -v a="$id" '$1==a {print $3}')
     [ -n "$files" ] || { rm -f "$RUN/$id.sig"; continue; }
     running "$id" && continue

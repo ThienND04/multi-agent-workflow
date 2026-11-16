@@ -23,11 +23,22 @@ if [ -z "$token" ] || [ -z "$chat" ]; then
   echo "Thiếu TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID trong .env, không gửi. Nội dung: $msg"
   exit 0
 fi
+case "$token$chat" in
+  *"<"*|*">"*|*" "*)
+    echo "File .env vẫn còn chữ mẫu (dấu < >) hoặc khoảng trắng. Thay bằng token và chat ID thật rồi thử lại."
+    exit 0 ;;
+esac
+case "$token" in
+  *:*) ;;
+  *) echo "TELEGRAM_BOT_TOKEN không đúng dạng (phải là số:chuỗi, ví dụ 123456789:AAH...). Kiểm tra lại token BotFather gửi."; exit 0 ;;
+esac
 
-code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+# Nội dung đi qua stdin, không qua tham số dòng lệnh: trên Windows, tham số
+# truyền cho curl.exe bị đổi bảng mã, làm hỏng chữ tiếng Việt (Telegram trả 400).
+code=$(printf '%s' "$msg" | curl -s -o /dev/null -w '%{http_code}' -X POST \
   "https://api.telegram.org/bot${token}/sendMessage" \
   --data-urlencode "chat_id=${chat}" \
-  --data-urlencode "text=${msg}")
+  --data-urlencode "text@-")
 
 if [ "$code" = "200" ]; then
   echo "Đã gửi thông báo Telegram."
