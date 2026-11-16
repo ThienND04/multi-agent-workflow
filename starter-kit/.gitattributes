@@ -1,0 +1,2 @@
+# Script của workflow luôn xuống dòng LF, để chạy được trên Linux và macOS
+workflow/*.sh text eol=lf

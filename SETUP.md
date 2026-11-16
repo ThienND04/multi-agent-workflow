@@ -28,6 +28,7 @@ Chép **toàn bộ nội dung** thư mục [starter-kit/](starter-kit/) vào **g
 AGENTS.md                  luật chung, quy tắc to:
 CLAUDE.md                  Claude Code tự đọc
 .claude/settings.json      quyền cho Claude Code: CHẶN git push, chặn đọc .env
+.gitattributes             giữ script .sh xuống dòng LF (gộp vào file cũ nếu dự án đã có)
 .claude/agents/            (tuỳ chọn) subagent cho Master dùng Claude Code
 workflow/
   agents.txt               danh sách agent, bạn điền ở bước 3

@@ -1,0 +1,2 @@
+# Script shell luôn xuống dòng LF, để chạy được trên Linux và macOS
+*.sh text eol=lf
