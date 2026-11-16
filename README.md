@@ -5,10 +5,12 @@ Bản xuất ngày 16/11/2026, để tiếp tục trên máy khác. Tài liệu 
 > **Mới vào?** Đọc [BAT-DAU.md](BAT-DAU.md) trước: 5 bước để bắt đầu và việc thường ngày của chủ dự án.
 > **Muốn hiểu toàn bộ hoặc tuỳ chỉnh cho mình?** Đọc [HUONG-DAN-WORKFLOW.md](HUONG-DAN-WORKFLOW.md).
 
-**Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01 (dự án có sẵn, chế độ gọn, cổng xác nhận FE/BE hai repo, skill, làm tiếp khi hết token) đã duyệt và đưa vào đặc tả. Chưa có mã nguồn.
+**Trạng thái:** thiết kế tổng thể đã chốt (mục 9). Đặc tả Giai đoạn 1 **đã duyệt** (`dac-ta/giai-doan-1.md`), 19 việc ở `dac-ta/viec-gd1/` đã sẵn sàng giao. Đề xuất bổ sung 01 và 02 đã duyệt. Giai đoạn 1b (tính năng, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy nhiều luồng) có đặc tả riêng `dac-ta/giai-doan-1b.md`, thêm 8 việc T-020…T-027 (tổng 27 việc). Chưa có mã nguồn.
 
 **File kèm theo:**
 - `monitor-2d-mockup.html`: bản phác trang monitor 2D, dữ liệu giả. Mở bằng trình duyệt.
+- `monitor-nhieu-luong-mockup.html`: bản phác monitor theo dõi nhiều tính năng cùng lúc (khu "Cần bạn", bảng luồng, văn phòng, chi tiết kèm trao đổi với Master). Xem đề xuất bổ sung 02, mục G.
+- `monitor-pixel-office.html`: **bản phác chọn làm hướng chính cho Giai đoạn 3**. Văn phòng pixel-art (nét vẽ tự làm), gộp đủ: nhân vật mặc áo màu tính năng, bong bóng trạng thái, bảng luồng trên tường, agent chờ đứng ở cây nước, agent mới xin vào đứng ở cửa, khu "Cần bạn", bảng luồng, chi tiết và trao đổi với Master theo tính năng.
 - `vi-du-lich-mua-ban/`: các file thật từ dự án thử nghiệm đầu tiên, để tham khảo cách làm cũ.
 
 ---
@@ -265,6 +267,7 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
 | Giai đoạn | Nội dung | Kết quả |
 |---|---|---|
 | **1** | Khung `.agents/` + nhánh `agents-state`, lệnh `ag` (init, checkin, claim kèm worktree, heartbeat, log, status, ask/answer/escalate/decide, bug, handoff, merge), hook git, file vai trò, `AGENTS.md` và các file trỏ | Agent nào cũng nhận vai, hỏi đúng cấp và làm tiếp được từ file. **Kiểm chứng bằng ít nhất 2 công cụ AI khác nhau** cùng chạy |
+| **1b** | Tính năng `F-NNN` (vòng đời có bước review đặc tả, "bắt đầu làm", nghiệm thu kèm push), chuyên môn FE/BE, hợp đồng API và việc ghép nối, phụ thuộc bên ngoài `X-NNN`, chạy song song an toàn (`AG_SLOT`), hộp thư Master theo tính năng | Làm nhiều tính năng FE/BE cùng lúc, kể cả khi BE do đội khác làm hoặc API có sẵn |
 | **2** | Monitor: `STATUS.md` + Telegram thông báo một chiều | Nhận thông báo khi vắng mặt |
 | **3** | Trang web 2D, trả lời câu hỏi trên web, hộp thư trao đổi với Master (tuỳ chọn đánh thức Master bằng `master_wake_cmd`) | Nhìn trực quan ai làm gì, duyệt và nhắn Master không cần gõ lệnh |
 | **4** | Đóng gói mẫu repo | Dùng lại bằng một lệnh |
@@ -316,6 +319,12 @@ Chỗ nào chưa rõ thì hỏi tôi, không tự quyết.
 | 14 | Skill | 24 skill dạng markdown trong `.agents/skills/`, AI nào cũng đọc được |
 | 15 | Làm tiếp khi hết token | `ag plan`/`ag step` ghi tiến độ từng bước; tự commit phần dở khi tiếp quản; `ag reassign` chuyển việc ngay; mở phiên mới cùng ID trong worktree cũ |
 | 16 | Trao đổi với Master trên web | Hộp thư qua file (`messages/M-NNN.md`, `ag reply`) ở Giai đoạn 3, dùng được với mọi công cụ AI. Tuỳ chọn `master_wake_cmd` để đánh thức Master khi có tin mới |
+| 17 | FE/BE | **Chuyên môn** (`area`) của Coder và Tester, không phải vai riêng. Hook chặn chéo chuyên môn |
+| 18 | Tính năng | `F-NNN` có độ ưu tiên và nhánh riêng. Vòng đời: phân tích → đặc tả → **review của cấp dưới** → chủ dự án cho **bắt đầu làm** → làm → **chủ dự án nghiệm thu (kèm chọn push)** → gộp vào `main` |
+| 19 | Hợp đồng API | Tài liệu chính thức trong `contract_dirs`, chỉ Master sửa, chủ dự án duyệt. Tính năng FE+BE chia thành: hợp đồng, BE, FE (API giả), ghép nối |
+| 20 | API của đội khác hoặc có sẵn | Phụ thuộc bên ngoài `X-NNN`. Agent không liên lạc đội ngoài; chủ dự án là cầu nối, gửi danh sách vấn đề soạn sẵn. Test thường chỉ chạy trên dữ liệu mẫu |
+| 21 | Nhiều phiên song song | Mỗi agent AI giữ tối đa 1 việc; người giữ được nhiều. `setup_cmd`, `AG_SLOT` tách cổng mạng và cơ sở dữ liệu |
+| 22 | Master nhiều luồng | Một phiên Master chung, trả lời câu hỏi đang chặn việc trước khi bàn tính năng mới. "Master luồng" để sau |
 
 ## 10. Câu hỏi chờ chủ dự án
 

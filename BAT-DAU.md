@@ -15,7 +15,7 @@ Bản thân công cụ `ag` (lệnh quản lý quy trình) **chưa có**. Ta đa
 
 | Đã xong | Chưa có |
 |---|---|
-| Thiết kế tổng thể, đặc tả Giai đoạn 1 (đã duyệt), 19 việc T-001…T-019, tài liệu cho agent | Code của lệnh `ag`, Monitor, Telegram, trang web 2D |
+| Thiết kế tổng thể, đặc tả Giai đoạn 1 (đã duyệt), 27 việc T-001…T-027 (Giai đoạn 1 và 1b), tài liệu cho agent | Code của lệnh `ag`, Monitor, Telegram, trang web 2D |
 
 ## Cần chuẩn bị
 

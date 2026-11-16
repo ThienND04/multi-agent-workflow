@@ -12,7 +12,7 @@ Tài liệu cho **người muốn hiểu và áp dụng** workflow này vào d�
 2. [Sáu nguyên tắc](#2-sáu-nguyên-tắc)
 3. [Các vai](#3-các-vai)
 4. [Khái niệm cơ bản](#4-khái-niệm-cơ-bản)
-5. [Một việc đi từ đầu đến cuối](#5-một-việc-đi-từ-đầu-đến-cuối)
+5. [Một việc đi từ đầu đến cuối](#5-một-việc-đi-từ-đầu-đến-cuối) (và luồng một tính năng, mục 5.3)
 6. [Hỏi đáp: không ai tự quyết](#6-hỏi-đáp-không-ai-tự-quyết)
 7. [Làm tiếp khi agent dừng giữa chừng](#7-làm-tiếp-khi-agent-dừng-giữa-chừng)
 8. [Hàng rào quyền hạn](#8-hàng-rào-quyền-hạn)
@@ -78,6 +78,10 @@ Con người cũng tham gia được như một Coder (`--tool human`), ví dụ
 | **Kế hoạch các bước** | — | Danh sách bước của một việc, đánh dấu khi xong từng bước | Trong file việc |
 | **Hạn giữ việc** (lease) | — | Agent giữ việc trong N phút, gia hạn bằng `heartbeat`. Quá hạn thì agent khác nhận | Trong file việc |
 | **Worktree** | — | Thư mục làm việc riêng của mỗi agent, trên nhánh riêng `agent/<ID>/<T-NNN>` | `<repo>-wt/<ID>/` |
+| **Tính năng** | `F-NNN` | Một yêu cầu của chủ dự án, gom nhiều việc. Có độ ưu tiên, nhánh riêng `feature/F-NNN`, vòng đời riêng (mục 5.3) | `.agents-state/features/` |
+| **Chuyên môn** | `area` | `fe`, `be`… gắn cho Coder, Tester và cho từng việc. Agent chỉ nhận việc đúng chuyên môn | `project.md` (`areas`) |
+| **Hợp đồng API** | — | Mô tả API mà FE và BE cùng bám vào. Chỉ Master sửa, chủ dự án duyệt | `contract_dirs` |
+| **Phụ thuộc bên ngoài** | `X-NNN` | API do đội khác làm, hoặc API có sẵn. Chủ dự án báo khi đội ngoài giao | `.agents-state/externals/` |
 | **Nhánh trạng thái** | — | Nhánh git riêng `agents-state` chứa toàn bộ trạng thái. Mỗi thay đổi là một commit | `.agents-state/` |
 | **Sự kiện** | — | Mỗi lệnh `ag` thêm một dòng JSON. Monitor đọc file này | `.agents-state/events.jsonl` |
 
@@ -121,6 +125,32 @@ ag heartbeat                                # ít nhất mỗi 15 phút
 ag ask "Ngày hiển thị theo định dạng nào?" --task T-012 --context "Mục 4.2 không ghi"
 # việc chuyển sang blocked; Coder nhận việc khác hoặc dừng
 ```
+
+### 5.3 Luồng một tính năng
+
+Đây là luồng chính khi bạn làm việc với Master:
+
+```
+Phân tích ──▶ Đặc tả ──▶ Review ──▶ Chờ bắt đầu ──▶ Đang làm ──▶ Chờ nghiệm thu ──▶ Đã gộp ──▶ Đã push
+(bạn +        (Master     (cấp dưới    (bạn duyệt       (code, test,   (Master kiểm xong,  (vào main)  (nếu bạn
+ Master)       viết, chia  đọc, hỏi)    đặc tả cuối)     ghép nối,      báo cáo gửi bạn)                chọn push)
+               việc)                                     sửa lỗi)
+```
+
+- **Review:** mỗi chuyên môn (FE, BE) và Tester nhận một việc review. Họ đọc đặc tả và đặt câu hỏi. Tester viết luôn **kế hoạch kiểm thử** cho từng tiêu chí chấp nhận. Đặc tả bị sửa thì những ai đã review xong phải review lại.
+- **Chỉ khi mọi người review xong và không còn câu hỏi nào**, bạn mới được báo để cho "bắt đầu làm". Trước lúc đó không ai viết code.
+- **Báo cáo nghiệm thu** có 7 phần: từng tiêu chí và bằng chứng, kết quả test, lỗi, các quyết định đã đưa ra, phụ thuộc bên ngoài, **cách tự thử**, những gì chưa làm.
+
+**Bạn chỉ cần vào ở 4 thời điểm**, lần nào cũng có thông báo:
+
+| # | Lúc nào | Bạn làm gì |
+|---|---|---|
+| 1 | Có câu hỏi Master không quyết được | `ag decide` |
+| 2 | Review xong, hết câu hỏi | Duyệt đặc tả cuối: `ag feature start F` |
+| 3 | Đội ngoài báo đã giao API (nếu có) | `ag ext delivered X` |
+| 4 | Tính năng xong | Nghiệm thu: `ag feature accept F --push` (đạt và push), `accept` (đạt, chưa push), hoặc `reject` |
+
+**Làm nhiều tính năng cùng lúc:** trong lúc tính năng A đang làm hoặc đang chờ, bạn và Master bàn tiếp tính năng B theo đúng luồng trên. Agent rảnh tự nhận việc theo độ ưu tiên của tính năng. Master trả lời câu hỏi đang chặn việc của A trước, rồi mới bàn tiếp B.
 
 ## 6. Hỏi đáp: không ai tự quyết
 
@@ -229,6 +259,11 @@ Frontmatter chỉ cho phép `khoá: giá trị` hoặc `khoá: [a, b]` trên m�
 | `known_failing` | `[]` | Test đã đỏ sẵn từ trước, chủ dự án đã duyệt. `test_cmd` phải tự loại ra | `[test/legacy_export.test.js]` |
 | `previous_hooks_path` | trống | Hook cũ của dự án. Hook của `ag` gọi tiếp các hook này | `.husky` |
 | `links` | `[]` | Repo khác (cùng máy) để đọc trạng thái chéo | `[be=../shop-api]` |
+| `areas` | `[]` | Chuyên môn và thư mục (Giai đoạn 1b) | `[be=server/**, fe=web/**]` |
+| `contract_dirs` | `[]` | Thư mục hợp đồng API, chỉ Master sửa (1b) | `[contracts/**]` |
+| `setup_cmd` | trống | Lệnh cài đặt khi tạo worktree mới (1b) | `npm ci` |
+| `worktree_env` | `[]` | Biến môi trường theo khe `AG_SLOT`, để nhiều phiên chạy server cùng lúc (1b) | `[PORT=3000+AG_SLOT, DB_NAME=app_AG_SLOT]` |
+| `live_check_cmd` | trống | Kiểm tra API thật so với hợp đồng (1b) | `npm run contract:live` |
 | `master_wake_cmd` | trống | Lệnh đánh thức Master khi có tin nhắn trên web (Giai đoạn 3) | `claude -p`, `codex exec` |
 
 ### 10.2 Mức 2: quy ước code và quyết định chung
@@ -347,11 +382,52 @@ Repo FE chỉ **đọc** trạng thái của repo BE, không bao giờ ghi sang.
 
 Xem mục 7. Cách nhanh nhất: mở phiên mới trong đúng worktree cũ với cùng ID.
 
+### 11.6 Một tính năng có cả BE lẫn FE, cùng repo
+
+1. Khai `areas: [be=server/**, fe=web/**]`. Duyệt Coder với `--area be` hoặc `--area fe`.
+2. Master chia tính năng thành 4 việc:
+   - hợp đồng API (bạn duyệt);
+   - BE làm đúng hợp đồng, kèm test hợp đồng;
+   - FE làm với API giả theo hợp đồng;
+   - ghép nối.
+3. BE và FE làm song song. Việc ghép nối mở ra khi cả hai xong.
+4. Vấn đề khi ghép nối chia làm 3 loại:
+   - lỗi FE: báo lỗi cho việc FE;
+   - BE lệch hợp đồng: báo lỗi cho việc BE;
+   - hợp đồng sai hoặc thiếu: câu hỏi lên bạn, không bên nào tự đoán.
+
+### 11.7 Chỉ làm FE, BE do đội khác làm
+
+1. Master chép tài liệu API của đội BE vào `contracts/external/`, ghi ngày và phiên bản. Bạn duyệt.
+2. Master tạo `X-001` ở trạng thái "chờ". FE làm với API giả.
+3. Đội BE báo xong (qua chat hay email). Bạn chạy `ag ext delivered X-001 --env <url staging>`.
+4. Tester chạy test hợp đồng trên API thật. Mỗi chỗ lệch được ghi bằng `ag ext issue`.
+5. Bạn chạy `ag ext issues X-001 --export`, rồi dán văn bản soạn sẵn gửi đội BE. Khi họ báo đã sửa: `ag ext fixed`, Tester kiểm lại.
+
+**Agent không bao giờ liên lạc trực tiếp với đội ngoài. Bạn là cầu nối.**
+
+### 11.8 Chỉ làm FE, API đã có sẵn (ví dụ app thống kê giá chứng khoán)
+
+1. `ag ext new … --delivered`: tạo phụ thuộc ở trạng thái "đã có" ngay từ đầu.
+2. Tester **chụp response thật một lần** làm dữ liệu mẫu trong `fixtures/`, ghi ngày chụp. Bạn duyệt bộ dữ liệu.
+3. Test thường chỉ chạy trên dữ liệu mẫu, nên kết quả cố định và không tốn hạn mức gọi.
+4. `ag ext check` (chạy `live_check_cmd`) kiểm tra API thật có đổi không. Có thay đổi thì bạn được hỏi.
+
+### 11.9 Làm nhiều tính năng cùng lúc
+
+- Mỗi tính năng có độ ưu tiên (1 cao nhất). Agent rảnh nhận việc của tính năng ưu tiên cao trước.
+- Mỗi agent AI chỉ giữ 1 việc. Muốn nhanh hơn thì mở thêm phiên AI. Bạn (người) giữ được nhiều việc.
+- Nhiều phiên chạy server cùng lúc: mỗi worktree có `AG_SLOT` riêng, nên cổng mạng và cơ sở dữ liệu không đụng nhau.
+- Tính năng A bị chặn (ví dụ chờ đội ngoài): agent tự chuyển sang việc của B. A mở lại thì việc của A lên đầu.
+- Theo dõi: `ag feature list`. Từ Giai đoạn 3 có trang web nhiều luồng, bản phác ở `monitor-nhieu-luong-mockup.html`.
+
+
 ## 12. Tình trạng hiện tại và lộ trình
 
 | Giai đoạn | Nội dung | Tình trạng |
 |---|---|---|
 | **1** | Lệnh `ag`, khung `.agents/`, hook, tài liệu agent, dự án có sẵn, chế độ gọn, cổng, liên kết hai repo, tiếp quản, bộ skill | Đặc tả đã duyệt, 19 việc chờ giao. **Chưa có code** |
+| **1b** | Tính năng và vòng đời có review, chuyên môn FE/BE, hợp đồng API, phụ thuộc bên ngoài, chạy song song an toàn, hộp thư Master theo tính năng | Đặc tả đã duyệt (`dac-ta/giai-doan-1b.md`), 8 việc T-020…T-027. **Chưa có code** |
 | **2** | Monitor: `STATUS.md`, Telegram một chiều, liên kết hai repo ở hai máy khác nhau | Chưa đặc tả |
 | **3** | Trang web 2D, trả lời câu hỏi và xác nhận cổng trên web, hộp thư Master | Có bản phác `monitor-2d-mockup.html` |
 | **4** | Đóng gói thành mẫu repo, cài bằng một lệnh | Chưa đặc tả |
@@ -387,6 +463,13 @@ Xem mục 7. Cách nhanh nhất: mở phiên mới trong đúng worktree cũ v�
 | `ag reassign T --to <ID>` | Chủ dự án (TTY) | Chuyển việc ngay |
 | `ag push <nhánh>` | Chủ dự án (TTY) | Đẩy code lên remote |
 | `ag reply M "…"` | Master | Trả lời tin nhắn trên web (Giai đoạn 3) |
+| `ag feature new / list / show / note / priority` | Master / mọi agent / chủ dự án | Tính năng (1b) |
+| `ag feature review / ready / merge F` | Master | Mở review, báo xong, gộp tính năng vào nhánh chính (1b) |
+| `ag feature start / accept [--push] / reject F` | Chủ dự án (TTY) | Cho bắt đầu làm, nghiệm thu (1b) |
+| `ag review ok F --area <cm> [--test-plan <file>]` | Coder, Tester | Xác nhận đã review đủ để làm (1b) |
+| `ag ext new / issue / issues --export / verify / check` | Master, Tester | Phụ thuộc bên ngoài (1b) |
+| `ag ext delivered / fixed` | Chủ dự án (TTY) | Ghi nhận đội ngoài giao API, báo đã sửa (1b) |
+| `ag env` | Mọi agent | In biến môi trường của worktree (`AG_SLOT`, cổng…) (1b) |
 
 Mã thoát: `0` thành công · `1` sai cú pháp · `2` không có quyền · `3` trạng thái không cho phép · `4` lỗi môi trường.
 
@@ -413,6 +496,7 @@ Mã thoát: `0` thành công · `1` sai cú pháp · `2` không có quyền · `
 | Master | làm rõ yêu cầu, viết đặc tả, viết hợp đồng API, chia việc, trả lời có nguồn, duyệt trước khi gộp, gộp nhánh, khảo sát dự án có sẵn, báo cáo mốc |
 | Coder | đọc việc, viết test trước, sửa lỗi, tự kiểm trước khi giao, commit chuẩn |
 | Tester | viết ca kiểm thử, kiểm thử thực tế, kiểm thử hợp đồng API, báo lỗi, kiểm lại sau khi sửa |
+| Thêm ở 1b | FE: dùng API giả, kiểm thử giao diện · BE: làm đúng hợp đồng, thay đổi dữ liệu · Chung: ghép nối, review đặc tả · Tester: chụp dữ liệu mẫu, kiểm tra API ngoài, kế hoạch kiểm thử · Master: chia tính năng, hợp đồng từ API có sẵn, báo cáo nghiệm thu, xử lý nhiều luồng |
 
 ## 14. Câu hỏi thường gặp
 

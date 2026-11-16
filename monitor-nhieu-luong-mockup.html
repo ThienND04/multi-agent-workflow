@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng điều hành (bản phác)</title>
+<style>
+:root{--bg:#f6f5f1;--panel:#fff;--floor:#efede6;--fg:#2c2c2a;--fg2:#5f5e5a;--muted:#8a8982;--line:#d6d4cb;--accent:#185fa5;
+--ok:#0f6e56;--okbg:#e1f5ee;--warn:#8a5208;--warnbg:#fbefd9;--bad:#a32d2d;--badbg:#fbe9e9;
+--f1:#2563c9;--f2:#0f8064;--f3:#b4570f;--f4:#7d3cb5;--f5:#b8336a}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1b1a;--panel:#252523;--floor:#2c2c2a;--fg:#f1efe8;--fg2:#b8b6ad;--muted:#8a8982;--line:#45453f;--accent:#85b7eb;
+--ok:#5dcaa5;--okbg:#17352c;--warn:#efa53a;--warnbg:#3a2c14;--bad:#f09595;--badbg:#3c1f1f;
+--f1:#7aa7f0;--f2:#4fc6a0;--f3:#f0a25c;--f4:#bb8ae6;--f5:#ee86b0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+main{max-width:1180px;margin:0 auto}
+h1{font-size:21px;font-weight:650;margin:0}
+h2{font-size:15px;font-weight:650;margin:0 0 10px;color:var(--fg2);text-transform:uppercase;letter-spacing:.04em}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;margin-bottom:6px}
+.note{color:var(--fg2);font-size:13px;margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+#filter{display:none}#filter.on{display:inline-flex;cursor:pointer;background:var(--panel)}
+/* Cần bạn */
+#need{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.ni{border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.ni .k{font-size:12px;color:var(--fg2);display:flex;gap:8px;align-items:center;margin-bottom:2px}
+.ni .t{font-weight:600;margin:0 0 4px}
+.ni .m{font-size:13px;color:var(--fg2);margin:0 0 8px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font:inherit;font-size:13px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+button:focus-visible,.row:focus-visible,.ag:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{background:var(--warnbg);color:var(--warn);border-radius:999px;padding:0 8px;font-size:13px;font-weight:700;margin-left:6px}
+/* Bảng luồng */
+.scroll{overflow-x:auto}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px;font-size:13px}
+th{font-weight:600;color:var(--fg2);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}
+.wait{margin:2px 0 0 17px;max-width:340px}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.row{cursor:pointer}.row:hover td{background:color-mix(in srgb,var(--c) 7%,transparent)}
+.row.sel td{background:color-mix(in srgb,var(--c) 13%,transparent)}
+.row.dim{opacity:.38}
+.fname{display:flex;align-items:center;gap:8px;font-weight:600;white-space:nowrap}
+.pr{font-size:11px;color:var(--fg2);font-weight:600;border:1px solid var(--line);border-radius:6px;padding:0 5px}
+.st{text-align:center}
+.pass{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);opacity:.45}
+.todo{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid var(--line)}
+.cur{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;color:var(--panel);background:var(--c);white-space:nowrap}
+.wait{font-size:12.5px}.wait.run{color:var(--ok)}.wait.ask{color:var(--warn);font-weight:600}.wait.block{color:var(--bad);font-weight:600}
+/* Văn phòng + chi tiết */
+.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+svg{width:100%;height:auto;background:var(--floor);border-radius:10px;border:1px solid var(--line);display:block}
+.ag{cursor:pointer;transition:opacity .2s}.ag.dim{opacity:.22}.ag.sel .desk{stroke-width:4}
+.lbl{font-size:12px;fill:var(--fg);font-weight:600}.sub{font-size:10.5px;fill:var(--fg2)}
+#detail h3{font-size:17px;margin:0 0 2px}#detail .s{color:var(--fg2);font-size:13px;margin:0 0 10px}
+#detail h4{font-size:13px;color:var(--fg2);margin:14px 0 6px;font-weight:650}
+#detail ul{margin:0;padding-left:18px;font-size:13.5px}#detail li{margin:2px 0}
+.tag{font-size:11px;font-weight:700;padding:0 6px;border-radius:6px;margin-left:4px}
+.t-ok{background:var(--okbg);color:var(--ok)}.t-warn{background:var(--warnbg);color:var(--warn)}.t-bad{background:var(--badbg);color:var(--bad)}.t-n{background:var(--bg);color:var(--fg2);border:1px solid var(--line)}
+.msg{font-size:13.5px;padding:8px 10px;border-radius:10px;margin:6px 0;max-width:92%}
+.msg.me{background:color-mix(in srgb,var(--accent) 14%,transparent);margin-left:auto}
+.msg.ma{background:var(--bg);border:1px solid var(--line)}
+.msg b{display:block;font-size:11.5px;color:var(--fg2)}
+.compose{display:flex;gap:6px;margin-top:8px}.compose input{flex:1;font:inherit;font-size:13px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--fg2);margin-top:8px}
+@media (prefers-reduced-motion:no-preference){.typing{animation:tp 1s ease-in-out infinite}@keyframes tp{50%{transform:translateY(-2px)}}.pulse{animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.45}}}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><h1>Phòng điều hành</h1><span id="filter" class="chip" role="button" tabindex="0" title="Bỏ lọc"></span></div>
+<p class="note">Bản phác giao diện monitor cho nhiều luồng (Giai đoạn 3). Dữ liệu là giả, các nút chưa hoạt động. Bấm một hàng trong "Bảng luồng" để lọc theo tính năng; bấm một nhân vật để xem agent đó.</p>
+
+<section class="card" aria-labelledby="h-need">
+  <h2 id="h-need">Cần bạn<span class="count" id="needCount"></span></h2>
+  <div id="need"></div>
+</section>
+
+<section class="card" aria-labelledby="h-flow">
+  <h2 id="h-flow">Bảng luồng</h2>
+  <div class="scroll"><table id="flow"></table></div>
+</section>
+
+<div class="grid">
+  <section class="card" aria-labelledby="h-office">
+    <h2 id="h-office">Văn phòng</h2>
+    <svg id="office" viewBox="0 0 600 330" role="img" aria-label="Văn phòng với 8 agent, viền bàn mang màu của tính năng agent đang làm"></svg>
+    <div class="legend" id="legend"></div>
+  </section>
+  <section class="card" id="detail" aria-live="polite"></section>
+</div>
+</main>
+
+<script>
+const STAGES=['Phân tích','Đặc tả','Review','Chờ bắt đầu','Đang làm','Chờ nghiệm thu','Đã gộp'];
+const F={
+ 'F-001':{n:'Đặt hàng',c:'--f1',p:1,stage:4,prog:'5/7 việc',state:'block',wait:'Bị chặn: API của đội BE ngoài lệch hợp đồng (X-001)',
+   tasks:[['T-015','Hợp đồng API (bản của đội BE)','done'],['T-016','Màn danh sách sản phẩm','done'],['T-017','Màn giỏ hàng (API giả)','done'],['T-019','Màn thanh toán','in_progress','Bạn'],['T-018','Ghép nối API đặt hàng','blocked','X-001']],
+   qs:['X-001: 3 chỗ lệch hợp đồng, chờ bạn gửi đội BE'],
+   th:[['me','Đội BE nói thứ 5 xong bản sửa.'],['ma','Đã ghi nhận. Trong lúc chờ, coder-fe-02 chuyển sang F-002. Khi đội BE báo xong, bạn bấm "Đội BE đã sửa" là việc ghép nối mở lại.']]},
+ 'F-002':{n:'Báo cáo doanh thu',c:'--f2',p:2,stage:4,prog:'3/6 việc',state:'run',wait:'2 Coder đang làm · 1 việc bị trả lại (B-021)',
+   tasks:[['T-029','Hợp đồng API báo cáo','done'],['T-030','Trang báo cáo','reopened','B-021'],['T-031','Biểu đồ theo tháng','in_progress','coder-fe-01'],['T-032','API tổng hợp doanh thu','in_progress','coder-be-01'],['T-033','Ghép nối','approved'],['T-034','Kiểm thử đầu-cuối','approved']],
+   qs:['D-012 đã trả lời (Master, theo D-003): làm tròn tiền đến đồng'],
+   th:[['me','Biểu đồ cần thêm so sánh cùng kỳ năm trước không?'],['ma','Đặc tả F-002 chưa có. Đây là thay đổi phạm vi: tôi soạn bản bổ sung để bạn duyệt, không đưa vào đợt này nếu bạn không đồng ý.']]},
+ 'F-003':{n:'Thông báo đẩy',c:'--f3',p:2,stage:2,prog:'Review 2/3',state:'ask',wait:'Chờ bạn: D-014',
+   tasks:[['R-1','Review đặc tả (fe)','done','coder-fe-01'],['R-2','Review đặc tả (be)','done','coder-be-02'],['R-3','Review + kế hoạch kiểm thử (tester)','blocked','D-014']],
+   qs:['D-014: Có gửi thông báo trong 22:00–7:00 không? (đang chờ bạn)'],
+   th:[['ma','Tester hỏi D-014, đặc tả không nói. Tôi đã chuyển lên bạn kèm 2 phương án.']]},
+ 'F-004':{n:'Xuất Excel',c:'--f4',p:3,stage:5,prog:'4/4 việc',state:'ask',wait:'Chờ bạn nghiệm thu',
+   tasks:[['T-024','Hợp đồng API xuất file','done'],['T-025','API sinh file','done'],['T-026','Nút xuất trên giao diện','done'],['T-027','Ghép nối + kiểm thử','done']],
+   qs:['Đã trả lời 3 câu (D-009…D-011)'],
+   th:[['ma','F-004 xong: 18 test đạt, 2 lỗi đã sửa (B-017, B-019). Báo cáo nghiệm thu đã sẵn sàng.']]},
+ 'F-005':{n:'Đăng nhập Google',c:'--f5',p:3,stage:0,prog:'—',state:'run',wait:'Bạn và Master đang phân tích',
+   tasks:[],qs:[],
+   th:[['me','Chỉ cho tài khoản công ty đăng nhập thôi.'],['ma','Ghi nhận. Câu tiếp theo: tài khoản Google mới đăng nhập lần đầu thì tự tạo người dùng, hay phải có quản trị viên mời trước?']]}
+};
+const NEED=[
+ {f:'F-003',k:'Câu hỏi',t:'D-014: Thông báo đẩy có gửi trong 22:00–7:00 không?',m:'Master đề xuất: không gửi, trừ cảnh báo giá. Đang chặn review của Tester.',a:['Trả lời']},
+ {f:'F-004',k:'Nghiệm thu',t:'Xuất Excel đã xong: 4/4 việc, 18 test đạt',m:'Cách thử: mở Báo cáo → Xuất Excel. 2 lỗi đã sửa trong quá trình làm.',a:['Xem báo cáo','Đạt + push','Đạt, chưa push','Chưa đạt']},
+ {f:'F-001',k:'Gửi đội ngoài',t:'X-001: 3 chỗ API đội BE lệch hợp đồng',m:'Văn bản đã soạn sẵn. Khi đội BE báo đã sửa, bấm "Đội BE đã sửa".',a:['Sao chép văn bản','Đội BE đã sửa']}
+];
+const A=[
+ {id:'Master',tool:'Claude Code',f:'F-005',st:'run',b:'F-005',task:'Đang phân tích F-005 cùng bạn',inbox:'Hộp thư: 0 câu hỏi chặn việc · 1 việc chờ gộp (F-002)',log:['Chuyển D-014 (F-003) lên bạn','Trả lời D-012 (F-002) theo D-003','Soạn báo cáo nghiệm thu F-004']},
+ {id:'coder-fe-01',tool:'Codex · fe',f:'F-002',st:'run',b:'T-031',task:'T-031: Biểu đồ doanh thu theo tháng',plan:[['Component biểu đồ',1],['Nối API giả',1],['Bộ lọc tháng',0],['Test giao diện',0]],log:['Xong bước 2: nối API giả','Review F-003 (fe): ok']},
+ {id:'coder-be-01',tool:'Claude Code · be',f:'F-002',st:'run',b:'T-032',task:'T-032: API tổng hợp doanh thu',plan:[['Truy vấn tổng hợp',1],['Endpoint',1],['Test hợp đồng',1],['Thêm chỉ mục',0]],log:['Test hợp đồng 12/12 đạt','Đang thêm chỉ mục']},
+ {id:'tester-01',tool:'Gemini CLI · e2e',f:'F-002',st:'bad',b:'!',task:'Kiểm tra T-030: Trang báo cáo',log:['Mở B-021: tổng tiền lệch 1 đồng do làm tròn','Trả T-030 về reopened']},
+ {id:'coder-fe-02',tool:'Cursor · fe',f:'F-002',st:'run',b:'T-030',task:'T-030: sửa B-021 (chuyển từ F-001 sang khi F-001 bị chặn)',plan:[['Viết test tái hiện B-021',1],['Sửa làm tròn',0]],log:['Nhả T-018 (F-001), chờ đội BE','Nhận T-030 (F-002) theo độ ưu tiên']},
+ {id:'coder-be-02',tool:'Claude Code · be',f:'F-003',st:'wait',b:'…',task:'Review F-003 (be) đã ok, chờ F-003 được duyệt bắt đầu',log:['Review đặc tả F-003: đủ để làm','Ước lượng 3 việc, rủi ro: giới hạn gửi của dịch vụ đẩy']},
+ {id:'Bạn',tool:'Người · fe',f:'F-001',st:'run',b:'T-019',task:'T-019: Màn thanh toán (bạn giữ 2 việc: T-019, T-035)',log:['Nhận T-019 (F-001)','Nhận T-035 (F-002)']},
+ {id:'tester-02',tool:'Codex',f:null,st:'off',b:'z z',task:'Không giữ việc',log:['Kết thúc phiên 2 giờ trước']}
+];
+const ST={done:['xong','t-ok'],in_progress:['đang làm','t-n'],approved:['chờ nhận','t-n'],blocked:['bị chặn','t-bad'],reopened:['trả lại','t-warn']};
+let filt=null,selAgent=null;
+const $=s=>document.querySelector(s);
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+const col=f=>f?`var(${F[f].c})`:'var(--muted)';
+
+function renderNeed(){
+  const box=$('#need');box.replaceChildren();
+  const items=NEED.filter(x=>!filt||x.f===filt);
+  $('#needCount').textContent=items.length;
+  items.forEach(x=>{
+    const d=el('div','ni');d.style.setProperty('--c',col(x.f));
+    const k=el('div','k');const ch=el('span','chip');const dt=el('span','dot');dt.style.background=col(x.f);ch.append(dt,x.f+' '+F[x.f].n);k.append(ch,el('span',null,x.k));
+    const b=el('div','btns');x.a.forEach((t,i)=>{const bt=el('button',i===(x.a.length>1?1:0)?'pri':null,t);bt.title='Bản phác: nút chưa hoạt động';b.append(bt)});
+    d.append(k,el('p','t',x.t),el('p','m',x.m),b);box.append(d);
+  });
+  if(!items.length)box.append(el('p','m','Không có gì chờ bạn trong tính năng này.'));
+}
+function renderFlow(){
+  const t=$('#flow');t.replaceChildren();
+  const hr=el('tr');['Tính năng · đang chờ','Ưu tiên',...STAGES,'Tiến độ'].forEach(h=>{const th=el('th',null,h);if(STAGES.includes(h))th.className='st';hr.append(th)});
+  const thead=el('thead');thead.append(hr);t.append(thead);
+  const tb=el('tbody');
+  Object.entries(F).sort((a,b)=>a[1].p-b[1].p).forEach(([id,f])=>{
+    const r=el('tr','row'+(filt===id?' sel':'')+(filt&&filt!==id?' dim':''));r.tabIndex=0;r.style.setProperty('--c',col(id));
+    r.setAttribute('aria-label',`${id} ${f.n}, bước ${STAGES[f.stage]}`);
+    const n=el('td');const fn=el('div','fname');const dt=el('span','dot');dt.style.background=col(id);fn.append(dt,el('span',null,id+' '+f.n));n.append(fn,el('div','wait '+f.state,f.wait));r.append(n);
+    const pr=el('td');pr.append(el('span','pr','P'+f.p));r.append(pr);
+    STAGES.forEach((s,i)=>{const td=el('td','st');td.append(i<f.stage?el('span','pass'):i===f.stage?el('span','cur',s):el('span','todo'));r.append(td)});
+    const pg=el('td',null,f.prog);pg.style.whiteSpace='nowrap';r.append(pg);
+    const go=()=>{filt=filt===id?null:id;selAgent=null;render();if(filt)showFeature(id);else showFeature(null)};
+    r.addEventListener('click',go);r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
+    tb.append(r);
+  });
+  t.append(tb);
+}
+const NS='http://www.w3.org/2000/svg';
+const sv=(tag,attrs,txt)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(txt!=null)e.textContent=txt;return e};
+function renderOffice(){
+  const s=$('#office');s.replaceChildren();
+  const board=sv('g');board.append(sv('rect',{x:150,y:10,width:300,height:30,rx:4,fill:'var(--panel)',stroke:'var(--line)'}));
+  const run=Object.values(F).filter(f=>f.stage<6).length;
+  board.append(sv('text',{x:300,y:25,'text-anchor':'middle','dominant-baseline':'central',style:'font-size:11px;fill:var(--fg2)'},`${run} luồng đang chạy · ${NEED.length} việc chờ bạn`));
+  s.append(board);
+  const xs=[20,165,310,455],ys=[118,250];
+  A.forEach((a,i)=>{
+    const x=xs[i%4],y=ys[Math.floor(i/4)],cx=x+62;
+    const g=sv('g',{class:'ag'+(filt&&a.f!==filt?' dim':'')+(selAgent===i?' sel':''),tabindex:0,role:'button','aria-label':`${a.id}, ${a.task}`});
+    g.append(sv('rect',{class:'desk',x,y,width:124,height:36,rx:5,fill:'var(--panel)',stroke:col(a.f),'stroke-width':2.5}));
+    const off=a.st==='off';
+    const body=sv('g',{class:a.st==='run'?'typing':''});
+    body.append(sv('circle',{cx,cy:y-22,r:13,fill:off?'var(--line)':col(a.f),opacity:off?1:.55}));
+    body.append(sv('rect',{x:cx-15,y:y-11,width:30,height:15,rx:6,fill:off?'var(--muted)':col(a.f)}));
+    g.append(body);
+    const bc={run:['var(--okbg)','var(--ok)'],wait:['var(--warnbg)','var(--warn)'],bad:['var(--badbg)','var(--bad)'],off:['transparent','var(--muted)']}[a.st];
+    const bub=sv('g',{class:a.st==='bad'||a.st==='wait'?'pulse':''});
+    const w=Math.max(24,a.b.length*7+12);
+    if(!off)bub.append(sv('rect',{x:cx+12,y:y-56,width:w,height:20,rx:6,fill:bc[0],stroke:bc[1],'stroke-width':.8}));
+    bub.append(sv('text',{x:cx+12+w/2,y:y-46,'text-anchor':'middle','dominant-baseline':'central',style:`font-size:11px;font-weight:700;fill:${bc[1]}`},a.b));
+    g.append(bub);
+    g.append(sv('text',{class:'lbl',x:cx,y:y+52,'text-anchor':'middle'},a.id));
+    g.append(sv('text',{class:'sub',x:cx,y:y+66,'text-anchor':'middle'},a.tool));
+    const go=()=>{selAgent=i;render();showAgent(i)};
+    g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
+    s.append(g);
+  });
+  const lg=$('#legend');lg.replaceChildren();
+  Object.entries(F).forEach(([id,f])=>{const sp=el('span');const dt=el('span','dot');dt.style.background=col(id);dt.style.display='inline-block';dt.style.marginRight='5px';sp.append(dt,id+' '+f.n);lg.append(sp)});
+  const sp=el('span',null,'Bong bóng: mã việc = đang làm · … = chờ · ! = lỗi · z z = ngoại tuyến');lg.append(sp);
+}
+function showFeature(id){
+  const d=$('#detail');d.replaceChildren();
+  if(!id){d.append(el('h3',null,'Chi tiết'),el('p','s','Chọn một tính năng trong Bảng luồng, hoặc một nhân vật trong Văn phòng.'));return}
+  const f=F[id];
+  const h=el('h3');const dt=el('span','dot');dt.style.cssText=`display:inline-block;margin-right:8px;background:${col(id)}`;h.append(dt,id+' '+f.n);
+  d.append(h,el('p','s',`Ưu tiên P${f.p} · Bước: ${STAGES[f.stage]} · ${f.prog}`));
+  d.append(el('h4',null,'Các việc'));
+  const ul=el('ul');if(!f.tasks.length)ul.append(el('li',null,'Chưa chia việc (đang phân tích).'));
+  f.tasks.forEach(([tid,tt,st,who])=>{const li=el('li',null,`${tid} ${tt}`);const [lb,cl]=ST[st];li.append(el('span','tag '+cl,lb));if(who)li.append(el('span','s',' · '+who));ul.append(li)});d.append(ul);
+  if(f.qs.length){d.append(el('h4',null,'Câu hỏi và phụ thuộc'));const q=el('ul');f.qs.forEach(x=>q.append(el('li',null,x)));d.append(q)}
+  d.append(el('h4',null,'Trao đổi với Master về '+id));
+  f.th.forEach(([who,txt])=>{const m=el('div','msg '+who);m.append(el('b',null,who==='me'?'Bạn':'Master'),document.createTextNode(txt));d.append(m)});
+  const c=el('div','compose');const inp=el('input');inp.placeholder='Nhắn Master về '+id+'…';inp.setAttribute('aria-label','Tin nhắn cho Master');const bt=el('button','pri','Gửi');bt.title='Bản phác: nút chưa hoạt động';c.append(inp,bt);d.append(c);
+}
+function showAgent(i){
+  const a=A[i],d=$('#detail');d.replaceChildren();
+  d.append(el('h3',null,a.id),el('p','s',a.tool+(a.f?` · đang làm cho ${a.f} ${F[a.f].n}`:'')));
+  const stx={run:['Đang làm','var(--ok)'],wait:['Đang chờ','var(--warn)'],bad:['Phát hiện lỗi','var(--bad)'],off:['Ngoại tuyến','var(--muted)']}[a.st];
+  const p=el('p',null,stx[0]);p.style.cssText=`color:${stx[1]};font-weight:700;margin:0`;d.append(p,el('p',null,a.task));
+  if(a.inbox)d.append(el('p','s',a.inbox));
+  if(a.plan){d.append(el('h4',null,'Kế hoạch các bước'));const ul=el('ul');a.plan.forEach(([t,ok],k)=>ul.append(el('li',null,`${ok?'☑':'☐'} ${k+1}. ${t}`)));d.append(ul)}
+  d.append(el('h4',null,'Nhật ký gần nhất'));const l=el('ul');a.log.forEach(x=>l.append(el('li',null,x)));d.append(l);
+}
+function render(){
+  renderNeed();renderFlow();renderOffice();
+  const fc=$('#filter');fc.replaceChildren();
+  if(filt){fc.className='chip on';const dt=el('span','dot');dt.style.background=col(filt);fc.append(dt,`Đang lọc: ${filt} ${F[filt].n} ✕`)}else fc.className='chip';
+}
+$('#filter').addEventListener('click',()=>{filt=null;render();showFeature(null)});
+$('#filter').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();filt=null;render();showFeature(null)}});
+render();showFeature(null);
+</script>
+</body>
+</html>

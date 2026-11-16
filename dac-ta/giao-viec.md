@@ -17,7 +17,10 @@ Master soạn, chủ dự án dán vào phiên AI tương ứng. Lời nhắn c�
 | 5b | T-014 (`ag push`), T-016 (`plan`/`step`), T-017 (tiếp quản), T-018 (cổng) | tối đa 4 Coder | Có. T-014 cần T-012, T-017 cần T-007 |
 | 5c | T-019 (liên kết hai repo) | Coder | — |
 | bất kỳ | T-015 (bộ skill) | Master | Chạy song song với mọi đợt |
-| 6 | T-013 | Tester (2 công cụ AI khác nhau cho 2 Coder, cần 2 repo mẫu FE/BE) | — |
+| 7 (1b) | T-020, T-021, T-022, T-023 | tối đa 4 Coder | Có, sau khi các việc Giai đoạn 1 mà chúng phụ thuộc đã xong |
+| 8 (1b) | T-024, T-026, T-027 | tối đa 3 Coder | Có |
+| bất kỳ (1b) | T-025 (skill 1b) | Master | Sau T-015 |
+| 9 | T-013 | Tester (2 công cụ AI khác nhau cho 2 Coder, cần 2 repo mẫu FE/BE) | — |
 
 Sau mỗi việc code: Tester kiểm tra (`in_test → verified`), rồi Master gộp (`verified → done`).
 

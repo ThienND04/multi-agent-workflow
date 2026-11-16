@@ -213,6 +213,7 @@ Chạy trong một repo git có ít nhất 1 commit. Lệnh làm các việc sau
 - **A-TSK-2** Thiếu `--files` với việc loại `feature`/`bug`: mã 1.
 - **A-TSK-3** `task list [--status s]` in bảng: id, trạng thái, người giữ, hạn giữ. Việc quá hạn giữ được đánh dấu `QUÁ HẠN`.
 - **A-TSK-4** `task show T-NNN` in toàn bộ file việc, kèm các `D-NNN` và `B-NNN` liên quan.
+- **A-TSK-5** (chừa chỗ cho Giai đoạn 1b) `task new` nhận `--area`, `--feature` và các loại việc `review`, `integration`; ghi đúng vào frontmatter. Ở Giai đoạn 1 chưa có hành vi nào dựa trên các khoá này.
 
 ### 5.5 `ag status <T> <trạng thái>`
 
@@ -453,5 +454,6 @@ Lệnh `ag` chưa tồn tại, nên các việc tạm đặt ở `dac-ta/viec-gd
 | Ngày | Thay đổi | Ai duyệt |
 |---|---|---|
 | 16/11/2026 | Bản đầu tiên, duyệt toàn bộ | Chủ dự án |
+| 16/11/2026 | Thêm A-TSK-5 (chừa chỗ cho Giai đoạn 1b: `area`, `feature`, loại việc `review` và `integration`). Giai đoạn 1b đặc tả riêng ở `dac-ta/giai-doan-1b.md` | Chủ dự án (duyệt đề xuất 02) |
 | 16/11/2026 | Thêm mục 5.14–5.19 theo đề xuất bổ sung 01: dự án có sẵn, chế độ gọn, cổng xác nhận và người tham gia, liên kết hai repo (cùng máy), kế hoạch các bước và tiếp quản, bộ skill. Thêm việc T-015…T-019, mở rộng T-003, T-011, T-013 | Chủ dự án |
 | 16/11/2026 | Thêm mục 5.13a: cấm agent tự push, chỉ chủ dự án push qua `ag push`. Thêm việc T-014 | Chủ dự án (yêu cầu trực tiếp) |

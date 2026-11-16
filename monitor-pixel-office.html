@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Văn phòng pixel (bản phác)</title>
+<style>
+:root{--bg:#e9e1d0;--paper:#fbf4e4;--ink:#3b2a20;--fg:#2d241d;--fg2:#6b5c4e;--line:#cdbfa6;--accent:#2f63c4;
+--ok:#1f7a4d;--okbg:#dff3e6;--warn:#9a5a00;--warnbg:#fdf0d2;--bad:#b23030;--badbg:#fbe3e0;
+--f1:#2f6fe0;--f2:#1f9a6e;--f3:#e07a1f;--f4:#8b4fd0;--f5:#d8457f}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1a17;--paper:#2a2520;--ink:#0e0c0a;--fg:#f2ebdf;--fg2:#bcae9c;--line:#4a4036;--accent:#8fb4ff;
+--ok:#6bd79f;--okbg:#1d3a2b;--warn:#f2b44f;--warnbg:#3d2f16;--bad:#ff8f8f;--badbg:#3f2020}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+main{max-width:1280px;margin:0 auto}
+.pix{background:var(--paper);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:12px 14px;margin-bottom:18px}
+h1{font:700 20px/1.2 ui-monospace,"Cascadia Mono",Consolas,monospace;margin:0;letter-spacing:.02em}
+h2{font:700 13px/1.2 ui-monospace,"Cascadia Mono",Consolas,monospace;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;color:var(--fg2)}
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.hud .sp{flex:1}
+.badge{font:700 12px ui-monospace,Consolas,monospace;padding:3px 8px;border:2px solid var(--ink);background:var(--paper);white-space:nowrap}
+.badge.warn{background:var(--warnbg);color:var(--warn)}
+.note{color:var(--fg2);font-size:13px;margin:8px 0 0}
+.layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:18px;align-items:start}
+.layout>div{min-width:0}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.scene{padding:6px;background:#2a211b}
+#office{display:block;width:100%;height:auto;image-rendering:pixelated;shape-rendering:crispEdges}
+#office text{shape-rendering:auto;font-family:ui-monospace,Consolas,monospace;font-weight:700}
+.ag,.hot{cursor:pointer;transition:opacity .2s}
+.ag.dim{opacity:.28}
+.ag:focus{outline:none}.ag:focus-visible .selbox,.ag.sel .selbox{display:inline}
+.selbox{display:none}
+@media (prefers-reduced-motion:no-preference){
+ .typing{animation:tp .5s steps(2) infinite}@keyframes tp{50%{transform:translateY(-1px)}}
+ .blink{animation:bl 1s steps(2) infinite}@keyframes bl{50%{opacity:.35}}
+ .sip{animation:sp 2.4s steps(2) infinite}@keyframes sp{50%{transform:translateY(-1px)}}}
+/* Cần bạn */
+.ni{border:2px solid var(--ink);border-left:8px solid var(--c);background:var(--bg);padding:8px 10px;margin-bottom:10px}
+.ni .k{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg2);margin-bottom:2px;flex-wrap:wrap}
+.ni .t{font-weight:650;margin:0 0 3px}.ni .m{font-size:13px;color:var(--fg2);margin:0 0 8px}
+.tagf{display:inline-flex;align-items:center;gap:5px;font:700 11px ui-monospace,Consolas,monospace;padding:1px 6px;border:2px solid var(--ink);background:var(--paper);white-space:nowrap}
+.sq{width:9px;height:9px;flex:none;border:1px solid var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font:600 12.5px system-ui,sans-serif;padding:3px 9px;border:2px solid var(--ink);background:var(--paper);color:var(--fg);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+button:active{transform:translate(2px,2px);box-shadow:none}
+button.pri{background:var(--accent);color:#fff}
+button:focus-visible,.row:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* Chi tiết */
+#detail h3{font-size:17px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+#detail .s{color:var(--fg2);font-size:13px;margin:0 0 8px}
+#detail h4{font:700 12px ui-monospace,Consolas,monospace;text-transform:uppercase;color:var(--fg2);margin:12px 0 6px}
+#detail ul{margin:0;padding-left:18px;font-size:13.5px}#detail li{margin:2px 0}
+.tag{font-size:11px;font-weight:700;padding:0 5px;margin-left:5px;border:1px solid currentColor}
+.t-ok{color:var(--ok);background:var(--okbg)}.t-warn{color:var(--warn);background:var(--warnbg)}.t-bad{color:var(--bad);background:var(--badbg)}.t-n{color:var(--fg2)}
+.msg{font-size:13.5px;padding:6px 9px;border:2px solid var(--ink);margin:6px 0;max-width:94%}
+.msg.me{background:color-mix(in srgb,var(--accent) 16%,var(--paper));margin-left:auto}.msg.ma{background:var(--bg)}
+.msg b{display:block;font:700 11px ui-monospace,Consolas,monospace;color:var(--fg2)}
+.compose{display:flex;gap:6px;margin-top:8px}.compose input{flex:1;min-width:0;font:inherit;font-size:13px;padding:5px 7px;border:2px solid var(--ink);background:var(--bg);color:var(--fg)}
+/* Bảng luồng */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:13px}
+th{font:700 11.5px ui-monospace,Consolas,monospace;color:var(--fg2);text-align:center;padding:6px;border-bottom:3px solid var(--ink);white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:7px 6px;border-bottom:2px dashed var(--line);text-align:center}
+td:first-child{text-align:left}
+.row{cursor:pointer}.row.sel{background:color-mix(in srgb,var(--c) 15%,transparent)}.row.dim{opacity:.35}
+.fname{display:flex;align-items:center;gap:7px;font-weight:650;white-space:nowrap}
+.wait{font-size:12.5px;margin:2px 0 0 16px}.wait.run{color:var(--ok)}.wait.ask{color:var(--warn);font-weight:600}.wait.block{color:var(--bad);font-weight:600}
+.seg{display:inline-block;width:14px;height:10px;border:2px solid var(--ink);background:var(--paper)}
+.seg.done{background:var(--c);opacity:.5}.seg.cur{background:var(--c)}
+.curlbl{display:block;font:700 10.5px ui-monospace,Consolas,monospace;color:var(--fg);margin-top:2px;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:#e9dcc6;padding:6px 4px 2px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+</style>
+</head>
+<body>
+<main>
+<header class="pix hud">
+  <h1>VĂN PHÒNG AGENT</h1>
+  <span class="sp"></span>
+  <span class="badge" id="bFlows"></span>
+  <span class="badge" id="bAgents"></span>
+  <span class="badge warn" id="bNeed"></span>
+  <span class="badge" id="bClock"></span>
+  <p class="note" style="flex-basis:100%">Bản phác giao diện Giai đoạn 3, dữ liệu giả, nút chưa hoạt động. Bấm nhân vật để xem agent; bấm bảng trắng trên tường hoặc một hàng trong Bảng luồng để lọc theo tính năng. Màu áo của nhân vật là màu của tính năng họ đang làm.</p>
+</header>
+
+<div class="layout">
+  <div>
+    <section class="pix scene" aria-label="Văn phòng">
+      <svg id="office" viewBox="0 0 320 180" role="img" aria-label="Văn phòng pixel: mỗi bàn là một agent"></svg>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section class="pix" aria-labelledby="h-flow">
+      <h2 id="h-flow">Bảng luồng</h2>
+      <div class="scroll"><table id="flow"></table></div>
+    </section>
+  </div>
+  <div>
+    <section class="pix" aria-labelledby="h-need">
+      <h2 id="h-need">Cần bạn</h2>
+      <div id="need"></div>
+    </section>
+    <section class="pix" id="detail" aria-live="polite"></section>
+  </div>
+</div>
+</main>
+
+<script>
+/* ---------- Dữ liệu giả ---------- */
+const STAGES=['Phân tích','Đặc tả','Review','Chờ bắt đầu','Đang làm','Chờ nghiệm thu','Đã gộp'];
+const F={
+ 'F-001':{n:'Đặt hàng',c:'--f1',hex:'#2f6fe0',p:1,stage:4,prog:'5/7 việc',state:'block',wait:'Bị chặn: API đội BE ngoài lệch hợp đồng (X-001)',
+   tasks:[['T-015','Hợp đồng API (bản của đội BE)','done'],['T-017','Màn giỏ hàng (API giả)','done'],['T-019','Màn thanh toán','in_progress','Bạn'],['T-018','Ghép nối API đặt hàng','blocked','X-001']],
+   qs:['X-001: 3 chỗ lệch hợp đồng, chờ bạn gửi đội BE'],
+   th:[['me','Đội BE nói thứ 5 xong bản sửa.'],['ma','Đã ghi nhận. Trong lúc chờ, coder-fe-02 chuyển sang F-002. Khi đội BE báo xong, bạn bấm "Đội BE đã sửa" là việc ghép nối mở lại.']]},
+ 'F-002':{n:'Báo cáo doanh thu',c:'--f2',hex:'#1f9a6e',p:2,stage:4,prog:'3/6 việc',state:'run',wait:'2 Coder đang làm · 1 việc bị trả lại (B-021)',
+   tasks:[['T-030','Trang báo cáo','reopened','B-021'],['T-031','Biểu đồ theo tháng','in_progress','coder-fe-01'],['T-032','API tổng hợp doanh thu','in_progress','coder-be-01'],['T-033','Ghép nối','approved']],
+   qs:['D-012 đã trả lời (Master, theo D-003): làm tròn tiền đến đồng'],
+   th:[['me','Biểu đồ cần so sánh cùng kỳ năm trước không?'],['ma','Đặc tả F-002 chưa có phần này, đây là thay đổi phạm vi. Tôi soạn bản bổ sung để bạn duyệt.']]},
+ 'F-003':{n:'Thông báo đẩy',c:'--f3',hex:'#e07a1f',p:2,stage:2,prog:'Review 2/3',state:'ask',wait:'Chờ bạn: D-014',
+   tasks:[['R-1','Review đặc tả (fe)','done','coder-fe-01'],['R-2','Review đặc tả (be)','done','coder-be-02'],['R-3','Review + kế hoạch kiểm thử','blocked','D-014']],
+   qs:['D-014: Có gửi thông báo trong 22:00–7:00 không? (chờ bạn)'],
+   th:[['ma','Tester hỏi D-014, đặc tả không nói. Tôi đã chuyển lên bạn kèm 2 phương án.']]},
+ 'F-004':{n:'Xuất Excel',c:'--f4',hex:'#8b4fd0',p:3,stage:5,prog:'4/4 việc',state:'ask',wait:'Chờ bạn nghiệm thu',
+   tasks:[['T-024','Hợp đồng API xuất file','done'],['T-025','API sinh file','done'],['T-026','Nút xuất trên giao diện','done'],['T-027','Ghép nối + kiểm thử','done']],
+   qs:['Đã trả lời 3 câu (D-009…D-011)'],
+   th:[['ma','F-004 xong: 18 test đạt, 2 lỗi đã sửa. Báo cáo nghiệm thu đã sẵn sàng.']]},
+ 'F-005':{n:'Đăng nhập Google',c:'--f5',hex:'#d8457f',p:3,stage:0,prog:'—',state:'run',wait:'Bạn và Master đang phân tích',
+   tasks:[],qs:[],
+   th:[['me','Chỉ cho tài khoản công ty đăng nhập.'],['ma','Ghi nhận. Tài khoản mới đăng nhập lần đầu thì tự tạo người dùng, hay phải có quản trị viên mời trước?']]}
+};
+const NEED=[
+ {f:'F-003',k:'Câu hỏi',t:'D-014: Gửi thông báo trong 22:00–7:00 không?',m:'Master đề xuất: không, trừ cảnh báo giá. Đang chặn review của Tester.',a:['Trả lời']},
+ {f:'F-004',k:'Nghiệm thu',t:'Xuất Excel xong: 4/4 việc, 18 test đạt',m:'Cách thử: Báo cáo → Xuất Excel.',a:['Xem báo cáo','Đạt + push','Đạt, chưa push','Chưa đạt']},
+ {f:'F-001',k:'Gửi đội ngoài',t:'X-001: 3 chỗ API đội BE lệch hợp đồng',m:'Văn bản đã soạn sẵn để bạn gửi.',a:['Sao chép văn bản','Đội BE đã sửa']},
+ {f:null,k:'Agent mới',t:'coder-07 (Gemini CLI) đang đứng ở cửa xin vào',m:'Chưa có vai. Duyệt thì chọn vai và chuyên môn.',a:['Duyệt…','Từ chối']}
+];
+const A=[
+ {id:'Master',tool:'Claude Code',f:'F-005',st:'run',b:'F-005',hair:'#3b2a20',task:'Đang phân tích F-005 cùng bạn',inbox:'Hộp thư: 0 câu hỏi chặn việc · 1 việc chờ gộp (F-002)',log:['Chuyển D-014 (F-003) lên bạn','Trả lời D-012 (F-002) theo D-003','Soạn báo cáo nghiệm thu F-004']},
+ {id:'Bạn',tool:'Người · fe',f:'F-001',st:'run',b:'T-019',hair:'#1f1a17',task:'T-019: Màn thanh toán (bạn giữ 2 việc: T-019, T-035)',log:['Nhận T-019 (F-001)','Nhận T-035 (F-002)']},
+ {id:'coder-fe-01',tool:'Codex · fe',f:'F-002',st:'run',b:'T-031',hair:'#7a4a22',task:'T-031: Biểu đồ doanh thu theo tháng',plan:[['Component biểu đồ',1],['Nối API giả',1],['Bộ lọc tháng',0],['Test giao diện',0]],log:['Xong bước 2: nối API giả','Review F-003 (fe): ok']},
+ {id:'coder-be-01',tool:'Claude Code · be',f:'F-002',st:'run',b:'T-032',hair:'#c9a24a',task:'T-032: API tổng hợp doanh thu',plan:[['Truy vấn tổng hợp',1],['Endpoint',1],['Test hợp đồng',1],['Thêm chỉ mục',0]],log:['Test hợp đồng 12/12 đạt','Đang thêm chỉ mục']},
+ {id:'tester-01',tool:'Gemini CLI · e2e',f:'F-002',st:'bad',b:'!',hair:'#a33a2a',task:'Kiểm tra T-030: Trang báo cáo',log:['Mở B-021: tổng tiền lệch 1 đồng do làm tròn','Trả T-030 về reopened']},
+ {id:'coder-fe-02',tool:'Cursor · fe',f:'F-002',st:'run',b:'T-030',hair:'#2d2d3a',task:'T-030: sửa B-021 (chuyển từ F-001 sang khi F-001 bị chặn)',plan:[['Viết test tái hiện B-021',1],['Sửa làm tròn',0]],log:['Nhả T-018 (F-001), chờ đội BE','Nhận T-030 (F-002) theo độ ưu tiên']},
+ {id:'coder-be-02',tool:'Claude Code · be',f:'F-003',st:'wait',b:'…',hair:'#5a3a2a',task:'Review F-003 (be) đã ok. Đang chờ F-003 được duyệt "bắt đầu làm", nên đứng ở cây nước',log:['Review đặc tả F-003: đủ để làm','Ước lượng 3 việc, rủi ro: giới hạn gửi của dịch vụ đẩy']},
+ {id:'tester-02',tool:'Codex',f:null,st:'off',b:'z z',hair:'#444',task:'Ngoại tuyến, không giữ việc',log:['Kết thúc phiên 2 giờ trước']},
+ {id:'coder-07',tool:'Gemini CLI',f:null,st:'pending',b:'?',hair:'#6b3d1e',task:'Đang xin tham gia, chưa được duyệt vai',log:['ag checkin --id coder-07 --tool gemini-cli','Chờ chủ dự án: ag approve-agent']}
+];
+const ST={done:['xong','t-ok'],in_progress:['đang làm','t-n'],approved:['chờ nhận','t-n'],blocked:['bị chặn','t-bad'],reopened:['trả lại','t-warn']};
+let filt=null,sel=null;
+const fhex=f=>f?F[f].hex:'#9a9a9a';
+const fcol=f=>f?`var(${F[f].c})`:'var(--fg2)';
+
+/* ---------- Vẽ pixel ---------- */
+const R=(x,y,w,h,c,ex='')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"${ex}/>`;
+const T=(x,y,s,c,txt,anchor='middle')=>`<text x="${x}" y="${y}" font-size="${s}" fill="${c}" text-anchor="${anchor}">${txt}</text>`;
+function defs(){return `<defs>
+<pattern id="wd" width="2" height="2" patternUnits="userSpaceOnUse">${R(0,0,2,2,'#a9b3c6')}${R(0,0,1,1,'#8e99b0')}${R(1,1,1,1,'#8e99b0')}</pattern>
+<pattern id="fl" width="32" height="12" patternUnits="userSpaceOnUse">${R(0,0,32,12,'#e4a467')}${R(0,5,32,1,'#c27b42')}${R(0,11,32,1,'#c27b42')}${R(0,0,1,5,'#c27b42')}${R(16,0,1,5,'#c27b42')}${R(8,6,1,5,'#c27b42')}${R(24,6,1,5,'#c27b42')}${R(3,1,4,1,'#eeb67f')}${R(19,2,5,1,'#eeb67f')}${R(11,7,5,1,'#eeb67f')}${R(27,8,3,1,'#eeb67f')}${R(6,3,2,1,'#d48f55')}${R(13,9,2,1,'#d48f55')}</pattern>
+</defs>`}
+function shelf(x){let s=R(x-1,13,24,43,'#6e3a20')+R(x,14,22,41,'#f1dcae')+R(x,14,22,3,'#e3c891');
+ const books=['#3f8f4a','#c23b3b','#2f5fb3','#7a3fa0','#3f8f4a','#e0a12b','#2f5fb3','#c23b3b'];
+ [19,30].forEach((y,r)=>{s+=R(x+2,y,18,9,'#4a2a18');for(let i=0;i<6;i++){s+=R(x+3+i*3,y+1+(i%3===1?1:0),2,8-(i%3===1?1:0),books[(i+r*3)%books.length])}});
+ s+=R(x+2,41,18,12,'#dcb072')+R(x+10,41,1,12,'#b98a4f')+R(x+8,46,1,2,'#6e3a20')+R(x+12,46,1,2,'#6e3a20');return s}
+function scene(){
+ let s=defs();
+ s+=R(0,0,320,56,'#c4cedd')+R(0,25,320,1,'#97a3b8')+R(0,26,320,28,'url(#wd)')+R(0,54,320,3,'#a85a32')+R(0,57,320,1,'#7a3d20')+R(0,58,320,122,'url(#fl)');
+ s+=shelf(78)+shelf(266);
+ // đồng hồ
+ s+=R(122,17,11,11,'#5b4a40')+R(123,18,9,9,'#ffffff')+R(127,19,1,4,'#c23b3b')+R(127,22,3,1,'#c23b3b')+R(126,27,3,1,'#5b4a40');
+ // cửa (mở nếu có agent chờ ở cửa)
+ const pend=A.some(a=>a.st==='pending');
+ s+=R(145,9,32,48,'#6e3a20')+(pend?R(148,12,26,45,'#2c201a')+R(148,12,4,45,'#c06a3a')+R(149,30,1,2,'#f0d07a'):R(148,12,26,45,'#c06a3a')+R(152,17,18,11,'#d98b55')+R(152,32,18,11,'#d98b55')+R(170,35,2,2,'#f0d07a'));
+ // tờ giấy trên tường
+ s+=R(57,24,10,13,'#ffffff')+R(59,27,6,1,'#9aa')+R(59,30,6,1,'#9aa')+R(59,33,4,1,'#9aa');
+ // cây nước
+ s+=R(298,22,12,15,'#7fc6ea')+R(300,24,2,10,'#c9ecff')+R(296,37,16,21,'#96a0b4')+R(296,37,16,2,'#b6bfd0')+R(300,44,2,2,'#d64545')+R(305,44,2,2,'#3f78d6')+R(299,49,10,3,'#6b7488');
+ // chậu cây
+ s+=R(292,160,18,16,'#8a4a2a')+R(292,160,18,3,'#a85e38');
+ [[296,140,4,20],[302,136,3,24],[290,146,7,3],[303,142,8,3],[292,151,6,3],[304,150,7,3],[298,132,4,4],[287,140,5,3],[307,136,5,3]].forEach(([x,y,w,h],i)=>{s+=R(x,y,w,h,i%2?'#3f9a4a':'#2f7a3a')});
+ // thùng rác
+ s+=R(64,66,8,9,'#8a93a8')+R(63,65,10,2,'#6f7890')+R(277,96,8,9,'#8a93a8')+R(276,95,10,2,'#6f7890');
+ return s;
+}
+function board(){
+ let s=`<g class="hot" id="wb" tabindex="0" role="button" aria-label="Bảng luồng trên tường: bấm để bỏ lọc và xem mọi tính năng">`;
+ s+=R(186,7,66,43,'#6e4a30')+R(188,9,62,39,'#f8f8f2')+T(219,14.5,4,'#3b2a20','BẢNG LUỒNG');
+ Object.entries(F).sort((a,b)=>a[1].p-b[1].p).forEach(([id,f],i)=>{const y=18+i*6;const dim=filt&&filt!==id;
+   s+=`<g opacity="${dim?.3:1}">`+R(190,y,3,3,f.hex);
+   for(let k=0;k<7;k++){const c=k<f.stage?f.hex:k===f.stage?f.hex:'#dcdcd2';s+=R(195+k*7,y,6,3,c,k<f.stage?' opacity=".45"':k===f.stage?' class="blink"':'')}
+   s+='</g>'});
+ s+=R(196,47,46,2,'#6e4a30');
+ return s+'</g>';
+}
+function bubble(cx,y,txt,kind){
+ const col={run:['#ffffff','#1f7a4d'],wait:['#fff6dc','#9a5a00'],bad:['#ffe6e3','#b23030'],off:['transparent','#c9c2b6'],pending:['#fff6dc','#9a5a00']}[kind];
+ const w=Math.max(9,txt.length*2.6+5);const x=Math.round(cx-w/2);
+ let s=`<g class="${kind==='bad'||kind==='wait'||kind==='pending'?'blink':''}">`;
+ if(kind!=='off')s+=R(x-1,y-1,w+2,9,'#3b2a20')+R(x,y,w,7,col[0])+R(cx-1,y+7,3,1,'#3b2a20')+R(cx,y+8,1,1,'#3b2a20');
+ return s+T(cx,y+5.3,4.6,col[1],txt)+'</g>';
+}
+function seated(cx,y,hair,shirt,typing){
+ return `<g class="${typing?'typing':''}">`+R(cx-5,y+5,10,6,shirt)+R(cx-5,y+5,10,1,'rgba(255,255,255,.25)')+R(cx-6,y+7,1,3,shirt)+R(cx+5,y+7,1,3,shirt)+R(cx-3,y,6,6,hair)+R(cx-3,y,6,1,'rgba(255,255,255,.18)')+'</g>';
+}
+function chair(cx,y){return R(cx-6,y,12,10,'#4f5669')+R(cx-6,y,12,1,'#6c7488')+R(cx-5,y+1,1,8,'#5d6579')+R(cx-1,y+10,2,2,'#363b48')+R(cx-4,y+12,8,1,'#363b48')}
+function standing(cx,y,hair,shirt,cls){
+ return `<g class="${cls||''}">`+R(cx-3,y,6,2,hair)+R(cx-3,y+2,6,4,'#f0c29a')+R(cx-2,y+3,1,1,'#2b2b2b')+R(cx+1,y+3,1,1,'#2b2b2b')+R(cx-4,y+6,8,6,shirt)+R(cx-5,y+7,1,4,'#f0c29a')+R(cx+4,y+7,1,4,'#f0c29a')+R(cx-3,y+12,2,4,'#3a3f5c')+R(cx+1,y+12,2,4,'#3a3f5c')+R(cx-4,y+16,3,1,'#222')+R(cx+1,y+16,3,1,'#222')+'</g>';
+}
+function monitor(x,y,on,hex){
+ let s=R(x,y,16,11,'#3a3d4a')+R(x+1,y+1,14,8,on?'#251f3a':'#15171d')+R(x+7,y+11,2,2,'#3a3d4a')+R(x+5,y+13,6,1,'#3a3d4a');
+ if(on){s+=R(x+2,y+2,6,1,hex)+R(x+3,y+4,8,1,'#55d27a')+R(x+2,y+6,4,1,'#e05a5a')+R(x+7,y+6,5,1,hex)}
+ return s;
+}
+function desk(x,y,a){
+ const on=a&&a.st!=='off';const hex=a?fhex(a.f):'#888';
+ let s=monitor(x+10,y-13,on,hex);
+ s+=R(x,y,36,10,'#efd9a9')+R(x,y,36,1,'#fbecc8')+R(x,y+9,36,1,'#c9a46a')+R(x+1,y+10,2,7,'#b98a4f')+R(x+33,y+10,2,7,'#b98a4f');
+ s+=R(x+12,y+3,11,3,'#c9cdd6')+R(x+12,y+3,11,1,'#e4e7ee')+R(x+26,y+3,3,3,'#9aa0ad');
+ s+=R(x+38,y+1,6,12,'#d8dbe2')+R(x+38,y+1,6,1,'#eef0f4')+R(x+40,y+4,2,1,on?'#e04848':'#888')+R(x+40,y+7,2,1,'#5f6573');
+ return s;
+}
+function agentG(i,inner,label,lx,ly,box){
+ const a=A[i];const dim=filt&&a.f!==filt;
+ return `<g class="ag${dim?' dim':''}${sel===i?' sel':''}" data-i="${i}" tabindex="0" role="button" aria-label="${a.id}: ${a.task}">`
+   +`<g class="selbox">${R(box[0],box[1],box[2],1,'#ffe066')}${R(box[0],box[1]+box[3],box[2],1,'#ffe066')}${R(box[0],box[1],1,box[3],'#ffe066')}${R(box[0]+box[2],box[1],1,box[3]+1,'#ffe066')}</g>`
+   +inner+R(lx-label.length*1.25-2,ly-4,label.length*2.5+4,5.5,'rgba(43,33,27,.72)')+T(lx,ly,4,'#fff6e6',label)+'</g>';
+}
+function render(){
+ const by=id=>A.findIndex(a=>a.id===id);
+ let s=scene()+board();
+ // Bàn của bạn (chữ L, góc trái)
+ { const i=by('Bạn'),a=A[i];let g='';
+   g+=R(8,92,46,11,'#c98a55')+R(8,92,46,1,'#dca36d')+R(8,92,11,40,'#c98a55')+R(8,131,11,2,'#9a6236')+R(50,103,3,8,'#9a6236');
+   g+=R(26,82,14,9,'#3a3d4a')+R(27,83,12,7,'#7fc6ea')+R(28,84,5,2,'#ffffff')+R(25,91,16,2,'#c9cdd6');
+   g+=R(11,96,5,5,'#d64545')+R(12,97,3,1,'#f08080')+R(10,110,6,2,'#2f6fe0')+R(12,104,2,6,'#3a3d4a');
+   g+=seated(33,100,a.hair,fhex(a.f),true)+chair(33,108)+bubble(33,72,a.b,a.st);
+   s+=agentG(i,g,a.id,33,129,[6,70,50,64]); }
+ // Lưới bàn
+ const grid=[['coder-fe-01',74,74],['coder-be-01',128,74],['tester-01',182,74],['coder-fe-02',74,132],['coder-be-02',128,132,'empty'],['tester-02',182,132]];
+ grid.forEach(([id,x,y,empty])=>{const i=by(id),a=A[i];let g=desk(x,y,a);
+   if(!empty&&a.st!=='off')g+=seated(x+18,y+6,a.hair,fhex(a.f),a.st==='run')+chair(x+18,y+13)+bubble(x+18,y-23,a.b,a.st);
+   else g+=chair(x+18,y+11)+(a.st==='off'?T(x+30,y-16,5,'#e9dcc6','z z'):'');
+   if(empty)s+=g; else s+=agentG(i,g,a.id,x+18,y+31,[x-2,y-26,49,60]);
+ });
+ // Bàn Master (bên phải)
+ { const i=by('Master'),a=A[i];let g='';
+   g+=monitor(238,82,true,fhex(a.f))+monitor(258,82,true,'#55d27a');
+   g+=R(232,96,52,11,'#efd9a9')+R(232,96,52,1,'#fbecc8')+R(232,106,52,1,'#c9a46a')+R(234,107,2,9,'#b98a4f')+R(280,107,2,9,'#b98a4f')+R(256,107,16,9,'#dcc08a');
+   g+=R(236,90,2,6,'#3a3d4a')+R(234,88,5,3,'#d64545')+R(276,92,4,4,'#ffffff')+R(277,93,2,2,'#c0c0c0');
+   g+=seated(256,103,a.hair,fhex(a.f),true)+chair(256,110)+bubble(256,70,a.b,a.st);
+   s+=agentG(i,g,'Master',256,131,[228,68,58,66]); }
+ // Agent đang chờ, đứng ở cây nước
+ { const i=by('coder-be-02'),a=A[i];
+   s+=agentG(i,standing(288,46,a.hair,fhex(a.f),'sip')+bubble(288,35,a.b,a.st),a.id,288,69,[280,33,17,38]); }
+ // Agent mới đứng ở cửa
+ { const i=by('coder-07'),a=A[i];
+   s+=agentG(i,standing(161,38,a.hair,'#9a9a9a','')+bubble(161,27,a.b,a.st),'coder-07 xin vào',161,22.5,[148,17,26,39]); }
+ $('#office').innerHTML=s;
+ document.querySelectorAll('#office .ag').forEach(g=>{const i=+g.dataset.i;const go=()=>{sel=i;render();showAgent(i)};
+   g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
+ const wb=$('#wb');const wgo=()=>{filt=null;sel=null;render();showFeature(null)};
+ wb.addEventListener('click',wgo);wb.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wgo()}});
+ renderNeed();renderFlow();renderHud();
+}
+/* ---------- Bảng điều khiển ---------- */
+const $=s=>document.querySelector(s);
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+const sq=f=>{const d=el('span','sq');d.style.background=f?fhex(f):'#9a9a9a';return d};
+function renderHud(){
+ $('#bFlows').textContent=`${Object.values(F).filter(f=>f.stage<6).length} LUỒNG`;
+ $('#bAgents').textContent=`${A.filter(a=>a.st!=='off'&&a.st!=='pending').length}/${A.length} AGENT`;
+ $('#bNeed').textContent=`${NEED.length} CHỜ BẠN`;
+ const d=new Date();$('#bClock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function renderNeed(){
+ const box=$('#need');box.replaceChildren();
+ const items=NEED.filter(x=>!filt||x.f===filt);
+ items.forEach(x=>{const d=el('div','ni');d.style.setProperty('--c',x.f?fcol(x.f):'#9a9a9a');
+   const k=el('div','k');const tg=el('span','tagf');tg.append(sq(x.f),x.f?x.f+' '+F[x.f].n:'Văn phòng');k.append(tg,el('span',null,x.k));
+   const b=el('div','btns');x.a.forEach((t,i)=>{const bt=el('button',i===(x.a.length>2?1:0)?'pri':null,t);bt.title='Bản phác: nút chưa hoạt động';b.append(bt)});
+   d.append(k,el('p','t',x.t),el('p','m',x.m),b);box.append(d)});
+ if(!items.length)box.append(el('p','m','Không có gì chờ bạn trong tính năng này.'));
+}
+function renderFlow(){
+ const t=$('#flow');t.replaceChildren();const hr=el('tr');
+ ['Tính năng · đang chờ','P',...STAGES,'Tiến độ'].forEach(h=>hr.append(el('th',null,h)));const th=el('thead');th.append(hr);t.append(th);
+ const tb=el('tbody');
+ Object.entries(F).sort((a,b)=>a[1].p-b[1].p).forEach(([id,f])=>{
+   const r=el('tr','row'+(filt===id?' sel':'')+(filt&&filt!==id?' dim':''));r.tabIndex=0;r.style.setProperty('--c',fcol(id));
+   const n=el('td');const fn=el('div','fname');fn.append(sq(id),el('span',null,id+' '+f.n));n.append(fn,el('div','wait '+f.state,f.wait));r.append(n);
+   r.append(el('td',null,'P'+f.p));
+   STAGES.forEach((s,i)=>{const td=el('td');td.append(el('span','seg'+(i<f.stage?' done':i===f.stage?' cur':'')));if(i===f.stage)td.append(el('span','curlbl',s));r.append(td)});
+   const pg=el('td',null,f.prog);pg.style.whiteSpace='nowrap';r.append(pg);
+   const go=()=>{filt=filt===id?null:id;sel=null;render();showFeature(filt)};
+   r.addEventListener('click',go);r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
+   tb.append(r)});
+ t.append(tb);
+ const lg=$('#legend');lg.replaceChildren();
+ Object.entries(F).forEach(([id,f])=>{const sp=el('span');sp.append(sq(id),id+' '+f.n);lg.append(sp)});
+ lg.append(el('span',null,'· bong bóng: mã việc = đang làm, … = chờ, ! = lỗi, ? = cần duyệt, z z = ngoại tuyến'));
+}
+function showFeature(id){
+ const d=$('#detail');d.replaceChildren();
+ if(!id){d.append(el('h2',null,'Chi tiết'),el('p','s','Bấm một nhân vật để xem agent đó. Bấm một hàng trong Bảng luồng để lọc theo tính năng và trao đổi với Master về tính năng đó.'));return}
+ const f=F[id];d.append(el('h2',null,'Tính năng'));const h=el('h3');h.append(sq(id),id+' '+f.n);d.append(h,el('p','s',`Ưu tiên P${f.p} · ${STAGES[f.stage]} · ${f.prog}`));
+ d.append(el('h4',null,'Các việc'));const ul=el('ul');if(!f.tasks.length)ul.append(el('li',null,'Chưa chia việc (đang phân tích).'));
+ f.tasks.forEach(([tid,tt,st,who])=>{const li=el('li',null,`${tid} ${tt}`);const [lb,cl]=ST[st];li.append(el('span','tag '+cl,lb));if(who)li.append(el('span','s',' · '+who));ul.append(li)});d.append(ul);
+ if(f.qs.length){d.append(el('h4',null,'Câu hỏi và phụ thuộc'));const q=el('ul');f.qs.forEach(x=>q.append(el('li',null,x)));d.append(q)}
+ d.append(el('h4',null,'Trao đổi với Master'));
+ f.th.forEach(([w,txt])=>{const m=el('div','msg '+w);m.append(el('b',null,w==='me'?'Bạn':'Master'),document.createTextNode(txt));d.append(m)});
+ const c=el('div','compose');const inp=el('input');inp.placeholder='Nhắn Master về '+id+'…';inp.setAttribute('aria-label','Tin nhắn cho Master');const bt=el('button','pri','Gửi');bt.title='Bản phác: nút chưa hoạt động';c.append(inp,bt);d.append(c);
+}
+function showAgent(i){
+ const a=A[i],d=$('#detail');d.replaceChildren();d.append(el('h2',null,'Agent'));
+ const h=el('h3');h.append(sq(a.f),a.id);d.append(h,el('p','s',a.tool+(a.f?` · đang làm cho ${a.f} ${F[a.f].n}`:'')));
+ const stx={run:['Đang làm','var(--ok)'],wait:['Đang chờ','var(--warn)'],bad:['Phát hiện lỗi','var(--bad)'],off:['Ngoại tuyến','var(--fg2)'],pending:['Chờ bạn duyệt','var(--warn)']}[a.st];
+ const p=el('p',null,stx[0]);p.style.cssText=`color:${stx[1]};font-weight:700;margin:0`;d.append(p,el('p',null,a.task));
+ if(a.inbox)d.append(el('p','s',a.inbox));
+ if(a.plan){d.append(el('h4',null,'Kế hoạch các bước'));const ul=el('ul');a.plan.forEach(([t,ok],k)=>ul.append(el('li',null,`${ok?'☑':'☐'} ${k+1}. ${t}`)));d.append(ul)}
+ d.append(el('h4',null,'Nhật ký gần nhất'));const l=el('ul');a.log.forEach(x=>l.append(el('li',null,x)));d.append(l);
+ if(a.st==='pending'){const b=el('div','btns');b.style.marginTop='10px';['Duyệt làm Coder fe','Duyệt làm Tester','Từ chối'].forEach((t,k)=>{const bt=el('button',k===0?'pri':null,t);bt.title='Bản phác: nút chưa hoạt động';b.append(bt)});d.append(b)}
+ if(a.f){const bt=el('button',null,'Xem tính năng '+a.f);bt.style.marginTop='10px';bt.addEventListener('click',()=>{filt=a.f;sel=null;render();showFeature(a.f)});d.append(bt)}
+}
+render();showFeature(null);
+setInterval(renderHud,30000);
+</script>
+</body>
+</html>
