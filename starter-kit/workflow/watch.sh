@@ -7,8 +7,10 @@
 #   sh workflow/watch.sh --once          quét một lần rồi thoát
 #
 # Quy tắc: file nào có dòng `to: <ID>` ở đầu là đang chờ agent đó.
-#   - Agent "auto" trong agents.txt: chạy lệnh đánh thức (một phiên mới, không tương tác).
-#   - Agent "manual": chỉ báo ra màn hình và qua Telegram (nếu đã cấu hình).
+#   - Agent "auto" trong agents.txt: chạy lệnh đánh thức (một phiên mới, không tương tác, chạy ngầm).
+#   - Agent "window": mở một cửa sổ terminal mới, chạy công cụ ở dạng tương tác với lời nhắn gửi sẵn.
+#     Cửa sổ còn mở mà có việc mới thì không mở thêm, chỉ báo.
+#   - Agent "manual": báo ra màn hình và qua Telegram (nếu đã cấu hình), chép sẵn lời nhắn vào clipboard.
 #   - Agent "subagent": không làm gì; Master tự gọi subagent đó trong phiên chat của nó.
 #   - `to: owner`: báo chủ dự án.
 # Script không tốn token khi không có việc: chỉ đọc file và so sánh.
@@ -84,9 +86,69 @@ sig_of() {
   (cd "$W" && echo "$1" && cat $1) | cksum | awk '{print $1}'
 }
 
+# make_prompt <id> <vai> <danh sách file>: lời nhắn cho agent, chỉ trỏ tới đúng file cần đọc
+make_prompt() {
+  list=$(echo $3)   # gộp các dòng thành một dòng, cách nhau một khoảng trắng
+  if [ "$2" = "master" ]; then
+    echo "Xử lý việc đang chờ (to: $1): $list"
+  else
+    echo "Đọc AGENTS.md và workflow/roles/$2.md rồi làm theo. ID của bạn: $1. Vai: $2. Các file đang chờ bạn (to: $1): $list. Chỉ xử lý những file đó. Xong phần của mình thì đổi to: sang người kế tiếp. Trả lời ngắn."
+  fi
+}
+
+# to_clipboard: chép stdin vào clipboard nếu máy có công cụ phù hợp (Windows, macOS, Linux)
+to_clipboard() {
+  if command -v clip.exe >/dev/null 2>&1 && command -v iconv >/dev/null 2>&1; then
+    # clip.exe chỉ hiểu đúng tiếng Việt khi nhận UTF-16LE
+    iconv -f UTF-8 -t UTF-16LE | clip.exe
+  elif command -v pbcopy >/dev/null 2>&1; then pbcopy
+  elif command -v wl-copy >/dev/null 2>&1; then wl-copy
+  elif command -v xclip >/dev/null 2>&1; then xclip -selection clipboard
+  else cat >/dev/null; return 1
+  fi
+}
+
+# open_window <id> <vai> <lệnh> <danh sách file>: mở cửa sổ terminal mới chạy công cụ ở dạng tương tác
+open_window() {
+  id="$1"; role="$2"; cmd="$3"; files="$4"
+  make_prompt "$id" "$role" "$files" > "$RUN/$id.prompt"
+  log="$LOGS/$(date '+%Y%m%d-%H%M%S')-$id.log"
+  launcher="$RUN/$id.window.sh"
+  cat > "$launcher" <<EOF
+#!/usr/bin/env sh
+# Do watch.sh sinh để mở cửa sổ cho $id. Đừng sửa tay.
+cd "$ROOT" || exit 1
+echo \$\$ > "$RUN/$id.pid"
+echo "[mở cửa sổ \$(date '+%H:%M:%S'), lệnh: $cmd]" > "$log"
+printf '\033]0;%s\007' "$id ($role)"
+echo "== $id ($role) == Cửa sổ do watch.sh mở. Lời nhắn đã gửi sẵn cho công cụ."
+$cmd "\$(cat "$RUN/$id.prompt")"
+code=\$?
+echo "[kết thúc, mã \$code]" >> "$log"
+rm -f "$RUN/$id.pid"
+echo
+echo "Công cụ đã thoát (mã \$code). Bấm Enter để đóng cửa sổ."
+read -r _
+EOF
+  if command -v wt.exe >/dev/null 2>&1 && command -v cygpath >/dev/null 2>&1; then
+    # Windows Terminal: chạy Git Bash trong một cửa sổ mới
+    wt.exe -w new nt --title "$id" "$(cygpath -w /)\\bin\\bash.exe" --login "$(cygpath -w "$launcher")" >/dev/null 2>&1 &
+  elif command -v mintty >/dev/null 2>&1; then
+    mintty -t "$id" /bin/sh "$launcher" >/dev/null 2>&1 &
+  elif command -v osascript >/dev/null 2>&1; then
+    osascript -e "tell application \"Terminal\" to do script \"sh '$launcher'\"" >/dev/null 2>&1
+  elif command -v x-terminal-emulator >/dev/null 2>&1; then
+    x-terminal-emulator -e sh "$launcher" >/dev/null 2>&1 &
+  else
+    notify "Không mở được cửa sổ cho $id: máy không có Windows Terminal, mintty, Terminal (macOS) hay x-terminal-emulator. Chạy tay: sh $launcher"
+    return
+  fi
+  say "Mở cửa sổ cho $id ($role)."
+}
+
 wake() { # wake <id> <vai> <lệnh> <danh sách file>
   id="$1"; role="$2"; cmd="$3"; files="$4"
-  prompt="Đọc AGENTS.md và làm theo. ID của bạn: $id. Vai: $role. Bạn được watch.sh đánh thức tự động vì các file sau đang chờ bạn (to: $id): $(echo $files | tr '\n' ' '). Chỉ xử lý những file đó, theo AGENTS.md mục 4 và 5. Xong phần của mình thì đổi to: sang người kế tiếp. Trả lời ngắn."
+  prompt=$(make_prompt "$id" "$role" "$files")
   log="$LOGS/$(date '+%Y%m%d-%H%M%S')-$id.log"
   (
     cd "$ROOT" || exit 1
@@ -152,17 +214,31 @@ tick() {
   grep -v '^[[:space:]]*#' "$AGENTS" | grep -v '^[[:space:]]*$' | while read -r id role mode cmd; do
     # subagent: Master tự gọi trong phiên chat của nó, watch.sh không đánh thức và không báo
     [ "$mode" = "subagent" ] && continue
+    # Dọn dấu "đang chạy" của tiến trình đã chết (ví dụ cửa sổ bị đóng bằng nút X)
+    [ -f "$RUN/$id.pid" ] && ! running "$id" && rm -f "$RUN/$id.pid"
     files=$(echo "$data" | awk -F'|' -v a="$id" '$1==a {print $3}')
     [ -n "$files" ] || { rm -f "$RUN/$id.sig"; continue; }
-    running "$id" && continue
+    [ "$mode" = "auto" ] && running "$id" && continue
+    if [ "$mode" = "window" ] && running "$id"; then
+      # Cửa sổ đang mở: agent tự sửa file của nó là bình thường; chỉ báo khi có FILE MỚI chờ nó
+      new=$(echo "$files" | while read -r f; do grep -qxF "$f" "$RUN/$id.list" 2>/dev/null || echo "$f"; done)
+      if [ -n "$new" ]; then
+        echo "$files" > "$RUN/$id.list"
+        notify "Có việc mới cho $id ($role), cửa sổ của nó đang mở: gõ vào đó \"Xử lý việc đang chờ\". File mới: $(echo $new)"
+      fi
+      continue
+    fi
     s=$(sig_of "$files")
     [ -f "$RUN/$id.sig" ] && [ "$s" = "$(cat "$RUN/$id.sig")" ] && continue
     echo "$s" > "$RUN/$id.sig"
-    if [ "$mode" = "auto" ]; then
-      wake "$id" "$role" "$cmd" "$files"
-    else
-      notify "Có việc cho $id ($role): $(echo $files | tr '\n' ' ')"
-    fi
+    case "$mode" in
+      auto) wake "$id" "$role" "$cmd" "$files" ;;
+      window) echo "$files" > "$RUN/$id.list"; open_window "$id" "$role" "$cmd" "$files" ;;
+      *)
+        make_prompt "$id" "$role" "$files" > "$RUN/$id.prompt"
+        if to_clipboard < "$RUN/$id.prompt"; then where="đã chép vào clipboard, mở công cụ rồi dán"; else where="xem workflow/.run/$id.prompt"; fi
+        notify "Có việc cho $id ($role): $(echo $files). Lời nhắn $where." ;;
+    esac
   done
   # Việc chờ chủ dự án
   ofiles=$(echo "$data" | awk -F'|' '$1=="owner" {print $3}')
