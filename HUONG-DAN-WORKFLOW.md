@@ -268,6 +268,7 @@ Frontmatter chỉ cho phép `khoá: giá trị` hoặc `khoá: [a, b]` trên m�
 | `setup_cmd` | trống | Lệnh cài đặt khi tạo worktree mới (1b) | `npm ci` |
 | `worktree_env` | `[]` | Biến môi trường theo khe `AG_SLOT`, để nhiều phiên chạy server cùng lúc (1b) | `[PORT=3000+AG_SLOT, DB_NAME=app_AG_SLOT]` |
 | `live_check_cmd` | trống | Kiểm tra API thật so với hợp đồng (1b) | `npm run contract:live` |
+| `notify_*`, `live_check_times`, `state_push` | xem 10.3 | Thông báo và Monitor (Giai đoạn 2) | |
 | `master_wake_cmd` | trống | Lệnh đánh thức Master khi có tin nhắn trên web (Giai đoạn 3) | `claude -p`, `codex exec` |
 
 ### 10.2 Mức 2: quy ước code và quyết định chung
@@ -291,14 +292,36 @@ Ví dụ phần thân `project.md`:
 
 Master dẫn mục "Quyết định chung" làm nguồn khi trả lời câu hỏi.
 
-### 10.3 Mức 3: thông báo (Giai đoạn 2)
+### 10.3 Mức 3: thông báo (Giai đoạn 2, đặc tả: `dac-ta/giai-doan-2.md`)
 
 File `.env` ở gốc repo, không đưa lên git:
 ```
 TELEGRAM_BOT_TOKEN=...      # lấy từ @BotFather
 TELEGRAM_CHAT_ID=...        # nhắn bot một tin rồi gọi getUpdates để lấy
 ```
-Bot chỉ gửi tin, không nhận lệnh. Không cài Telegram thì mọi thứ khác vẫn chạy bình thường. Các tuỳ chọn như khoảng gom tin hay giờ gửi bản tóm tắt sẽ được chốt khi viết đặc tả Giai đoạn 2.
+Bot chỉ gửi tin, không nhận lệnh. Không cài Telegram thì mọi thứ khác vẫn chạy bình thường.
+
+**Tạo bot và lấy chat ID:**
+1. Trong Telegram, nhắn `@BotFather` lệnh `/newbot`, đặt tên. BotFather trả về token. Giữ bí mật, không dán vào chat với AI.
+2. Mở chat với bot, bấm Start, gửi một tin.
+3. Trên trình duyệt của bạn, mở `https://api.telegram.org/bot<TOKEN>/getUpdates`. Tìm `"chat":{"id":…}`: số đó là chat ID. Nhóm thì chat ID là số âm.
+
+**Các khoá trong `project.md`:**
+
+| Khoá | Mặc định | Ý nghĩa |
+|---|---|---|
+| `notify_channel` | `telegram` nếu có token | `none` để tắt gửi tin |
+| `notify_batch_seconds` | `120` | Gom các tin trong khoảng này thành 1 tin |
+| `notify_digest_times` | `[08:00, 17:00]` | Giờ gửi bản tóm tắt |
+| `notify_detail` | `title` | `code-only`: chỉ gửi mã, không gửi tiêu đề |
+| `notify_silent_minutes` | `30` | Agent im lặng bao lâu khi đang giữ việc thì báo |
+| `notify_blocked_hours` | `4` | Việc bị chặn bao lâu thì báo |
+| `notify_question_remind_hours` | `12` | Nhắc lại câu hỏi đang chờ bạn mỗi bao lâu |
+| `live_check_times` | `[]` | Giờ chạy kiểm tra API ngoài. Rỗng thì không chạy |
+| `monitor_poll_seconds` | `2` | Monitor đọc sự kiện mỗi bao lâu |
+| `state_push` | `false` | Cho Monitor tự push riêng nhánh `agents-state` (hai repo khác máy). Bật bằng `ag state-push enable` |
+
+**Chạy:** `ag notify test` để gửi tin thử. `ag monitor start` để chạy Monitor nền. Muốn Monitor tự chạy khi mở máy thì dùng Task Scheduler (Windows), `systemd --user` (Linux) hoặc `launchd` (macOS).
 
 ### 10.4 Mức 4: đội của bạn
 

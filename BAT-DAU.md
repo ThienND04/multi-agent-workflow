@@ -153,6 +153,7 @@ Telegram (chỉ thông báo) có ở Giai đoạn 2. Trang web **văn phòng pix
 | FE/BE cùng repo, BE đội khác, API có sẵn, nhiều tính năng cùng lúc, luồng có review (đã duyệt) | [dac-ta/de-xuat-bo-sung-02.md](dac-ta/de-xuat-bo-sung-02.md) |
 | Chat với Master trên web, Master chính và Master luồng (đã duyệt) | [dac-ta/de-xuat-bo-sung-03.md](dac-ta/de-xuat-bo-sung-03.md) |
 | Lệnh `ag` làm gì, tiêu chí đạt của từng lệnh | [dac-ta/giai-doan-1.md](dac-ta/giai-doan-1.md), [dac-ta/giai-doan-1b.md](dac-ta/giai-doan-1b.md) |
+| Monitor và thông báo Telegram (Giai đoạn 2, đã duyệt) | [dac-ta/giai-doan-2.md](dac-ta/giai-doan-2.md) |
 | Giao việc nào trước, lời nhắn dán sẵn | [dac-ta/giao-viec.md](dac-ta/giao-viec.md) |
 | Quy tắc AI phải theo lúc này | [AGENTS.md](AGENTS.md) |
 | Giao diện monitor | Mở `monitor-pixel-office.html` bằng trình duyệt (hướng chính). Bản cũ: `monitor-nhieu-luong-mockup.html`, `monitor-2d-mockup.html` |

@@ -269,7 +269,7 @@ Một chương trình Node chạy nền, theo dõi `.agents-state/`. Gồm 3 ph�
 |---|---|---|
 | **1** | Khung `.agents/` + nhánh `agents-state`, lệnh `ag` (init, checkin, claim kèm worktree, heartbeat, log, status, ask/answer/escalate/decide, bug, handoff, merge), hook git, file vai trò, `AGENTS.md` và các file trỏ | Agent nào cũng nhận vai, hỏi đúng cấp và làm tiếp được từ file. **Kiểm chứng bằng ít nhất 2 công cụ AI khác nhau** cùng chạy |
 | **1b** | Tính năng `F-NNN` (vòng đời có bước review đặc tả, "bắt đầu làm", nghiệm thu kèm push), chuyên môn FE/BE, hợp đồng API và việc ghép nối, phụ thuộc bên ngoài `X-NNN`, chạy song song an toàn (`AG_SLOT`), hộp thư Master theo tính năng | Làm nhiều tính năng FE/BE cùng lúc, kể cả khi BE do đội khác làm hoặc API có sẵn |
-| **2** | Monitor: `STATUS.md` + Telegram thông báo một chiều | Nhận thông báo khi vắng mặt |
+| **2** | Monitor: `STATUS.md`, luật phát hiện, Telegram thông báo một chiều (gom tin, tóm tắt), kiểm tra API ngoài theo lịch, liên kết hai repo khác máy. Đặc tả: `dac-ta/giai-doan-2.md` (**đã duyệt**), 8 việc T-029…T-036 | Nhận thông báo khi vắng mặt |
 | **3** | Trang web văn phòng pixel; **Phòng họp**: chat với Master chính và các Master luồng qua bộ nối công cụ (hộp thư làm dự phòng); trả lời câu hỏi, cho bắt đầu làm, nghiệm thu ngay trong hội thoại | Bàn giao và theo dõi mọi luồng trên một trang |
 | **4** | Đóng gói mẫu repo; (tuỳ chọn) Monitor tự mở phiên Coder và Tester khi có việc chờ | Dùng lại bằng một lệnh |
 
@@ -313,7 +313,7 @@ Chỗ nào chưa rõ thì hỏi tôi, không tự quyết.
 | 7 | AI chỉ có giao diện chat (không chạy được lệnh) | **Không cho tham gia** |
 | 8 | Ai duyệt agent mới | **Chỉ chủ dự án** |
 | 9 | Chủ dự án trả lời câu hỏi ở đâu | Lệnh `ag decide` ở Giai đoạn 1–2, trang web từ Giai đoạn 3 |
-| 10 | Push code | **Không agent nào được tự push.** Chỉ chủ dự án push, qua `ag push` có gõ xác nhận. Hook `pre-push` chặn mọi lần push khác |
+| 10 | Push code | **Không agent nào được tự push.** Chỉ chủ dự án push, qua `ag push` có gõ xác nhận. Hook `pre-push` chặn mọi lần push khác. Ngoại lệ duy nhất: quyết định 29 |
 | 11 | Dự án có sẵn | `ag init --existing`: không ghi đè `AGENTS.md`/hook cũ, hỗ trợ nhánh chính khác `main`, test đỏ sẵn. Master khảo sát rồi điền `project.md`; chỉ đặc tả phần làm mới |
 | 12 | Chỉ 1 việc, 1 Coder | Chế độ gọn `team_mode: solo`: vẫn có Master, Master kiêm Tester. Coder ghi kế hoạch các bước thay cho chia việc nhỏ |
 | 13 | FE/BE và cổng xác nhận | **Hai repo** (cùng máy ở Giai đoạn 1). Hợp đồng API ở repo BE. Cổng `gate` ở repo FE, chỉ chủ dự án đóng. Mỗi repo một Master. Đọc chéo, không ghi chéo. Chủ dự án tham gia như agent với `tool: human` |
@@ -330,6 +330,9 @@ Chỗ nào chưa rõ thì hỏi tôi, không tự quyết.
 | 24 | Lịch sử hội thoại | Lưu trong file `threads/C-NNN.md`, không phụ thuộc phiên AI. Phiên mất thì phiên mới đọc lại và trả lời tiếp |
 | 25 | Hành động của chủ dự án trên web | Đăng nhập + gõ lại mã + mã dùng một lần do Monitor cấp, tương đương gõ xác nhận trong terminal |
 | 26 | Tự mở phiên Coder và Tester | Để Giai đoạn 4 (tuỳ chọn) |
+| 27 | Monitor | Mỗi repo một Monitor chạy nền (`ag monitor start`), dùng chung một bot, tin có tiền tố tên dự án. `STATUS.md` nằm trong `.agents-state/`, không commit. Danh tính `monitor` chỉ được chạy `ext check` |
+| 28 | Ngưỡng và nội dung thông báo | Im lặng 30 phút, bị chặn 4 giờ, nhắc câu hỏi mỗi 12 giờ, gom tin 2 phút, tóm tắt 08:00 và 17:00. Tin có mã, tiêu đề và lệnh gợi ý; tuỳ chọn `code-only`. Kiểm tra API ngoài theo lịch mặc định tắt |
+| 29 | Ngoại lệ push cho hai repo khác máy | Khi chủ dự án bật `state_push` (gõ xác nhận một lần), Monitor được tự push **riêng nhánh `agents-state`** (chỉ trạng thái, không code). Mọi nhánh khác vẫn bị chặn. Nên dùng remote riêng tư |
 
 ## 10. Câu hỏi chờ chủ dự án
 

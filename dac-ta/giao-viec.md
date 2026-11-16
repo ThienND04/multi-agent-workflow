@@ -22,6 +22,11 @@ Chi tiết từng bước (mở phiên nào, kiểm tra gì, mốc chuyển sang
 | 8 | T-022, T-024, T-026, T-027 | Coder | 4 |
 | 9 | T-028 (Master luồng) | Coder | 1 |
 | 10 | T-013 | Tester (2 công cụ AI khác nhau) | — |
+| 11 (GĐ2) | T-029 | Coder | 1 |
+| 12 (GĐ2) | T-030, T-031, T-033 | Coder | 3 |
+| 13 (GĐ2) | T-032, T-034 | Coder | 2 |
+| 14 (GĐ2) | T-036 | Tester | — |
+| bất kỳ (GĐ2) | T-035 (tài liệu) | Master | — |
 | bất kỳ | T-015 (sau T-004), T-025 (sau T-015), xong trước Đợt 10 | Master | — |
 
 Sau mỗi việc code: Tester kiểm tra (`in_test → verified`), rồi Master gộp (`verified → done`).
