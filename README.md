@@ -66,9 +66,15 @@ cd multi-agent-workflow
 
 ### C. Muốn áp dụng cho dự án của bạn
 
-**Bây giờ: chưa được**, vì lệnh `ag` chưa có. Bạn có hai lựa chọn:
-1. **Chờ bản `v0.1.0`.** Bấm Watch → Releases trên GitHub để được báo.
-2. **Làm tay** theo cách của dự án thử nghiệm đầu tiên. Xem các file thật trong [vi-du-lich-mua-ban/](vi-du-lich-mua-ban/). Cách này chạy được, nhưng tốn công và không có hàng rào tự động.
+**Dùng ngay hôm nay: bộ khởi đầu làm tay.** Không cần cài gì:
+1. Chép [bo-khoi-dau-lam-tay/AGENTS.md](bo-khoi-dau-lam-tay/AGENTS.md) vào **gốc** dự án của bạn.
+2. Làm theo [bo-khoi-dau-lam-tay/HUONG-DAN.md](bo-khoi-dau-lam-tay/HUONG-DAN.md): mở phiên Master, nêu yêu cầu, duyệt đặc tả, giao Coder và Tester.
+
+Bản làm tay có đủ các ý chính (vai, hỏi khi chưa rõ, không tự nghiệm thu, ghi mọi thứ vào file) nhưng **chưa có hàng rào tự động**.
+
+**Đừng chép `AGENTS.md` ở gốc repo này**: file đó viết riêng cho việc xây `ag`.
+
+**Bản đầy đủ** (có hàng rào tự động) cần lệnh `ag`, đang xây. Bấm Watch → Releases trên GitHub để được báo khi có `v0.1.0`.
 
 **Khi có `v0.1.0`**, các bước sẽ là (theo thiết kế đã duyệt):
 ```bash
@@ -101,6 +107,7 @@ Hướng dẫn đầy đủ, từng bước: [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-
 | `dac-ta/` | Đặc tả từng giai đoạn, đề xuất đã duyệt, các việc, thứ tự giao | Master, Coder, Tester |
 | `templates/` | Luật mà `ag init` sẽ chép vào **dự án của bạn** (`AGENTS.md`, vai, quy trình) | AI trong dự án dùng workflow |
 | `monitor-*.html` | Bản phác giao diện, dữ liệu giả. Hướng chính: `monitor-pixel-office.html` | Mọi người |
+| `bo-khoi-dau-lam-tay/` | **Dùng workflow ngay hôm nay, không cần `ag`**: một file `AGENTS.md` chung và một trang hướng dẫn | Người muốn áp dụng ngay |
 | `vi-du-lich-mua-ban/` | File thật từ dự án thử nghiệm đầu tiên, chỉ để tham khảo | Người tò mò |
 
 ---
@@ -111,7 +118,7 @@ Hướng dẫn đầy đủ, từng bước: [VI-DU-LICH-MUA-BAN.md](VI-DU-LICH-
 Đúng vậy. Code chưa được viết. File này xuất hiện khi việc T-001 xong.
 
 **`AGENTS.md` ở thư mục gốc có phải thứ tôi chép sang dự án của tôi không?**
-Không. File đó là luật cho các AI **đang xây chính repo này**. Bản dành cho dự án của bạn là `templates/AGENTS.md`, và `ag init` sẽ tự chép.
+Không. File đó là luật cho các AI **đang xây chính repo này**. Muốn dùng ngay thì chép `bo-khoi-dau-lam-tay/AGENTS.md`. Khi có `ag`, lệnh `ag init` sẽ tự chép bản đầy đủ (`templates/AGENTS.md`).
 
 **Có cần cài gói npm nào không?**
 Không. `ag` chỉ dùng thư viện có sẵn của Node.js ≥ 20.
