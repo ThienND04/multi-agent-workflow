@@ -108,6 +108,7 @@ function state() {
     const lg = lastLog(a.id);
     a.running = !!(lg && !lg.finished && fs.existsSync(path.join(W, '.run', a.id + '.pid')));
     a.lastLog = lg; a.pending = []; a.features = [];
+    a.paused = fs.existsSync(path.join(W, '.run', a.id + '.paused'));
   }
   const features = readFeatures();
   const owner = [];
@@ -129,6 +130,8 @@ function state() {
   return {
     project: path.basename(ROOT), now: new Date().toISOString(),
     hasWorkflow: isDir(W), agents, features, owner, unknown: [...unknown],
+    // Do watch.sh ghi mỗi lần quét (việc không ai cầm, status/to lệch, thiếu Nguồn:, chờ quá lâu)
+    anomalies: read(path.join(W, '.run', 'lint.txt')).split(/\r?\n/).filter(Boolean).map(s => s.replace(/`/g, '')),
   };
 }
 
@@ -434,10 +437,15 @@ function render(){
  $('#bRun').textContent=S.agents.filter(a=>a.running).length+'/'+S.agents.length+' ĐANG CHẠY';
  $('#bNeed').textContent=S.owner.length+' CHỜ BẠN';
  document.title=(S.owner.length?'('+S.owner.length+') Chờ bạn · ':'')+'Văn phòng agent';
- $('#needBox').classList.toggle('on',S.owner.length>0);
+ const anom=S.anomalies||[],paused=S.agents.filter(a=>a.paused);
+ $('#needBox').classList.toggle('on',S.owner.length>0||anom.length>0||paused.length>0);
  const need=$('#need');need.replaceChildren();
+ if(anom.length||paused.length){const box=el('div','ask');
+  box.append(el('p','act','Bất thường ('+(anom.length+paused.length)+')'),el('p','muted','watch.sh phát hiện. Nói với Master: "Xử lý việc đang chờ", hoặc tự xem file.'));
+  paused.forEach(a=>{const p=el('p',null,a.id+' đang tạm dừng vì bị đánh thức quá nhiều lần. Xem log, rồi chạy: ');p.append(el('code',null,'sh workflow/watch.sh --resume '+a.id));box.append(p)});
+  anom.forEach(t=>box.append(el('p',null,'• '+t)));need.append(box)}
  if(!S.hasWorkflow)need.append(el('p','muted','Không thấy thư mục workflow/. Hãy chạy monitor tại thư mục dự án.'));
- else if(!S.owner.length)need.append(el('p','muted','Không có gì chờ bạn.'));
+ else if(!S.owner.length){if(!anom.length&&!paused.length)need.append(el('p','muted','Không có gì chờ bạn.'))}
  else S.owner.forEach(o=>{const a=ownerAction(o),box=el('div','ask');
   box.append(el('p','act',o.feature+' · '+a.act),el('p',null,o.title||o.file),el('p','muted',a.how));
   if(a.say){const p=el('p','say');p.append(document.createTextNode('Nói với Master: '),el('code',null,a.say));box.append(p)}
@@ -457,7 +465,7 @@ function showDetail(){
  const d=$('#detail');const a=S.agents.find(x=>x.id===openId);d.replaceChildren();d.style.display='block';
  const close=el('button',null,'Đóng');close.onclick=()=>{openId=null;d.style.display='none';build()};d.append(close,el('h2',null,openId));
  if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
- d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.running?'Đang chạy':'Không chạy'));
+ d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.paused?'Tạm dừng (đánh thức quá nhiều lần): sh workflow/watch.sh --resume '+a.id:a.running?'Đang chạy':'Không chạy'));
  d.append(el('h2',null,'File đang chờ'));
  if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
  d.append(el('h2',null,'Log gần nhất'));
