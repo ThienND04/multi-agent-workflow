@@ -3,6 +3,7 @@
 //
 // Chạy:   node workflow/monitor.js              rồi mở http://localhost:4300
 //         node workflow/monitor.js --port 5000
+//         (thường không cần chạy riêng: sh workflow/watch.sh tự mở kèm monitor)
 // Cần:    Node.js 18 trở lên. Không cần cài thư viện nào.
 //
 // Trang đọc đúng các file mà watch.sh đọc: workflow/agents.txt, workflow/F-*/SPEC.md,
@@ -13,6 +14,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const crypto = require('crypto');
 
 let port = 4300;
 const argv = process.argv.slice(2);
@@ -25,6 +27,7 @@ let ROOT;
 try { ROOT = cp.execSync('git rev-parse --show-toplevel', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
 catch { ROOT = process.cwd(); }
 const W = path.join(ROOT, 'workflow');
+const RUNDIR = path.join(W, '.run');
 
 // ---------- Đọc dữ liệu ----------
 function frontmatter(text) {
@@ -101,8 +104,35 @@ function readFeatures() {
   });
 }
 
+// Master ghi .run/<ID>.now một dòng: đang làm gì, hoặc "Chờ bạn: …". Rỗng là phiên rảnh hay đã xong.
+function readMasters() {
+  const out = [];
+  let names = [];
+  try { names = fs.readdirSync(RUNDIR).filter(n => n.endsWith('.now')); } catch { return out; }
+  for (const n of names) {
+    const fp = path.join(RUNDIR, n), text = read(fp).trim().split(/\r?\n/)[0] || '';
+    if (!text) continue;
+    let at = 0; try { at = fs.statSync(fp).mtimeMs; } catch {}
+    out.push({ id: n.slice(0, -4), text: text.slice(0, 300), at, waitOwner: /^chờ bạn/i.test(text) });
+  }
+  return out;
+}
+
+// watch.sh ghi .run/watch.beat "<giây> <chu kỳ> <pid>" mỗi vòng quét; dừng đàng hoàng thì ghi .run/watch.stopped
+function readWatch() {
+  const b = read(path.join(RUNDIR, 'watch.beat')).trim().split(/\s+/);
+  if (b[0]) {
+    const at = Number(b[0]) * 1000, iv = Number(b[1]) || 30;
+    return { state: Date.now() - at < (iv * 3 + 30) * 1000 ? 'running' : 'dead', at };
+  }
+  const s = read(path.join(RUNDIR, 'watch.stopped')).trim();
+  if (s) { const i = s.indexOf(' '); return { state: 'stopped', at: Number(i > 0 ? s.slice(0, i) : s) * 1000, reason: i > 0 ? s.slice(i + 1) : '' }; }
+  return { state: 'never' };
+}
+
 function state() {
   const agents = readAgents();
+  const masters = readMasters();
   const byId = Object.fromEntries(agents.map(a => [a.id, a]));
   for (const a of agents) {
     const lg = lastLog(a.id);
@@ -117,6 +147,8 @@ function state() {
       if (Date.now() - fs.statSync(sf).mtimeMs < 90 * 60 * 1000) a.sub = read(sf).trim();
     } catch {}
     if (a.sub) a.running = true;
+    const m = masters.find(x => x.id === a.id);
+    a.now = m ? m.text : ''; a.nowWait = !!(m && m.waitOwner);
   }
   const features = readFeatures();
   const owner = [];
@@ -137,15 +169,38 @@ function state() {
   }
   return {
     project: path.basename(ROOT), now: new Date().toISOString(),
-    hasWorkflow: isDir(W), agents, features, owner, unknown: [...unknown],
+    hasWorkflow: isDir(W), agents, features, owner, unknown: [...unknown], masters, watch: readWatch(),
     // Do watch.sh ghi mỗi lần quét (việc không ai cầm, status/to lệch, thiếu Nguồn:, chờ quá lâu)
     anomalies: read(path.join(W, '.run', 'lint.txt')).split(/\r?\n/).filter(Boolean).map(s => s.replace(/`/g, '')),
   };
 }
 
 // ---------- Máy chủ ----------
+// Mã bí mật cho lệnh dừng (sh workflow/watch.sh --stop): ghi vào .run/, chỉ ai đọc được thư mục dự án mới dừng được
+const TOKEN = crypto.randomBytes(16).toString('hex');
+const runFile = n => path.join(RUNDIR, n);
+function writeRun() {
+  if (!isDir(W)) return;
+  try {
+    fs.mkdirSync(RUNDIR, { recursive: true });
+    fs.writeFileSync(runFile('monitor.token'), TOKEN, { mode: 0o600 });
+    fs.writeFileSync(runFile('monitor.port'), String(port));
+    fs.writeFileSync(runFile('monitor.pid'), String(process.pid));
+  } catch {}
+}
+function quit() {
+  if (read(runFile('monitor.token')).trim() === TOKEN) for (const n of ['monitor.token', 'monitor.port', 'monitor.pid']) { try { fs.unlinkSync(runFile(n)); } catch {} }
+  process.exit(0);
+}
+for (const s of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(s, quit);
+
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
+  if (req.method === 'POST' && url === '/api/stop') {
+    if (req.headers['x-token'] !== TOKEN) { res.writeHead(403); return res.end(); }
+    res.writeHead(200); res.end('ok');
+    return setTimeout(quit, 50);
+  }
   if (req.method !== 'GET') { res.writeHead(405); return res.end(); }
   if (url === '/api/state') {
     let body;
@@ -159,13 +214,30 @@ const server = http.createServer((req, res) => {
   }
   res.writeHead(404); res.end('Không có');
 });
-server.on('error', e => {
-  console.error(e.code === 'EADDRINUSE' ? `Cổng ${port} đang được dùng. Thử: node workflow/monitor.js --port ${port + 1}` : e.message);
+function fail(e) {
+  console.error(e && e.code === 'EADDRINUSE'
+    ? `Cổng ${port} đang bị chiếm, có thể bởi monitor bản cũ (chưa có lệnh dừng): đóng terminal đang chạy nó. Hoặc dùng cổng khác: --port ${port + 1}`
+    : String(e && e.message || e));
   process.exit(1);
+}
+let retried = false;
+server.on('error', e => {
+  // Cổng bận vì monitor cũ của chính dự án này: dừng nó bằng mã bí mật nó để lại, rồi chạy bản mới
+  const old = read(runFile('monitor.token')).trim(), oldPort = Number(read(runFile('monitor.port')).trim());
+  if (e.code !== 'EADDRINUSE' || retried || !old || oldPort !== port) return fail(e);
+  retried = true;
+  const r = http.request({ host: '127.0.0.1', port, path: '/api/stop', method: 'POST', headers: { 'X-Token': old }, timeout: 3000 }, res => {
+    res.resume();
+    if (res.statusCode !== 200) return fail(e);
+    console.log('Đã dừng monitor cũ trên cổng ' + port + ', chạy bản mới.');
+    setTimeout(() => server.listen(port, '127.0.0.1'), 800);
+  });
+  r.on('error', () => fail(e)); r.on('timeout', () => { r.destroy(); fail(e); }); r.end();
 });
 server.listen(port, '127.0.0.1', () => {
+  writeRun();
   console.log(`Monitor: http://localhost:${port}   (đọc ${W})`);
-  console.log('Ctrl+C để dừng.');
+  console.log('Ctrl+C để dừng, hoặc: sh workflow/watch.sh --stop');
 });
 
 // ---------- Trang ----------
@@ -190,7 +262,7 @@ h2{font:700 12.5px ui-monospace,Consolas,monospace;text-transform:uppercase;lett
 .banner{font:700 18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer}
 .banner.owner{background:var(--badbg);color:var(--bad);border-color:var(--bad);box-shadow:4px 4px 0 var(--bad);font-size:20px}
 .banner.flow{background:var(--runbg);color:var(--run);border-color:var(--run);box-shadow:4px 4px 0 var(--run)}
-.banner p{margin:2px 0}.banner .small{font-size:14px;font-weight:600}
+.banner p{margin:2px 0}.banner .small{font-size:14px;font-weight:600}.banner .alert{color:var(--bad);font-size:15px}
 .need.on{background:var(--waitbg);border-color:var(--wait);box-shadow:4px 4px 0 var(--wait)}
 .need.on h2{color:var(--wait)}
 .ask{border-top:2px dashed var(--line);padding:10px 0 4px}.ask:first-of-type{border-top:0;padding-top:0}
@@ -219,7 +291,7 @@ td:last-child{white-space:nowrap}
 </style></head>
 <body><main>
 <header class="pix"><h1 id="proj">VĂN PHÒNG AGENT</h1><span class="sp"></span>
-<span class="badge" id="bFeat"></span><span class="badge" id="bRun"></span><span class="badge warn" id="bNeed"></span><span class="badge" id="bConn">…</span></header>
+<span class="badge" id="bFeat"></span><span class="badge" id="bRun"></span><span class="badge warn" id="bNeed"></span><span class="badge" id="bWatch"></span><span class="badge" id="bConn">…</span></header>
 <section class="pix banner" id="banner" hidden tabindex="0" role="button"></section>
 <section class="pix need" id="needBox"><h2>Cần bạn</h2><div id="need"></div></section>
 <section class="pix scene" aria-label="Văn phòng: mỗi tính năng một dãy bàn">
@@ -360,6 +432,7 @@ function stateOf(a,dir){
  if(!a)return{kind:'bad',txt:'?',label:'Chưa khai báo trong agents.txt',on:false};
  const here=a.pending.filter(p=>p.indexOf(dir+'/')===0).length;
  if(a.running)return{kind:'run',txt:'…',label:a.sub?'Master đang gọi ('+a.sub+')':'Đang chạy',on:true};
+ if(a.now)return a.nowWait?{kind:'wait',txt:'!',label:a.now,on:true}:{kind:'run',txt:'…',label:a.now,on:true};
  if(here)return{kind:'wait',txt:String(here),label:MODE_WAIT[a.mode]||'Có việc, cần mở phiên tay',on:true};
  return{kind:'idle',txt:'z',label:'Rảnh',on:false};
 }
@@ -439,7 +512,7 @@ function build(){
  ow.addEventListener('click',toNeed);ow.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toNeed()}});
  svg.querySelector('#pet').addEventListener('click',()=>{PET.bark=12;PET.pause=Math.max(PET.pause,12);petTick()});
  const lg=$('#legend');lg.replaceChildren();
- lg.append(el('span',null,'Bong bóng: … đang chạy (kể cả subagent Master đang gọi) · số = số việc đang chờ · ! = Master chờ bạn · z rảnh · ? chưa khai trong agents.txt · cửa mở = có việc chờ bạn · bấm bàn "BẠN" để tới mục Cần bạn'));
+ lg.append(el('span',null,'Bong bóng: … đang chạy (kể cả subagent Master đang gọi, Master đang làm rõ yêu cầu) · số = số việc đang chờ · ! = Master chờ bạn · z rảnh · ? chưa khai trong agents.txt · cửa mở = có việc chờ bạn · bấm bàn "BẠN" để tới mục Cần bạn'));
  if(free.length>4)lg.append(el('span',null,'Rảnh, không hiện hết: '+free.slice(4).map(a=>a.id).join(', ')));
 }
 
@@ -448,8 +521,12 @@ function render(){
  $('#proj').textContent='VĂN PHÒNG AGENT · '+S.project;
  {const d=S.features.filter(f=>f.status==='done').length;$('#bFeat').textContent=(S.features.length-d)+' ĐANG LÀM · '+d+' XONG'}
  $('#bRun').textContent=S.agents.filter(a=>a.running).length+'/'+S.agents.length+' ĐANG CHẠY';
- $('#bNeed').textContent=S.owner.length+' CHỜ BẠN';
- document.title=(S.owner.length?'('+S.owner.length+') Chờ bạn · ':'')+'Văn phòng agent';
+ {const mw=(S.masters||[]).filter(m=>m.waitOwner).length;$('#bNeed').textContent=(S.owner.length+mw)+' CHỜ BẠN'}
+ {const w=S.watch||{state:'never'},bw=$('#bWatch');
+  bw.textContent=w.state==='running'?'WATCH ✓':w.state==='dead'?'WATCH ĐÃ CHẾT':'WATCH TẮT';
+  bw.className='badge'+(w.state==='dead'?' off':w.state==='running'?'':' warn');
+  bw.title=w.state==='running'?'watch.sh đang chạy, quét lần cuối '+hm(w.at):'Chạy: sh workflow/watch.sh'}
+ {const n=S.owner.length+(S.masters||[]).filter(m=>m.waitOwner).length;document.title=(n?'('+n+') Chờ bạn · ':'')+'Văn phòng agent'}
  const anom=S.anomalies||[],paused=S.agents.filter(a=>a.paused);
  $('#needBox').classList.toggle('on',S.owner.length>0||anom.length>0||paused.length>0);
  banner();
@@ -478,23 +555,39 @@ function render(){
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
  if(openId)showDetail();
 }
-// Một dòng to nói rõ ai đang cầm lượt: chủ dự án (đỏ) hay agent nào (xanh)
+// Một dòng to nói rõ ai đang cầm lượt: chủ dự án (đỏ) hay agent nào (xanh), Master nào đang mở, watch.sh còn chạy không
+const hm=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+function watchLine(active){
+ const w=S.watch||{state:'never'};
+ if(w.state==='dead')return '⚠ watch.sh đã dừng bất thường (nhịp tim cuối '+hm(w.at)+'): không báo Telegram, không đánh thức agent auto/window. Chạy lại: sh workflow/watch.sh --restart';
+ if(w.state!=='running'&&active)return '⚠ watch.sh không chạy'+(w.state==='stopped'?' (dừng lúc '+hm(w.at)+(w.reason?', '+w.reason:'')+')':'')+': không báo Telegram, không đánh thức agent auto/window. Chạy: sh workflow/watch.sh';
+ return '';
+}
+function masterLine(m){const old=Date.now()-m.at>2*3600e3;
+ return 'MASTER '+m.id+': '+m.text+(old?' (không đổi từ '+hm(m.at)+', phiên có thể đã đóng)':' ('+hm(m.at)+')')}
 function banner(){
  const b=$('#banner');b.replaceChildren();b.className='pix banner';
- if(S.owner.length){
-  b.classList.add('owner');b.append(el('p',null,'ĐANG CHỜ BẠN ('+S.owner.length+')'));
-  S.owner.forEach(o=>{const a=ownerAction(o);b.append(el('p','small','▶ '+o.feature+' · '+a.act+(a.say?' → nói với Master: "'+a.say+'"':'')))});
-  b.hidden=false;b.onclick=()=>$('#needBox').scrollIntoView({behavior:MOTION_OK?'smooth':'auto',block:'start'});return}
- const act=S.features.filter(f=>f.status!=='done');
+ const ms=S.masters||[],mw=ms.filter(m=>m.waitOwner),act=S.features.filter(f=>f.status!=='done');
+ const wl=watchLine(act.length>0||ms.length>0);
  const turns=[];act.forEach(f=>f.items.forEach(it=>{if(it.to&&it.to!=='none'&&it.to!=='owner')turns.push({f,it})}));
  const run=S.agents.filter(a=>a.running);
- if(!turns.length&&!run.length){b.hidden=true;return}
+ const need=S.owner.length+mw.length;
+ if(need){
+  b.classList.add('owner');b.append(el('p',null,'ĐANG CHỜ BẠN ('+need+')'));
+  S.owner.forEach(o=>{const a=ownerAction(o);b.append(el('p','small','▶ '+o.feature+' · '+a.act+(a.say?' → nói với Master: "'+a.say+'"':'')))});
+  mw.forEach(m=>b.append(el('p','small','▶ '+m.id+': '+m.text+' (trả lời trong phiên chat của '+m.id+')')));
+  ms.filter(m=>!m.waitOwner).forEach(m=>b.append(el('p','small',masterLine(m))));
+  if(wl)b.append(el('p','small alert',wl));
+  b.hidden=false;b.onclick=()=>$('#needBox').scrollIntoView({behavior:MOTION_OK?'smooth':'auto',block:'start'});return}
+ if(!turns.length&&!run.length&&!ms.length&&!wl){b.hidden=true;return}
  b.classList.add('flow');
- b.append(el('p',null,run.length?'ĐANG CHẠY: '+run.map(a=>a.id+(a.sub?' ('+a.sub+', Master gọi)':'')).join(' · '):'KHÔNG AI ĐANG CHẠY'));
+ b.append(el('p',null,run.length?'ĐANG CHẠY: '+run.map(a=>a.id+(a.sub?' ('+a.sub+', Master gọi)':'')).join(' · '):ms.length?'MASTER ĐANG LÀM':'KHÔNG AI ĐANG CHẠY'));
+ ms.forEach(m=>b.append(el('p','small',masterLine(m))));
  const by={};turns.forEach(x=>{(by[x.it.to]=by[x.it.to]||[]).push(x.f.id+' '+x.it.file)});
  Object.keys(by).forEach(id=>{const a=S.agents.find(z=>z.id===id);
   const how=!a?'không có trong agents.txt, không ai đánh thức được':a.running?'đang làm':a.mode==='subagent'?'chờ Master gọi':(MODE_WAIT[a.mode]||'chờ đánh thức').toLowerCase();
   b.append(el('p','small','Lượt của '+id+' ('+how+'): '+by[id].join(', ')))});
+ if(wl)b.append(el('p','small alert',wl));
  b.hidden=false;b.onclick=null;
 }
 function showDetail(){

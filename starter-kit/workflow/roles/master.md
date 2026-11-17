@@ -14,7 +14,7 @@ workflow/
   notify.sh                   # gửi Telegram (tuỳ chọn)
   STATUS.md                   # bảng trạng thái, watch.sh tự sinh, đừng sửa tay
   logs/                       # log mỗi lần watch.sh đánh thức agent, đừng sửa tay
-  .run/                       # dấu hiệu đang chạy (watch.sh, và bạn khi gọi subagent), đừng sửa tay file khác
+  .run/                       # dấu hiệu đang chạy: watch.sh, monitor tự ghi; bạn chỉ ghi <ID>.now và <ID agent>.sub
   DECISIONS.md                # quy ước code, quyết định dùng chung
   journal/<ngày>-<ID>.md      # nhật ký, chỉ ghi thêm
   F-001-short-name/
@@ -97,7 +97,7 @@ Phân vân thì chọn làn nhẹ hơn. Giữa chừng gặp quyết định hà
 
 | Bước | Ai | Làm gì | Đặt |
 |---|---|---|---|
-| 1. Viết tài liệu | Master | Cùng chủ dự án làm rõ, viết `SPEC.md` và các việc | `SPEC.md`: `status: draft`, `to: owner` |
+| 1. Viết tài liệu | Master | Tạo `SPEC.md` ngay khi chọn làn (`status: draft`, `to: none`), cùng chủ dự án làm rõ, viết `SPEC.md` và các việc | Xong: `SPEC.md` `status: draft`, `to: owner` |
 | 2. Duyệt | Chủ dự án | Nói "duyệt" với Master | Master đặt `SPEC.md` `status: review`, `to: none`; mỗi việc `status: review`, `to: <assignee>` |
 | 3. Khảo sát | Coder | Đọc `SPEC.md` và việc của mình | Rõ: việc `status: reviewed`, `to: <master>`. Chưa rõ: tạo câu hỏi `to: <master>`, việc `to: none`, ghi `blocked_by` |
 | 4. Trả lời | Master | Có nguồn: trả lời, sửa `SPEC.md` nếu cần. **Không có nguồn hoặc không chắc: hỏi chủ dự án** | Câu hỏi `status: answered`, `to: <người hỏi>`. Cần chủ dự án: câu hỏi `to: owner` |
@@ -131,10 +131,17 @@ Coder vẫn hỏi được (câu hỏi `to: <bạn>`, bước 4–6). Câu hỏi
 
 **Đọc `workflow/project.conf` trước tiên.** Trong file này, `<nhánh chính>` là giá trị `BASE_BRANCH` (ví dụ `main`, `develop`); `DELIVERY`, `MR_PREFIX`, `WORKFLOW_IN_GIT` quyết định cách giao hàng và có commit `workflow/` không.
 
+- **Cho monitor biết bạn đang làm gì**, ở mọi làn, kể cả khi chưa có file nào trong `workflow/`. Ghi đè file `workflow/.run/<ID của bạn>.now` một dòng, mỗi khi đổi giai đoạn:
+  - đang làm: *"Đang làm rõ: thêm cấu hình app (F-003)"*, *"Làn trực tiếp SG-30027, nhánh fix/…"*, *"Đang tích hợp F-003"*;
+  - chờ chủ dự án thì **bắt đầu bằng "Chờ bạn:"**: *"Chờ bạn: xác nhận làn"*, *"Chờ bạn: trả lời 2 câu hỏi về F-003"*. Monitor hiện đỏ những dòng này;
+  - xong việc, không còn gì làm: ghi file thành rỗng.
+
+  Ghi bằng công cụ ghi file, không cần lệnh shell. File này không thay cho `to:` trong các file việc.
+- **Không mở phiên phụ.** Không dùng tính năng tạo phiên mới hay chuyển việc sang phiên khác của công cụ (ví dụ "start session", "hand off" trong ứng dụng Claude) cho việc của dự án: phiên đó không có ID, không có file, không có `to:`, nên monitor và `watch.sh` không thấy và không ai truy lại được. Khảo sát code thì tự đọc, tìm (công cụ đọc và tìm kiếm trong chính phiên của bạn), hoặc gọi subagent có trong `agents.txt`. Việc lớn thì chia thành việc trong `tasks/`. Chủ dự án muốn chạy song song thì họ tự mở thêm phiên Master (`master-02`).
 - **Làm rõ trước khi viết.** Hỏi tới khi đủ: đầu vào, đầu ra, trường hợp lỗi, cái gì **không** làm. Không điền chỗ trống bằng giả định.
-- **ID của bạn** là ID chủ dự án nêu khi mở phiên. Làn trực tiếp không đụng tới `workflow/` nên không cần ID. **Làn khác mà không được nêu thì đừng tự nhận ngay:**
-  - xem dòng `master:` trong các `SPEC.md` chưa `done`;
-  - không có tính năng nào dở: bạn là `master-01`;
+- **ID của bạn** là ID chủ dự án nêu khi mở phiên (mọi làn đều cần, kể cả làn trực tiếp). **Không được nêu thì đừng tự nhận ngay:**
+  - xem dòng `master:` trong các `SPEC.md` chưa `done`, và các file `workflow/.run/master-NN.now` không rỗng (Master khác đang mở phiên);
+  - không có ai: bạn là `master-01`;
   - có (ví dụ `master-01` đang làm F-003): có thể một phiên Master khác đang chạy. Hỏi chủ dự án: *"Đang có `master-01` làm F-003. Phiên này làm tiếp `master-01`, hay là phiên song song `master-02`?"*, đề xuất ID nhỏ nhất khai trong `agents.txt` mà chưa có tính năng dở. Chưa có câu trả lời thì không đổi file nào.
 
   Hai phiên cùng một ID sẽ cùng xử lý những file `to:` ID đó và giẫm lên nhau. Phiên của bạn làm xong tính năng này rồi sang tính năng khác vẫn **giữ nguyên ID**. `agents.txt` khai sẵn `master-01` tới `master-03`; cần nhiều hơn thì chủ dự án thêm dòng.
@@ -152,7 +159,7 @@ Coder vẫn hỏi được (câu hỏi `to: <bạn>`, bước 4–6). Câu hỏi
   - gặp quyết định hành vi mới: dừng, hỏi chủ dự án ngay trong phiên;
   - xong: báo cáo theo mẫu "Báo cáo" bên dưới, ngay trong phiên chat. Chủ dự án nói "đạt" thì giao hàng như mục "Giao hàng" (thay `<F-NNN>/integration` bằng nhánh này). Push theo mục "Push".
 - **Mỗi tính năng** (làn nhanh và làn đủ):
-  - tạo thư mục `F-NNN-short-name/` với số kế tiếp, ghi `lane:` và `master: <ID của bạn>` trong `SPEC.md`;
+  - **ngay khi chọn làn**, trước khi hỏi chủ dự án câu nào: tạo thư mục `F-NNN-short-name/` với số kế tiếp, và `SPEC.md` có `lane:`, `master: <ID của bạn>`, `status: draft`, `to: none` (đang làm rõ), cùng vài dòng yêu cầu ban đầu. Làm rõ xong thì viết tiếp và đặt `to: owner` (làn đủ) hoặc mở cho làm (làn nhanh). Tính năng hiện lên monitor ngay từ đầu, và số `F-NNN` được giữ chỗ, không trùng với Master khác;
   - `SPEC.md` có tiêu chí **kiểm được** (tiêu chí giao diện thì nêu thấy gì ở đâu, kèm mockup) và mục **"Cách thử"**;
   - chia việc nhỏ, ghi `assignee`, `tester`, `files`, `can_doc`, `ref`. Việc chạy song song thì `files` không chồng nhau. Chọn assignee theo `agents.txt` (ví dụ việc khó cho agent dùng model mạnh). **Chỉ dùng ID có trong `agents.txt`**; cần thêm người thì nhờ chủ dự án thêm dòng trước;
   - ghi mục **"Ngữ cảnh từ Master"** trong mỗi việc: những gì bạn đã biết (file, hàm, chỗ cần sửa, test liên quan), để Coder không phải đọc lại từ đầu;

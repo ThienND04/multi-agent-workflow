@@ -2,7 +2,9 @@
 # watch.sh: theo dõi các file trao đổi trong workflow/, đánh thức agent có việc, sinh STATUS.md.
 #
 # Dùng:
-#   sh workflow/watch.sh                 chạy liên tục, quét 30 giây một lần (Ctrl+C để dừng)
+#   sh workflow/watch.sh                 chạy liên tục, quét 30 giây một lần, mở kèm trang monitor (Ctrl+C để dừng)
+#   sh workflow/watch.sh --stop          dừng watch.sh và monitor đang chạy (ở terminal nào cũng được)
+#   sh workflow/watch.sh --restart       dừng bản đang chạy rồi chạy lại ở terminal này
 #   sh workflow/watch.sh --interval 60   đổi chu kỳ quét
 #   sh workflow/watch.sh --once          quét một lần rồi thoát
 #   sh workflow/watch.sh --lint          chỉ in các trạng thái bất thường (mã 1 nếu có), không đánh thức ai
@@ -12,6 +14,14 @@
 #                    agent đó và báo bạn, để agent bị kẹt không đốt token mãi. 0 = không giới hạn
 #   --timeout 60     số phút tối đa cho một lần chạy agent auto; quá thì dừng nó và báo. 0 = không giới hạn
 #   --stale 24       số giờ một file chờ agent mà không đổi thì báo là bất thường. 0 = không kiểm
+#   --port 4300      cổng của trang monitor
+#   --no-monitor     không mở kèm monitor
+#
+# Chạy liên tục thì watch.sh:
+#   - chỉ cho một bản chạy cùng lúc (ghi .run/watch.pid);
+#   - ghi nhịp tim vào .run/watch.beat mỗi vòng quét; monitor báo đỏ khi nhịp tim cũ (watch.sh chết ngang);
+#   - chạy từ bản sao .run/watch.run.sh, nên chép đè workflow/watch.sh lúc đang chạy không làm hỏng nó;
+#     thấy watch.sh hay monitor.js đổi thì tự nạp lại bản mới, không cần khởi động lại.
 #
 # Quy tắc: file nào có dòng `to: <ID>` ở đầu là đang chờ agent đó.
 #   - Agent "auto" trong agents.txt: chạy lệnh đánh thức (một phiên mới, không tương tác, chạy ngầm).
@@ -36,6 +46,11 @@ RESUME=""
 MAXWAKES=6
 TIMEOUT=60
 STALE=24
+PORT=4300
+NOMON=0
+STOP=0
+RESTART=0
+PASS_ARGS=""   # tham số để tự chạy lại (giá trị không có khoảng trắng), bỏ --restart, --stop
 
 need_num() { case "${2:-}" in ''|*[!0-9]*) echo "$1 cần một số nguyên"; exit 1 ;; esac; }
 while [ $# -gt 0 ]; do
@@ -47,10 +62,16 @@ while [ $# -gt 0 ]; do
     --timeout) need_num "$1" "${2:-}"; shift; TIMEOUT="$1" ;;
     --stale) need_num "$1" "${2:-}"; shift; STALE="$1" ;;
     --resume) [ -n "${2:-}" ] || { echo "--resume cần ID agent"; exit 1; }; shift; RESUME="$1" ;;
+    --port) need_num "$1" "${2:-}"; shift; PORT="$1" ;;
+    --no-monitor) NOMON=1 ;;
+    --stop) STOP=1 ;;
+    --restart) RESTART=1 ;;
     *) echo "Tham số không hiểu: $1"; exit 1 ;;
   esac
   shift
 done
+PASS_ARGS="--interval $INTERVAL --max-wakes $MAXWAKES --timeout $TIMEOUT --stale $STALE --port $PORT"
+[ "$NOMON" = 1 ] && PASS_ARGS="$PASS_ARGS --no-monitor"
 
 [ -f "$AGENTS" ] || { echo "Thiếu $AGENTS. Xem SETUP.md."; exit 1; }
 mkdir -p "$RUN" "$LOGS"
@@ -400,21 +421,135 @@ $(sed 's/^/- /' "$RUN/lint.txt" | tr -d '`')"
   write_status "$data"
 }
 
+# ---------- Chạy liên tục: một bản duy nhất, nhịp tim, kèm monitor ----------
+
+watch_alive() { [ -f "$RUN/watch.pid" ] && kill -0 "$(cat "$RUN/watch.pid" 2>/dev/null)" 2>/dev/null; }
+
+# monitor_stop: dừng monitor đang chạy (do watch.sh mở hay bạn tự mở) bằng lệnh dừng của chính nó.
+# Không cần tìm PID: monitor ghi cổng và mã bí mật vào .run/, chỉ ai đọc được thư mục này mới dừng được.
+monitor_stop() {
+  [ -f "$RUN/monitor.token" ] && [ -f "$RUN/monitor.port" ] || return 1
+  command -v node >/dev/null 2>&1 || return 1
+  node -e '
+    const fs = require("fs"), http = require("http");
+    let token = "", port = 0;
+    try { token = fs.readFileSync(process.argv[1], "utf8").trim(); port = +fs.readFileSync(process.argv[2], "utf8").trim(); } catch { process.exit(1); }
+    const r = http.request({ host: "127.0.0.1", port, path: "/api/stop", method: "POST", headers: { "X-Token": token }, timeout: 3000 },
+      res => process.exit(res.statusCode === 200 ? 0 : 1));
+    r.on("error", () => process.exit(1)); r.on("timeout", () => { r.destroy(); process.exit(1); }); r.end();
+  ' "$RUN/monitor.token" "$RUN/monitor.port"
+}
+
+MON_PID=""; MON_SIG=""
+monitor_start() {
+  [ "$NOMON" = 1 ] && return
+  command -v node >/dev/null 2>&1 || { say "Không có node (cần Node.js 18+), không mở monitor."; NOMON=1; return; }
+  [ -f "$W/monitor.js" ] || { NOMON=1; return; }
+  MON_SIG=$(cksum < "$W/monitor.js")
+  node "$W/monitor.js" --port "$PORT" > "$RUN/monitor.log" 2>&1 &
+  MON_PID=$!
+  sleep 2
+  if kill -0 "$MON_PID" 2>/dev/null; then
+    say "Monitor: http://localhost:$PORT"
+  else
+    say "Không mở được monitor:"; sed 's/^/    /' "$RUN/monitor.log"
+    say "watch.sh vẫn chạy, không có monitor. Sửa xong thì: sh workflow/watch.sh --restart"
+    MON_PID=""; NOMON=1
+  fi
+}
+
+# monitor_check: mỗi vòng quét, monitor chết thì mở lại, monitor.js đổi thì nạp bản mới
+monitor_check() {
+  [ "$NOMON" = 1 ] && return
+  if [ -n "$MON_PID" ] && [ "$(cksum < "$W/monitor.js" 2>/dev/null)" != "$MON_SIG" ]; then
+    say "monitor.js đã đổi, mở lại monitor."
+    monitor_stop || kill "$MON_PID" 2>/dev/null
+    sleep 1; monitor_start; return
+  fi
+  if [ -z "$MON_PID" ] || ! kill -0 "$MON_PID" 2>/dev/null; then say "Monitor đã dừng, mở lại."; monitor_start; fi
+}
+
+beat() { echo "$(date +%s) $INTERVAL $$" > "$RUN/watch.beat"; }
+
+STOP_REASON=""
+on_exit() {
+  [ -n "$MON_PID" ] && { monitor_stop || kill "$MON_PID" 2>/dev/null; }
+  rm -f "$RUN/watch.beat" "$RUN/watch.pid"
+  echo "$(date +%s) ${STOP_REASON:-thoát}" > "$RUN/watch.stopped"
+}
+
+do_stop() {
+  any=0
+  if watch_alive; then
+    p=$(cat "$RUN/watch.pid"); kill "$p" 2>/dev/null
+    i=0; while kill -0 "$p" 2>/dev/null && [ $i -lt 20 ]; do sleep 0.5; i=$((i + 1)); done
+    if kill -0 "$p" 2>/dev/null; then
+      kill -9 "$p" 2>/dev/null; rm -f "$RUN/watch.pid" "$RUN/watch.beat"
+      echo "$(date +%s) lệnh --stop" > "$RUN/watch.stopped"
+    fi
+    echo "Đã dừng watch.sh (pid $p)."; any=1
+  fi
+  if monitor_stop; then echo "Đã dừng monitor."; any=1; fi
+  [ "$any" = 1 ] || echo "Không có watch.sh hay monitor nào đang chạy (monitor bản cũ, nếu có, phải đóng terminal của nó)."
+}
+
 # Khi khởi động: chỉ dọn dấu "đang chạy" của tiến trình đã chết
 for p in "$RUN"/*.pid; do
   [ -f "$p" ] || continue
   a=$(basename "$p" .pid)
+  [ "$a" = monitor ] && continue   # PID của node trên Windows, kill -0 trong Git Bash không nhận; monitor tự dọn
   running "$a" || rm -f "$p"
 done
 
+if [ "$STOP" = 1 ]; then do_stop; exit 0; fi
 if [ "$LINT" = "1" ]; then
   out=$(lint)
   if [ -n "$out" ]; then echo "Bất thường:"; echo "$out" | sed 's/^/- /'; exit 1; fi
   echo "Không có gì bất thường."; exit 0
 fi
 if [ "$ONCE" = "1" ]; then tick; exit 0; fi
-say "Bắt đầu theo dõi $W, quét mỗi $INTERVAL giây. Ctrl+C để dừng."
+
+[ "$RESTART" = 1 ] && do_stop
+if watch_alive; then
+  echo "watch.sh đang chạy rồi (pid $(cat "$RUN/watch.pid")). Dừng: sh workflow/watch.sh --stop. Chạy lại ở đây: sh workflow/watch.sh --restart"
+  exit 1
+fi
+# Chạy từ bản sao trong .run/: sh đọc script dần dần trong lúc chạy, chép đè file đang chạy sẽ làm hỏng nó
+if [ "${WATCH_SH_COPY:-}" != 1 ]; then
+  cp "$W/watch.sh" "$RUN/watch.run.sh" || exit 1
+  export WATCH_SH_COPY=1
+  # shellcheck disable=SC2086
+  exec sh "$RUN/watch.run.sh" $PASS_ARGS
+fi
+unset WATCH_SH_COPY
+
+echo $$ > "$RUN/watch.pid"
+rm -f "$RUN/watch.stopped"
+trap on_exit EXIT
+trap 'STOP_REASON="Ctrl+C"; exit 130' INT
+trap 'STOP_REASON="lệnh --stop"; exit 143' TERM
+trap 'STOP_REASON="terminal bị đóng"; exit 129' HUP
+SRC_SIG=$(cksum < "$W/watch.sh")
+beat
+say "Bắt đầu theo dõi $W, quét mỗi $INTERVAL giây. Dừng: Ctrl+C, hoặc sh workflow/watch.sh --stop ở terminal khác."
+monitor_start
 while true; do
   tick
-  sleep "$INTERVAL"
+  beat
+  monitor_check
+  # watch.sh vừa được cập nhật (ví dụ chép bộ khởi đầu mới): nạp lại bản mới, nếu file đã chép xong và đúng cú pháp
+  s=$(cksum < "$W/watch.sh" 2>/dev/null)
+  if [ -n "$s" ] && [ "$s" != "$SRC_SIG" ]; then
+    sleep 1
+    if [ "$(cksum < "$W/watch.sh" 2>/dev/null)" = "$s" ] && sh -n "$W/watch.sh" 2>/dev/null; then
+      say "watch.sh đã được cập nhật, nạp lại bản mới."
+      trap - EXIT INT TERM HUP
+      [ -n "$MON_PID" ] && { monitor_stop || kill "$MON_PID" 2>/dev/null; sleep 1; }
+      rm -f "$RUN/watch.pid"
+      # shellcheck disable=SC2086
+      exec sh "$W/watch.sh" $PASS_ARGS
+    fi
+  fi
+  # sleep chạy nền rồi wait: Ctrl+C hay --stop được xử lý ngay, không phải chờ hết chu kỳ
+  sleep "$INTERVAL" & wait $!
 done

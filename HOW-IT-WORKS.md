@@ -85,7 +85,7 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 | 1 | Master cùng tôi làm rõ, viết tài liệu, chia việc cho cấp 2 | Master hỏi tới khi đủ, viết `SPEC.md` (tiêu chí kiểm được, mục "Cách thử") và các file việc nhỏ |
 | 2 | Cấp 2 khảo sát, hỏi chỗ chưa rõ; Master giải quyết; không chắc thì hỏi tôi | Bước ② ③. Mỗi câu hỏi là một file `questions/D-NN.md`, chuyển qua lại bằng `to:` |
 | 3 | Rõ mới code; test lỗi thì Coder sửa; đạt thì báo Master, Master báo tôi; tôi quyết và push | Bước ④ ⑤ ⑥. Chỉ Master được push, và chỉ khi bạn cho phép đúng lần push đó trong phiên chat. Hook git `pre-push` chặn mọi lần push thiếu `WORKFLOW_PUSH_OK=1`, với mọi công cụ AI; Claude Code còn hiện hộp xác nhận mỗi lần push. Coder, Tester không bao giờ push. Bạn tự push bằng `WORKFLOW_PUSH_OK=1 git push` |
-| 4, 11 | Theo dõi mọi agent: trạng thái, việc đang làm | **Trang monitor local** (`node workflow/monitor.js`): văn phòng pixel, mỗi tính năng một dãy bàn (mục 6). Thêm `workflow/STATUS.md` dạng bảng |
+| 4, 11 | Theo dõi mọi agent: trạng thái, việc đang làm | **Trang monitor local** (`sh workflow/watch.sh` mở kèm): văn phòng pixel, mỗi tính năng một dãy bàn (mục 6). Thêm `workflow/STATUS.md` dạng bảng |
 | 5, 12 | Thông báo qua Telegram, chỉ một chiều | `watch.sh` gọi `notify.sh` khi có việc chờ bạn hoặc chờ một agent đánh thức tay. Bot chỉ gửi, không nhận lệnh |
 | 6 | Không tự quyết theo phán đoán | Mọi câu trả lời phải kèm **nguồn**. Không có nguồn thì chuyển `to: owner` |
 | 7 | Mỗi vai có skill riêng | Luật riêng cho từng vai trong `AGENTS.md`. Với Claude Code có thêm file vai trong `.claude/agents/`; skill dùng chung có thể đặt thêm trong `.claude/skills/` |
@@ -110,7 +110,7 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 
 ## 6. Trang monitor
 
-Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **http://localhost:4300**.
+Chạy `sh workflow/watch.sh` (tự mở kèm monitor; cần Node.js 18 trở lên), rồi mở **http://localhost:4300**. Dừng bằng `sh workflow/watch.sh --stop`, khởi động lại bằng `--restart`.
 
 ```
 ┌─ tủ sách · cây nước · cửa (mở khi có việc chờ bạn) · bảng tính năng · ──── BẠN ─┐
@@ -128,7 +128,7 @@ Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **ht
 - **Văn phòng pixel, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy. Tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
 - **Bàn của bạn** (biển tên "BẠN") ở góc phải, có lối đi thảm đỏ chạy thẳng xuống (`░` trong sơ đồ). Có việc chờ bạn thì bong bóng trên đầu bạn hiện `!` kèm số việc; bấm vào bàn để tới mục "Cần bạn". Một chú chó đi lang thang dọc chân tường và lối đi; bấm vào nó thử xem.
 - **Bong bóng trên đầu:** `…` đang chạy, số là số việc đang chờ, `z` là rảnh, `!` là Master đang chờ bạn, `?` là ID chưa khai trong `agents.txt`. Agent rảnh đứng ở cây nước bên trái, tay cầm cốc nước. Cửa mở nghĩa là có việc chờ bạn.
-- **Dòng to ở đầu trang:** màu đỏ "ĐANG CHỜ BẠN" kèm việc cần làm và câu cần nói với Master; không chờ bạn thì màu xanh, ghi agent nào đang chạy (kể cả subagent Master đang gọi) và đang đến lượt ai.
+- **Dòng to ở đầu trang:** màu đỏ "ĐANG CHỜ BẠN" kèm việc cần làm và câu cần nói với Master; không chờ bạn thì màu xanh, ghi agent nào đang chạy (kể cả subagent Master đang gọi), từng Master đang mở và đang làm gì (kể cả lúc mới làm rõ yêu cầu, chưa có file nào), và đang đến lượt ai. `watch.sh` không chạy hay chết ngang thì có cảnh báo ở đây và huy hiệu WATCH ở đầu trang.
 - **Mục "Cần bạn"** (tô vàng khi có việc): ghi rõ bạn cần làm gì (duyệt, trả lời, nghiệm thu), câu cần nói với Master, và hiện sẵn mục "Cách thử" của tính năng chờ nghiệm thu. Có thêm khung **"Bất thường"** khi `watch.sh` phát hiện việc không ai cầm, `status` và `to` lệch nhau, câu trả lời thiếu `Nguồn:`, file chờ quá lâu, hay agent bị tạm dừng vì đánh thức quá nhiều lần.
 - **Bấm vào một agent:** xem file đang chờ nó và log gần nhất.
 - **Chỉ đọc**, tự làm mới 3 giây một lần, chỉ mở trên máy bạn. Trang đọc đúng các file mà `watch.sh` đọc, và không cần cài thư viện nào.

@@ -225,11 +225,21 @@ ghi những gì tìm được vào workflow/DECISIONS.md. Cho tôi xem trước 
 
 ## 6. Chạy `watch.sh` và trang monitor
 
-**`watch.sh`:** mở một cửa sổ terminal riêng (Git Bash trên Windows) tại thư mục dự án:
+**Một lệnh cho cả hai:** mở một cửa sổ terminal riêng (Git Bash trên Windows) tại thư mục dự án:
 ```bash
 sh workflow/watch.sh
 ```
-Để cửa sổ đó chạy; bấm `Ctrl+C` khi muốn dừng.
+`watch.sh` theo dõi file và **tự mở kèm trang monitor** ở **http://localhost:4300**. Để cửa sổ đó chạy.
+
+| Muốn | Lệnh (ở terminal nào cũng được) |
+|---|---|
+| Dừng cả watch.sh và monitor | `sh workflow/watch.sh --stop` (hoặc `Ctrl+C` trong cửa sổ của nó) |
+| Khởi động lại (dừng bản đang chạy, chạy lại ở terminal này) | `sh workflow/watch.sh --restart` |
+| Không mở kèm monitor / đổi cổng | `--no-monitor` / `--port 5000` |
+
+- Chỉ một `watch.sh` chạy được cùng lúc; chạy thêm thì nó báo và dừng.
+- **Cập nhật workflow không cần khởi động lại:** `watch.sh` chạy từ một bản sao trong `workflow/.run/`, nên chép đè `watch.sh`, `monitor.js` lúc đang chạy không làm hỏng nó. Thấy file đổi, nó tự nạp bản mới ở lần quét kế tiếp.
+- **watch.sh chết ngang** (cửa sổ bị đóng, máy ngủ…): nó ghi nhịp tim mỗi lần quét, nên trang monitor hiện đỏ *"watch.sh đã dừng bất thường"* và huy hiệu **WATCH ĐÃ CHẾT**. Dừng đàng hoàng thì huy hiệu là **WATCH TẮT**, kèm cảnh báo khi đang có việc dở.
 - `--interval 60`: quét mỗi 60 giây (mặc định 30 giây).
 - `--once`: quét đúng một lần.
 - `--lint`: chỉ liệt kê trạng thái bất thường rồi thoát, không đánh thức ai.
@@ -248,12 +258,10 @@ sh workflow/watch.sh
   - câu trả lời thiếu dòng `Nguồn:`;
   - file chờ một agent quá `--stale 24` giờ mà không đổi.
 
-**Trang monitor:** mở thêm một terminal tại thư mục dự án:
-```bash
-node workflow/monitor.js
-```
-Rồi mở **http://localhost:4300**. Đổi cổng bằng `--port 5000`.
+**Trang monitor** (mở kèm `watch.sh`; muốn chạy riêng thì `node workflow/monitor.js`). Gặp cổng 4300 đang bị monitor cũ của dự án chiếm, nó tự dừng bản cũ rồi chạy bản mới.
 - **Dòng to ở đầu trang:** đỏ "ĐANG CHỜ BẠN" kèm việc cần làm; xanh khi không chờ bạn, ghi agent nào đang chạy (kể cả subagent Master đang gọi) và đang đến lượt ai.
+- **Từng Master đang mở** và đang làm gì, kể cả lúc mới làm rõ yêu cầu, chưa có file nào: Master ghi một dòng vào `workflow/.run/<ID>.now`. Dòng bắt đầu bằng "Chờ bạn:" thì hiện đỏ. Không đổi quá 2 giờ thì ghi "phiên có thể đã đóng".
+- **Tình trạng `watch.sh`:** huy hiệu WATCH ✓ / WATCH TẮT / WATCH ĐÃ CHẾT, và cảnh báo trong dòng to khi nó không chạy mà còn việc dở.
 - Khu **"Cần bạn"** ngay bên dưới.
 - **Văn phòng pixel:**
   - mỗi tính năng là **một dãy bàn** có thảm màu riêng;

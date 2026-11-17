@@ -20,7 +20,7 @@ Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-ki
 **Đã có:**
 - Master, Coder, Tester trao đổi qua file;
 - `watch.sh` tự đánh thức agent có việc;
-- trang monitor văn phòng pixel chạy trên máy bạn (`node workflow/monitor.js`);
+- trang monitor văn phòng pixel chạy trên máy bạn, mở kèm `sh workflow/watch.sh` (dừng: `--stop`, chạy lại: `--restart`);
 - thông báo Telegram một chiều;
 - chặn `git push` khi chưa được bạn cho phép bằng hook git (mọi công cụ AI), thêm hộp xác nhận của Claude Code mỗi lần push.
 
