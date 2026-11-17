@@ -2,6 +2,8 @@
 
 Đây là ghi lại **một lần dùng thật** (16–17/11/2026), từ lúc dự án còn là thư mục trống tới khi có hai tính năng được nghiệm thu. Mọi file, số liệu và lỗi gặp phải đều lấy từ dự án đó; chỉ đổi email cá nhân thành địa chỉ giả `lienhe@pnh.vn`.
 
+**Phiên bản:** bộ khởi đầu bản [`v0.1.0`](https://github.com/pnhit/multi-agent-workflow/tree/v0.1.0). Bản hiện tại khác ở vài lời nhắn (ghi chú tại chỗ), cách làm vẫn như vậy.
+
 **Cấu hình đã dùng:** chỉ có **ứng dụng Claude desktop** (tab Code), không cài Claude Code dòng lệnh. Coder và Tester chạy ở chế độ `subagent`: Master tự gọi họ ngay trong phiên chat. Máy Windows, có Git Bash và Node 20.
 
 **Bạn chỉ chat với Master.** Toàn bộ những câu chủ dự án đã nói nằm ở [mục 9](#9-tóm-tắt-chủ-dự-án-đã-nói-gì).
@@ -45,6 +47,8 @@ Trong ứng dụng Claude: tab **Code**, phiên mới, thư mục `D:\Workspace\
 Đọc AGENTS.md và làm theo. Bạn là Master. Đây là dự án mới.
 Dựng thư mục workflow/ theo mục 3 của AGENTS.md (hỏi tôi trước khi git init).
 ```
+> Bản hiện tại: luật riêng của Master nằm trong `workflow/roles/master.md`, nên câu thứ hai là *"Dựng thư mục workflow/ theo workflow/roles/master.md (hỏi tôi trước khi git init)."* Xem `SETUP.md`, bước 5.
+
 Master:
 - xin chạy `git init -b main`, bạn đồng ý;
 - tạo `workflow/DECISIONS.md` và `workflow/journal/`;
