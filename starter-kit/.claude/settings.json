@@ -27,13 +27,27 @@
       "Bash(pytest:*)",
       "Bash(python -m pytest:*)",
       "Bash(go test:*)",
-      "Bash(cargo test:*)"
+      "Bash(cargo test:*)",
+      "Bash(git -C:*)",
+      "Bash(git rebase:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(pnpm run test:*)",
+      "Bash(yarn dev:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git * push)",
+      "Bash(git * push *)",
+      "Bash(WORKFLOW_PUSH_OK=*)"
     ],
     "deny": [
-      "Bash(git push:*)",
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./workflow/.env)"
+      "Read(./workflow/.env)",
+      "Bash(git * --no-verify)",
+      "Bash(git * --no-verify *)"
     ]
   }
 }

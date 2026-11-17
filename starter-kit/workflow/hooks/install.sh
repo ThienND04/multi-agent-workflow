@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-# Cài hook pre-push chặn agent push. Có tác dụng với mọi công cụ AI, không riêng Claude Code.
+# Cài hook pre-push chặn push khi chưa được phép (WORKFLOW_PUSH_OK=1). Có tác dụng với mọi công cụ AI, không riêng Claude Code.
+# Chạy lại để cập nhật hook đã cài bản cũ.
 #
 # Dùng (ở thư mục dự án, Git Bash trên Windows):
 #   sh workflow/hooks/install.sh           cài (chủ dự án chạy một lần)
@@ -61,4 +62,4 @@ if [ "$husky" = 1 ]; then
 else
   echo "Đã cài hook chặn push: $dst"
 fi
-echo "Từ giờ mọi git push đều bị chặn. Bạn tự push bằng: git push --no-verify origin <nhánh>"
+echo "Từ giờ git push bị chặn trừ khi có WORKFLOW_PUSH_OK=1. Bạn push bằng: WORKFLOW_PUSH_OK=1 git push origin <nhánh>"

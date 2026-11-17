@@ -1,12 +1,22 @@
 #!/usr/bin/env sh
 # workflow-multi-agent: block-push
 # Hook git do workflow multi-agent cài (sh workflow/hooks/install.sh).
-# Chặn MỌI lần git push, với mọi công cụ AI (Claude Code, Codex, Gemini, Antigravity…),
+# Chặn mọi lần git push, với mọi công cụ AI (Claude Code, Codex, Gemini, Antigravity…),
 # vì git tự chạy hook này trước khi push, bất kể ai gọi lệnh.
-# Chủ dự án tự push bằng:  git push --no-verify <remote> <nhánh>
-# (agent bị cấm dùng --no-verify và cấm sửa hook, xem AGENTS.md mục 6).
+# Chỉ cho qua khi lệnh push có WORKFLOW_PUSH_OK=1:
+#   WORKFLOW_PUSH_OK=1 git push <remote> <nhánh>
+# - Chủ dự án: dùng lúc nào cũng được.
+# - Master: chỉ dùng khi chủ dự án vừa cho phép đúng lần push đó trong phiên chat (AGENTS.md mục 6).
+# - Coder, Tester: không bao giờ.
+# Agent bị cấm dùng --no-verify và cấm sửa hook.
+
+if [ "${WORKFLOW_PUSH_OK:-}" = "1" ]; then
+  echo "workflow multi-agent: push được chủ dự án cho phép (WORKFLOW_PUSH_OK=1)." >&2
+  exit 0
+fi
 
 echo "git push bị chặn bởi workflow multi-agent." >&2
-echo "- Nếu bạn là AI agent: KHÔNG thử cách khác. Ghi câu hỏi cho Master; chỉ chủ dự án quyết định và tự push." >&2
-echo "- Nếu bạn là chủ dự án: git push --no-verify ${1:-origin} <nhánh>" >&2
+echo "- Nếu bạn là AI agent: chỉ Master được push, và chỉ khi chủ dự án vừa cho phép đúng lần push này trong phiên chat." >&2
+echo "  Chưa được cho phép thì dừng và hỏi chủ dự án (Coder, Tester: ghi câu hỏi cho Master). KHÔNG thử cách khác." >&2
+echo "- Nếu bạn là chủ dự án: WORKFLOW_PUSH_OK=1 git push ${1:-origin} <nhánh>" >&2
 exit 1

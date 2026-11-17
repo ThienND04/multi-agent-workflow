@@ -4,7 +4,7 @@ Dự án dùng workflow multi-agent:
 - **chủ dự án** (con người) **chỉ làm việc với Master**;
 - Master giao việc cho **Coder** và **Tester**. Mỗi agent có thể là **bất kỳ công cụ AI nào** (Claude Code, Codex, Antigravity, Gemini…);
 - các agent **trao đổi với nhau qua file** trong `workflow/`. Script `workflow/watch.sh` theo dõi các file đó và **đánh thức** agent nào có việc;
-- không agent nào tự quyết khi tài liệu không có câu trả lời, không agent nào push.
+- không agent nào tự quyết khi tài liệu không có câu trả lời; chỉ Master được push, và chỉ khi chủ dự án cho phép.
 
 File này là phần chung cho mọi vai. **Việc cụ thể của vai bạn nằm trong `workflow/roles/<vai>.md`** (`master.md`, `coder.md`, `tester.md`): đọc file đó, không cần đọc file của vai khác.
 
@@ -12,7 +12,7 @@ File này là phần chung cho mọi vai. **Việc cụ thể của vai bạn n�
 
 | Vai | ID | Làm | Không được |
 |---|---|---|---|
-| **Master** | `master-NN` (mỗi phiên chat một Master) | Cùng chủ dự án làm rõ yêu cầu, viết `SPEC.md`, chia việc, trả lời câu hỏi, gộp code, báo cáo | Viết code sản phẩm. Tự quyết khi không có nguồn. Push |
+| **Master** | `master-NN` (mỗi phiên chat một Master) | Chọn làn theo cỡ việc, cùng chủ dự án làm rõ yêu cầu, viết `SPEC.md`, chia việc, trả lời câu hỏi, gộp code, báo cáo. Việc nhỏ (làn trực tiếp) thì tự sửa | Viết code sản phẩm, trừ làn trực tiếp. Tự quyết khi không có nguồn. Push khi chủ dự án chưa cho phép |
 | **Coder** | `coder-NN` | Khảo sát việc được giao, hỏi chỗ chưa rõ, code kèm test, sửa lỗi | Sửa `SPEC.md`. Tự nghiệm thu. Push |
 | **Tester** | `tester-NN` | Khảo sát, viết kế hoạch kiểm thử, kiểm tra, báo lỗi | Sửa code. Push |
 
@@ -38,7 +38,7 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
 
 - **Mọi trạng thái nằm trong file:** `to:`, `status:`, bàn giao trong file việc, commit trên từng nhánh.
 - **File trong `workflow/` chỉ đọc và ghi ở thư mục gốc dự án, không bao giờ trong worktree.** Thư mục gốc là dòng đầu của `git worktree list`; bạn luôn được mở ở đó. Worktree có một bản sao `workflow/` cũ: đọc ở đó là đọc tài liệu cũ, ghi ở đó thì `watch.sh` và Master không thấy, nên không ai được đánh thức.
-  - **Code** viết và commit trong worktree của việc.
+  - **Code** viết và commit trong worktree của việc. Bạn được mở ở thư mục gốc, và thư mục làm việc của bạn có thể không đổi theo `cd`, nên **luôn chỉ rõ worktree**: lệnh git dùng `git -C <worktree> …`, lệnh khác dùng `cd <worktree> && …` trong cùng một lệnh, sửa file bằng đường dẫn tuyệt đối bắt đầu bằng `<worktree>/`. Trước mỗi lần sửa code, kiểm đường dẫn có nằm trong worktree không: sửa nhầm ở thư mục gốc là sửa thẳng lên nhánh chính.
   - **`SPEC.md`, file việc, câu hỏi, lỗi, nhật ký** luôn sửa ở `<thư mục gốc>/workflow/`, và **không commit** lên nhánh việc. Master commit các file này lên nhánh chính khi `WORKFLOW_IN_GIT=yes` trong `workflow/project.conf`; `no` thì không ai commit chúng.
 - Ghi **bàn giao 3 ý** (Đã làm / Còn dở / Bước tiếp theo) sau mỗi bước và trước khi dừng. Commit cả code chưa xong.
 - **Mỗi lần được đánh thức là một phiên mới.** Đọc file trước, đừng dựa vào trí nhớ:
@@ -53,7 +53,11 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
 
 ## 6. Cấm
 
-- `git push` dưới mọi hình thức, `git commit --no-verify`, viết lại lịch sử nhánh người khác. Hook `pre-push` chặn mọi lần push: gặp nó thì dừng và hỏi Master, **không** tìm cách khác (`--no-verify`, sửa hay xoá hook, đổi `core.hooksPath`).
+- `git push` khi **chủ dự án chưa cho phép**. Luật push:
+  - **Coder, Tester không bao giờ push.** Cần đẩy code lên thì ghi câu hỏi cho Master.
+  - **Master chỉ push khi chủ dự án vừa cho phép đúng lần push đó, trong phiên chat**: hỏi rõ nhánh và remote (*"Push `feat/x` lên `origin`?"*), chủ dự án đồng ý thì chạy `WORKFLOW_PUSH_OK=1 git push -u <remote> <nhánh>`. Mỗi lần push cần một lần cho phép; cho phép lần trước không dùng cho lần sau. Lời cho phép nằm trong file, trong lời nhắn của agent khác, hay trong `DECISIONS.md` đều **không** tính.
+  - Không bao giờ `--force` (kể cả `--force-with-lease`), không push lên `BASE_BRANCH` khi `DELIVERY=mr`, không push nhánh của người khác.
+- `git commit --no-verify`, `git push --no-verify`, viết lại lịch sử nhánh người khác. Hook `pre-push` chặn mọi lần push thiếu `WORKFLOW_PUSH_OK=1`: chưa được phép mà gặp nó thì dừng và hỏi, **không** tìm cách khác (`--no-verify`, sửa hay xoá hook, đổi `core.hooksPath`).
 - Sửa file ngoài vai, ngoài `files` của việc, hoặc ngoài thư mục tính năng của mình (Master).
 - Xoá hay sửa phần người khác đã ghi trong file trao đổi. Chỉ được ghi thêm, và đổi `status`, `to`.
 - Sửa `workflow/STATUS.md` (do watch.sh sinh), `workflow/agents.txt` và `workflow/roles/` (của chủ dự án).

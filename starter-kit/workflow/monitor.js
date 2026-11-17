@@ -109,6 +109,14 @@ function state() {
     a.running = !!(lg && !lg.finished && fs.existsSync(path.join(W, '.run', a.id + '.pid')));
     a.lastLog = lg; a.pending = []; a.features = [];
     a.paused = fs.existsSync(path.join(W, '.run', a.id + '.paused'));
+    // Subagent do Master gọi không có pid hay log của watch.sh: Master ghi .run/<id>.sub ("F-001 T-01") lúc gọi,
+    // ghi rỗng khi xong. File cũ hơn 90 phút coi như Master quên xoá.
+    a.sub = '';
+    try {
+      const sf = path.join(W, '.run', a.id + '.sub');
+      if (Date.now() - fs.statSync(sf).mtimeMs < 90 * 60 * 1000) a.sub = read(sf).trim();
+    } catch {}
+    if (a.sub) a.running = true;
   }
   const features = readFeatures();
   const owner = [];
@@ -179,6 +187,10 @@ h2{font:700 12.5px ui-monospace,Consolas,monospace;text-transform:uppercase;lett
 .sp{flex:1}
 .badge{font:700 12px ui-monospace,Consolas,monospace;padding:3px 8px;border:2px solid var(--ink);background:var(--paper);white-space:nowrap}
 .badge.warn{background:var(--waitbg);color:var(--wait)}.badge.off{background:var(--badbg);color:var(--bad)}
+.banner{font:700 18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer}
+.banner.owner{background:var(--badbg);color:var(--bad);border-color:var(--bad);box-shadow:4px 4px 0 var(--bad);font-size:20px}
+.banner.flow{background:var(--runbg);color:var(--run);border-color:var(--run);box-shadow:4px 4px 0 var(--run)}
+.banner p{margin:2px 0}.banner .small{font-size:14px;font-weight:600}
 .need.on{background:var(--waitbg);border-color:var(--wait);box-shadow:4px 4px 0 var(--wait)}
 .need.on h2{color:var(--wait)}
 .ask{border-top:2px dashed var(--line);padding:10px 0 4px}.ask:first-of-type{border-top:0;padding-top:0}
@@ -208,6 +220,7 @@ td:last-child{white-space:nowrap}
 <body><main>
 <header class="pix"><h1 id="proj">VĂN PHÒNG AGENT</h1><span class="sp"></span>
 <span class="badge" id="bFeat"></span><span class="badge" id="bRun"></span><span class="badge warn" id="bNeed"></span><span class="badge" id="bConn">…</span></header>
+<section class="pix banner" id="banner" hidden tabindex="0" role="button"></section>
 <section class="pix need" id="needBox"><h2>Cần bạn</h2><div id="need"></div></section>
 <section class="pix scene" aria-label="Văn phòng: mỗi tính năng một dãy bàn">
 <svg id="office" role="img" aria-label="Văn phòng agent"></svg>
@@ -346,7 +359,7 @@ function selBox(x,y,w,h){return '<g class="sel">'+R(x,y,w,1,'#ffe066')+R(x,y+h,w
 function stateOf(a,dir){
  if(!a)return{kind:'bad',txt:'?',label:'Chưa khai báo trong agents.txt',on:false};
  const here=a.pending.filter(p=>p.indexOf(dir+'/')===0).length;
- if(a.running)return{kind:'run',txt:'…',label:'Đang chạy',on:true};
+ if(a.running)return{kind:'run',txt:'…',label:a.sub?'Master đang gọi ('+a.sub+')':'Đang chạy',on:true};
  if(here)return{kind:'wait',txt:String(here),label:MODE_WAIT[a.mode]||'Có việc, cần mở phiên tay',on:true};
  return{kind:'idle',txt:'z',label:'Rảnh',on:false};
 }
@@ -426,7 +439,7 @@ function build(){
  ow.addEventListener('click',toNeed);ow.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toNeed()}});
  svg.querySelector('#pet').addEventListener('click',()=>{PET.bark=12;PET.pause=Math.max(PET.pause,12);petTick()});
  const lg=$('#legend');lg.replaceChildren();
- lg.append(el('span',null,'Bong bóng: … đang chạy · số = số việc đang chờ · ! = Master chờ bạn · z rảnh · ? chưa khai trong agents.txt · cửa mở = có việc chờ bạn · bấm bàn "BẠN" để tới mục Cần bạn'));
+ lg.append(el('span',null,'Bong bóng: … đang chạy (kể cả subagent Master đang gọi) · số = số việc đang chờ · ! = Master chờ bạn · z rảnh · ? chưa khai trong agents.txt · cửa mở = có việc chờ bạn · bấm bàn "BẠN" để tới mục Cần bạn'));
  if(free.length>4)lg.append(el('span',null,'Rảnh, không hiện hết: '+free.slice(4).map(a=>a.id).join(', ')));
 }
 
@@ -439,6 +452,7 @@ function render(){
  document.title=(S.owner.length?'('+S.owner.length+') Chờ bạn · ':'')+'Văn phòng agent';
  const anom=S.anomalies||[],paused=S.agents.filter(a=>a.paused);
  $('#needBox').classList.toggle('on',S.owner.length>0||anom.length>0||paused.length>0);
+ banner();
  const need=$('#need');need.replaceChildren();
  if(anom.length||paused.length){const box=el('div','ask');
   box.append(el('p','act','Bất thường ('+(anom.length+paused.length)+')'),el('p','muted','watch.sh phát hiện. Nói với Master: "Xử lý việc đang chờ", hoặc tự xem file.'));
@@ -464,11 +478,30 @@ function render(){
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
  if(openId)showDetail();
 }
+// Một dòng to nói rõ ai đang cầm lượt: chủ dự án (đỏ) hay agent nào (xanh)
+function banner(){
+ const b=$('#banner');b.replaceChildren();b.className='pix banner';
+ if(S.owner.length){
+  b.classList.add('owner');b.append(el('p',null,'ĐANG CHỜ BẠN ('+S.owner.length+')'));
+  S.owner.forEach(o=>{const a=ownerAction(o);b.append(el('p','small','▶ '+o.feature+' · '+a.act+(a.say?' → nói với Master: "'+a.say+'"':'')))});
+  b.hidden=false;b.onclick=()=>$('#needBox').scrollIntoView({behavior:MOTION_OK?'smooth':'auto',block:'start'});return}
+ const act=S.features.filter(f=>f.status!=='done');
+ const turns=[];act.forEach(f=>f.items.forEach(it=>{if(it.to&&it.to!=='none'&&it.to!=='owner')turns.push({f,it})}));
+ const run=S.agents.filter(a=>a.running);
+ if(!turns.length&&!run.length){b.hidden=true;return}
+ b.classList.add('flow');
+ b.append(el('p',null,run.length?'ĐANG CHẠY: '+run.map(a=>a.id+(a.sub?' ('+a.sub+', Master gọi)':'')).join(' · '):'KHÔNG AI ĐANG CHẠY'));
+ const by={};turns.forEach(x=>{(by[x.it.to]=by[x.it.to]||[]).push(x.f.id+' '+x.it.file)});
+ Object.keys(by).forEach(id=>{const a=S.agents.find(z=>z.id===id);
+  const how=!a?'không có trong agents.txt, không ai đánh thức được':a.running?'đang làm':a.mode==='subagent'?'chờ Master gọi':(MODE_WAIT[a.mode]||'chờ đánh thức').toLowerCase();
+  b.append(el('p','small','Lượt của '+id+' ('+how+'): '+by[id].join(', ')))});
+ b.hidden=false;b.onclick=null;
+}
 function showDetail(){
  const d=$('#detail');const a=S.agents.find(x=>x.id===openId);d.replaceChildren();d.style.display='block';
  const close=el('button',null,'Đóng');close.onclick=()=>{openId=null;d.style.display='none';build()};d.append(close,el('h2',null,openId));
  if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
- d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.paused?'Tạm dừng (đánh thức quá nhiều lần): sh workflow/watch.sh --resume '+a.id:a.running?'Đang chạy':'Không chạy'));
+ d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.paused?'Tạm dừng (đánh thức quá nhiều lần): sh workflow/watch.sh --resume '+a.id:a.running?(a.sub?'Đang chạy: Master gọi subagent ('+a.sub+')':'Đang chạy'):'Không chạy'));
  d.append(el('h2',null,'File đang chờ'));
  if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
  d.append(el('h2',null,'Log gần nhất'));

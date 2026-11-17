@@ -158,7 +158,7 @@ lint() {
           if [ "$to" = "none" ]; then
             case "$st" in
               review|reviewed|ready|in_progress|in_test|reopened)
-                # Việc "Kế hoạch kiểm thử" chờ nhánh tích hợp: bình thường
+                # Việc "Kế hoạch kiểm thử" (kind: test-plan) của tính năng tạo trước khi bỏ loại việc này: bình thường
                 if [ "$st" = "reviewed" ] && [ "$(fm "$f" kind)" = "test-plan" ]; then :
                 elif ! has_open_question "$fd" "$(fm "$f" blocked_by)"; then
                   echo "\`$rel\`: không ai cầm (status: $st, to: none, không còn câu hỏi nào đang mở)"

@@ -32,7 +32,7 @@ CLAUDE.md                  Claude Code tự đọc: nạp sẵn AGENTS.md (dòng
 GEMINI.md                  Gemini CLI tự đọc: nạp sẵn AGENTS.md
 .gitattributes             giữ script .sh và hook xuống dòng LF
 .claude/
-  settings.json            quyền cho Claude Code: cho chạy git và lệnh test thường gặp, chặn git push, chặn đọc .env
+  settings.json            quyền cho Claude Code: cho chạy git và lệnh test thường gặp, hỏi bạn trước mỗi lần git push, chặn đọc .env
   agents/                  subagent Coder, Tester mà Master tự gọi
 workflow/
   agents.txt               danh sách agent và cách đánh thức (bạn điền ở bước 4)
@@ -41,7 +41,7 @@ workflow/
   watch.sh                 theo dõi file, đánh thức agent, sinh STATUS.md
   monitor.js               trang theo dõi local
   notify.sh                gửi Telegram
-  hooks/                   hook git chặn push (pre-push) và script cài (install.sh)
+  hooks/                   hook git chặn push khi chưa được phép (pre-push) và script cài (install.sh)
   .gitignore               bỏ qua các file do watch.sh sinh ra và workflow/.env
 ```
 
@@ -58,8 +58,9 @@ workflow/
 sh workflow/hooks/install.sh
 ```
 - Dự án mới, chưa là repo git: chạy lệnh này **sau khi Master `git init`** (Master sẽ nhắc).
-- Từ đó **mọi** lần `git push` đều bị chặn, dù agent dùng Claude Code, Codex, Gemini hay Antigravity. Hook nằm trong thư mục hook chung nên áp dụng cho mọi worktree.
-- **Bạn** push bằng `git push --no-verify origin <nhánh>`. Agent bị cấm dùng `--no-verify`.
+- Từ đó `git push` bị chặn trừ khi lệnh có `WORKFLOW_PUSH_OK=1`, dù agent dùng Claude Code, Codex, Gemini hay Antigravity. Hook nằm trong thư mục hook chung nên áp dụng cho mọi worktree. Đã cài bản cũ thì chạy lại lệnh trên để cập nhật.
+- **Bạn** push bằng `WORKFLOW_PUSH_OK=1 git push origin <nhánh>`.
+- **Master** chỉ push khi bạn cho phép đúng lần push đó trong phiên chat: Master hỏi *"Push `feat/x` (2 commit) lên `origin`?"*, bạn đồng ý thì Master chạy lệnh trên; Claude Code còn hiện hộp xác nhận để bạn bấm. Coder, Tester không bao giờ push. Agent bị cấm dùng `--no-verify`, `--force`.
 - Dự án dùng **husky** (`core.hooksPath` là `.husky/_`): script tự cài vào `.husky/pre-push` và thêm file đó vào `.git/info/exclude`, để hook không bao giờ bị commit rồi chặn push của cả team.
 - Dự án đã có hook `pre-push` riêng: script không ghi đè mà in hướng dẫn gộp tay.
 
@@ -92,7 +93,7 @@ Dùng khi repo là của team và bạn chỉ muốn thử workflow trên máy m
 6. Chạy `sh workflow/hooks/install.sh` (tự xử lý husky như trên).
 7. Kiểm: `git status --short` **không được** hiện file nào của workflow.
 
-Lưu ý: hook chặn push áp cho **mọi** lần push từ repo này, kể cả nhánh của bạn không liên quan workflow. Bạn push bằng `git push --no-verify`; muốn tắt thì xoá hook.
+Lưu ý: hook chặn push áp cho **mọi** lần push từ repo này, kể cả nhánh của bạn không liên quan workflow. Bạn push bằng `WORKFLOW_PUSH_OK=1 git push …`; muốn tắt thì xoá hook.
 
 **Vì sao trạng thái luôn ghi ở thư mục gốc:** Coder và Tester code, test trong worktree riêng (thư mục `../<tên-dự-án>-wt/…`). Worktree cũng có một bản sao `workflow/`, nhưng đó là bản cũ. Luật trong `AGENTS.md` yêu cầu mọi file trong `workflow/` chỉ được sửa ở thư mục gốc, để `watch.sh` và Master thấy được. Trước khi gộp, Master kiểm tra: nhánh nào lỡ đụng tới `workflow/` thì không gộp.
 
@@ -196,7 +197,7 @@ Lệnh mẫu (kiểm tra lại theo phiên bản bạn cài). Lệnh phải **k�
 
 **Master** luôn để `manual`, vì bạn đang chat với nó. Khi có việc chờ Master, `watch.sh` báo bạn và bạn nói với Master một câu *"Xử lý việc đang chờ"*.
 
-**Cấp quyền cho agent Claude** (cả `subagent` lẫn `auto`) để nó chạy được lệnh build và test của dự án. `.claude/settings.json` đã cho sẵn các lệnh test thường gặp: `node --test`, `npm test`, `npm run test`, `npm run build`, `pnpm test`, `yarn test`, `pytest`, `go test`, `cargo test`. Dự án dùng lệnh khác thì thêm vào danh sách `allow`, ví dụ `"Bash(./gradlew test:*)"`; lần đầu mở, Master sẽ ghi các lệnh của dự án vào `DECISIONS.md` và đưa bạn đúng dòng cần thêm. Thiếu quyền thì agent `auto` không chạy được test (không có ai bấm cho phép), còn `subagent` thì bạn bị hỏi quyền liên tục. Lệnh nào dự án không dùng thì có thể xoá. `git push` đã bị chặn sẵn. Công cụ khác có cách cấp quyền riêng, xem tài liệu của công cụ đó. Agent `auto` chạy không có người canh, nên chỉ cấp đúng những gì cần.
+**Cấp quyền cho agent Claude** (cả `subagent` lẫn `auto`) để nó chạy được lệnh build và test của dự án. `.claude/settings.json` đã cho sẵn các lệnh test thường gặp (`node --test`, `npm test`, `npm run test`, `npm run build`, `pnpm test`, `yarn test`, `pytest`, `go test`, `cargo test`), lệnh chạy sản phẩm để tự kiểm trên trình duyệt (`npm run dev`, `pnpm dev`, `yarn dev`), và `git -C …` (agent được mở ở thư mục gốc nên chạy git trong worktree bằng `git -C <worktree>`). `--no-verify` bị chặn ở mọi dạng, kể cả `git -C <thư mục> push --no-verify`. Dự án dùng lệnh khác thì thêm vào danh sách `allow`, ví dụ `"Bash(./gradlew test:*)"`; lần đầu mở, Master sẽ ghi các lệnh của dự án vào `DECISIONS.md` và đưa bạn đúng dòng cần thêm. Thiếu quyền thì agent `auto` không chạy được test (không có ai bấm cho phép), còn `subagent` thì bạn bị hỏi quyền liên tục. Lệnh nào dự án không dùng thì có thể xoá. `git push` luôn hỏi bạn trước (danh sách `ask`), kể cả dạng `git -C <thư mục> push`. Công cụ khác có cách cấp quyền riêng, xem tài liệu của công cụ đó. Agent `auto` chạy không có người canh, nên chỉ cấp đúng những gì cần.
 
 **Thử một agent `auto` có chạy đúng tài khoản không** (tại thư mục dự án):
 ```bash
@@ -252,7 +253,8 @@ sh workflow/watch.sh
 node workflow/monitor.js
 ```
 Rồi mở **http://localhost:4300**. Đổi cổng bằng `--port 5000`.
-- Khu **"Cần bạn"** ở trên cùng.
+- **Dòng to ở đầu trang:** đỏ "ĐANG CHỜ BẠN" kèm việc cần làm; xanh khi không chờ bạn, ghi agent nào đang chạy (kể cả subagent Master đang gọi) và đang đến lượt ai.
+- Khu **"Cần bạn"** ngay bên dưới.
 - **Văn phòng pixel:**
   - mỗi tính năng là **một dãy bàn** có thảm màu riêng;
   - Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp; dãy dài thì tự xuống hàng;
@@ -273,7 +275,14 @@ Hỏi tôi đến khi đủ để viết tài liệu có tiêu chí kiểm đư�
 Giao việc theo các agent trong workflow/agents.txt.
 ```
 
-Từ đây:
+Master **chọn làn theo cỡ việc** trước, nói bạn biết một câu rồi làm ngay (xem `HOW-IT-WORKS.md` mục 3). Bạn muốn chọn trước thì nói luôn trong lời nhắn:
+- **làn trực tiếp**, cho bug nhỏ: *"Sửa trực tiếp SG-30027: <link Jira>"*. Master tự sửa trên nhánh riêng và tự kiểm trên trình duyệt, không tạo file trong `workflow/`;
+- **làn nhanh**: *"Làn nhanh: SG-30027, SG-30012"*. Không có bước duyệt, Master kiểm thay Tester;
+- **làn đủ**: *"Làn đủ: …"*, cho tính năng lớn. Đi đủ các bước dưới đây.
+
+Muốn Coder, Tester (và Master ở làn trực tiếp) tự kiểm được trên trình duyệt, Master ghi lệnh chạy sản phẩm và địa chỉ mở vào `workflow/DECISIONS.md`. Subagent dùng chung công cụ trình duyệt của phiên chính (trình duyệt có sẵn trong ứng dụng Claude, Claude in Chrome).
+
+Từ đây (làn đủ; làn nhanh bỏ bước duyệt và khảo sát):
 
 | Khi | Ai làm gì |
 |---|---|
@@ -283,8 +292,8 @@ Từ đây:
 | Có câu Master không chắc (`to: owner`) | `watch.sh` báo, kể cả qua Telegram. Bạn trả lời Master và bàn tới khi chốt |
 | Có việc cho agent `manual` | `watch.sh` báo và chép sẵn lời nhắn vào clipboard. Bạn mở công cụ, dán |
 | Có việc mới cho agent `window` mà cửa sổ của nó đang mở | `watch.sh` báo. Bạn gõ vào cửa sổ đó: *"Xử lý việc đang chờ"* |
-| Báo cáo xong (`SPEC.md` có `to: owner`) | Bạn tự thử theo mục "Cách thử", trên **worktree tích hợp** (`../<tên-dự-án>-wt/F-NNN-integration`): đó đúng là bản sẽ vào `main`, đã ghép mọi việc của tính năng. Rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt |
-| Master đã gộp code | **Bạn push:** `git push --no-verify origin main` (hook chặn mọi lần push thường) |
+| Báo cáo xong (`SPEC.md` có `to: owner`) | Báo cáo luôn có: nhánh, danh sách file đã đổi, lệnh xem diff, lệnh chạy test, cách thử. Bạn thử **ngay ở thư mục dự án**: `git switch F-NNN/integration` (Master đã xoá các worktree để bạn switch được, và trình soạn thảo thấy ngay thay đổi). Đó đúng là bản sẽ vào `main`, mỗi việc một commit. Thử xong `git switch main`, rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt |
+| Master đã gộp code | Master hỏi có push không. Đồng ý thì Master push (bạn bấm xác nhận); hoặc **bạn tự push:** `WORKFLOW_PUSH_OK=1 git push origin main` |
 
 **Lời nhắn cho agent `manual`**, nếu máy không chép được vào clipboard (lời nhắn cũng được lưu ở `workflow/.run/<ID>.prompt`):
 ```text

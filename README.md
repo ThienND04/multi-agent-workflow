@@ -3,7 +3,7 @@
 Cách để một developer dùng **nhiều AI agent** cùng làm phần mềm:
 - **bạn chỉ làm việc với Master**;
 - Master giao việc cho **Coder** và **Tester**, và họ có thể dùng bất kỳ AI nào;
-- **không AI nào tự quyết hay tự push**: bạn là người quyết định cuối.
+- **không AI nào tự quyết, và chỉ Master được push khi bạn cho phép**: bạn là người quyết định cuối.
 
 ## Đọc 3 file
 
@@ -22,7 +22,7 @@ Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-ki
 - `watch.sh` tự đánh thức agent có việc;
 - trang monitor văn phòng pixel chạy trên máy bạn (`node workflow/monitor.js`);
 - thông báo Telegram một chiều;
-- chặn `git push` của agent bằng hook git (mọi công cụ AI), thêm luật quyền của Claude Code.
+- chặn `git push` khi chưa được bạn cho phép bằng hook git (mọi công cụ AI), thêm hộp xác nhận của Claude Code mỗi lần push.
 
 **Đang xây:** chat với Master và bấm duyệt ngay trên trang monitor; bộ công cụ `ag` với hàng rào tự động đầy đủ. Bấm **Watch → Releases** trên GitHub để được báo.
 
