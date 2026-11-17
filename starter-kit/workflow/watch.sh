@@ -97,14 +97,24 @@ notify() {
   say "THÔNG BÁO: $1"
 }
 
-# fm <file> <khoá>: đọc một khoá trong phần đầu file (giữa hai dòng ---), bỏ chú thích sau dấu #
+# fm <file> <khoá>: đọc một khoá trong phần đầu file (giữa hai dòng ---).
+# "#" chỉ là chú thích khi có khoảng trắng ở cả hai bên ("status: review  # review | …"), nên "Sửa lỗi #123" giữ nguyên;
+# bỏ một cặp ngoặc "…" hay '…' bao quanh giá trị.
+# Cùng quy tắc với frontmatter() trong monitor.js.
 fm() {
   awk -v k="$2" '
     NR==1 && $0 !~ /^---/ { exit }
     /^---/ { c++; if (c==2) exit; next }
     c==1 && index($0, k ":")==1 {
-      v = substr($0, length(k)+2); sub(/#.*/, "", v); gsub(/^[ \t]+|[ \t\r]+$/, "", v); print v; exit
+      v = substr($0, length(k)+2); sub(/[ \t]#([ \t].*)?$/, "", v); gsub(/^[ \t]+|[ \t\r]+$/, "", v)
+      if (length(v) >= 2 && (v ~ /^".*"$/ || v ~ /^\047.*\047$/)) v = substr(v, 2, length(v) - 2)
+      print v; exit
     }' "$1"
+}
+
+# job_of <danh sách file>: "F-001 T-01, F-001 B-02" để monitor biết agent đang chạy cho tính năng nào
+job_of() {
+  echo "$1" | sed -n 's#^\(F-[0-9][0-9]*\)[^/]*/[a-z]*/\([^/]*\)\.md$#\1 \2#p' | awk 'NF { printf "%s%s", (n++ ? ", " : ""), $0 }'
 }
 
 # owner_lines <dòng scan có to: owner>: mỗi dòng nói rõ chủ dự án cần làm gì
@@ -367,7 +377,7 @@ tick() {
       # Cửa sổ đang mở: agent tự sửa file của nó là bình thường; chỉ báo khi có FILE MỚI chờ nó
       new=$(echo "$files" | while read -r f; do grep -qxF "$f" "$RUN/$id.list" 2>/dev/null || echo "$f"; done)
       if [ -n "$new" ]; then
-        echo "$files" > "$RUN/$id.list"
+        echo "$files" > "$RUN/$id.list"; job_of "$files" > "$RUN/$id.job"
         notify "Có việc mới cho $id ($role), cửa sổ của nó đang mở: gõ vào đó \"Xử lý việc đang chờ\". File mới: $(echo $new)"
       fi
       continue
@@ -385,6 +395,7 @@ tick() {
       date +%s >> "$RUN/$id.wakes"
     fi
     echo "$s" > "$RUN/$id.sig"
+    case "$mode" in auto|window) job_of "$files" > "$RUN/$id.job" ;; esac
     case "$mode" in
       auto) wake "$id" "$role" "$cmd" "$files" ;;
       window) echo "$files" > "$RUN/$id.list"; open_window "$id" "$role" "$cmd" "$files" ;;

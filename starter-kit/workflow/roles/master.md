@@ -136,6 +136,8 @@ Coder vẫn hỏi được (câu hỏi `to: <bạn>`, bước 4–6). Câu hỏi
   - chờ chủ dự án thì **bắt đầu bằng "Chờ bạn:"**: *"Chờ bạn: xác nhận làn"*, *"Chờ bạn: trả lời 2 câu hỏi về F-003"*. Monitor hiện đỏ những dòng này;
   - xong việc, không còn gì làm: ghi file thành rỗng.
 
+  Đã có thư mục tính năng thì **luôn nêu mã `F-NNN`** trong dòng (ví dụ *"Chờ bạn: nghiệm thu F-005"*). Bạn cầm nhiều tính năng chưa xong thì monitor chỉ hiện dòng này ở dãy bàn của tính năng có mã đó; không có mã thì hiện ở mọi dãy bàn của bạn.
+
   Ghi bằng công cụ ghi file, không cần lệnh shell. File này không thay cho `to:` trong các file việc.
 - **Không mở phiên phụ.** Không dùng tính năng tạo phiên mới hay chuyển việc sang phiên khác của công cụ (ví dụ "start session", "hand off" trong ứng dụng Claude) cho việc của dự án: phiên đó không có ID, không có file, không có `to:`, nên monitor và `watch.sh` không thấy và không ai truy lại được. Khảo sát code thì tự đọc, tìm (công cụ đọc và tìm kiếm trong chính phiên của bạn), hoặc gọi subagent có trong `agents.txt`. Việc lớn thì chia thành việc trong `tasks/`. Chủ dự án muốn chạy song song thì họ tự mở thêm phiên Master (`master-02`).
 - **Làm rõ trước khi viết.** Hỏi tới khi đủ: đầu vào, đầu ra, trường hợp lỗi, cái gì **không** làm. Không điền chỗ trống bằng giả định.

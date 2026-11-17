@@ -37,7 +37,9 @@ function frontmatter(text) {
   for (let i = 1; i < lines.length; i++) {
     if (/^---/.test(lines[i])) break;
     const m = lines[i].match(/^([A-Za-z_]+):(.*)$/);
-    if (m) o[m[1]] = m[2].replace(/#.*/, '').trim();
+    // "#" chỉ là chú thích khi có khoảng trắng ở cả hai bên ("review  # review | …"), nên "Sửa lỗi #123" giữ nguyên;
+    // bỏ một cặp ngoặc bao quanh giá trị. Cùng quy tắc với fm() trong watch.sh.
+    if (m) o[m[1]] = m[2].replace(/\s#(\s.*)?$/, '').trim().replace(/^(["'])(.*)\1$/, '$2');
   }
   return o;
 }
@@ -147,6 +149,10 @@ function state() {
       if (Date.now() - fs.statSync(sf).mtimeMs < 90 * 60 * 1000) a.sub = read(sf).trim();
     } catch {}
     if (a.sub) a.running = true;
+    // Agent auto/window đang chạy: watch.sh ghi .run/<id>.job các việc nó được đánh thức cho ("F-001 T-01, F-001 B-02")
+    a.job = a.running && !a.sub ? read(path.join(W, '.run', a.id + '.job')).trim() : '';
+    // Các tính năng agent đang chạy cho; rỗng là không biết (hiện "đang chạy" ở mọi dãy bàn như cũ)
+    a.runIn = [...new Set(((a.sub || a.job).match(/F-\d+/g) || []))];
     const m = masters.find(x => x.id === a.id);
     a.now = m ? m.text : ''; a.nowWait = !!(m && m.waitOwner);
   }
@@ -313,6 +319,8 @@ const MODE_NAME={auto:'chạy ngầm tự động',window:'tự mở cửa sổ'
 const MODE_WAIT={auto:'Có việc, chờ watch.sh đánh thức',window:'Có việc, chờ watch.sh mở cửa sổ',manual:'Có việc, cần mở phiên tay',subagent:'Có việc, chờ Master gọi'};
 const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
 const stVi=x=>ST[x]||x||'?';
+// Nhãn trạng thái của tính năng / file: draft chỉ là "chờ bạn duyệt" khi to: owner; còn lại Master đang làm rõ
+const stOf=o=>o.status==='draft'&&o.to!=='owner'?'đang làm rõ':stVi(o.status);
 // Chủ dự án cần làm gì với một file to: owner
 function ownerAction(o){
  if(o.kind==='spec'&&o.status==='acceptance')return{act:'Đã làm xong, chờ bạn nghiệm thu',how:'Thử theo hướng dẫn bên dưới. Ổn thì nói với Master câu này; chưa ổn thì nói rõ chỗ chưa đạt.',say:'đạt'};
@@ -431,8 +439,14 @@ function selBox(x,y,w,h){return '<g class="sel">'+R(x,y,w,1,'#ffe066')+R(x,y+h,w
 function stateOf(a,dir){
  if(!a)return{kind:'bad',txt:'?',label:'Chưa khai báo trong agents.txt',on:false};
  const here=a.pending.filter(p=>p.indexOf(dir+'/')===0).length;
- if(a.running)return{kind:'run',txt:'…',label:a.sub?'Master đang gọi ('+a.sub+')':'Đang chạy',on:true};
- if(a.now)return a.nowWait?{kind:'wait',txt:'!',label:a.now,on:true}:{kind:'run',txt:'…',label:a.now,on:true};
+ // dir thuộc một trong các tính năng ids ("F-005")? ids rỗng (không biết) hay dir rỗng (cây nước) thì coi là có
+ const inF=ids=>!dir||!ids.length||ids.some(F=>dir.indexOf(F+'-')===0);
+ // Agent đang chạy (subagent qua .sub, auto/window qua .job) chỉ hiện "…" ở dãy bàn của tính năng nó đang làm
+ const runHere=a.running&&inF(a.runIn||[]),what=a.sub||a.job;
+ if(runHere)return{kind:'run',txt:'…',label:a.sub?'Master đang gọi ('+a.sub+')':'Đang chạy'+(a.job?' ('+a.job+')':''),on:true};
+ if(a.running&&!here)return{kind:'idle',txt:'z',label:'Đang chạy ở '+what,on:false};
+ // Dòng .now của Master: có mã F-NNN thì chỉ hiện ở dãy bàn tính năng đó, không có mã thì hiện ở mọi dãy của Master
+ if(a.now&&inF(a.now.match(/F-\d+/g)||[]))return a.nowWait?{kind:'wait',txt:'!',label:a.now,on:true}:{kind:'run',txt:'…',label:a.now,on:true};
  if(here)return{kind:'wait',txt:String(here),label:MODE_WAIT[a.mode]||'Có việc, cần mở phiên tay',on:true};
  return{kind:'idle',txt:'z',label:'Rảnh',on:false};
 }
@@ -471,7 +485,7 @@ function build(){
  // mỗi tính năng 2 dòng: tên, rồi trạng thái; tối đa 4 tính năng
  const board=blocks.map(b=>({f:b.f,color:b.color})).concat(done.slice().reverse().map(f=>({f,color:'#b9b0a3'})));
  board.slice(0,4).forEach((b,i)=>{const y=16+i*8.5;
-  s+=R(187,y,3,3,b.color)+T(192,y+2.8,3.4,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(60/(CW*3.4))),'start')+T(192,y+6.6,3.1,b.f.to==='owner'?'#b23030':'#6b5c4e',stVi(b.f.status),'start')});
+  s+=R(187,y,3,3,b.color)+T(192,y+2.8,3.4,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(60/(CW*3.4))),'start')+T(192,y+6.6,3.1,b.f.to==='owner'?'#b23030':'#6b5c4e',stOf(b.f),'start')});
  if(board.length>4)s+=T(252,49,3,'#6b5c4e','+'+(board.length-4)+' nữa','end');
  if(!board.length)s+=T(219,30,3.6,'#6b5c4e','(chưa có)');
  // bên trái: cây nước, agent rảnh đứng quanh cầm cốc nước
@@ -485,7 +499,7 @@ function build(){
  blocks.forEach(b=>{
   const f=b.f;
   s+=R(4,y,BR-4,b.h,'rgba(0,0,0,.06)')+R(4,y,BR-4,1,b.color)+R(4,y+b.h-1,BR-4,1,b.color)+R(4,y,1,b.h,b.color)+R(BR-1,y,1,b.h,b.color);
-  const sv='['+stVi(f.status)+']',svw=sv.length*CW*3.8,label=cut(f.id+' · '+f.title,Math.floor((BR-8-11-svw)/(CW*4.4))),lw=label.length*CW*4.4;
+  const sv='['+stOf(f)+']',svw=sv.length*CW*3.8,label=cut(f.id+' · '+f.title,Math.floor((BR-8-11-svw)/(CW*4.4))),lw=label.length*CW*4.4;
   s+=R(6,y+2,Math.min(lw+svw+11,BR-8),8,b.color)+T(8,y+7.6,4.4,'#ffffff',label,'start')+T(11+lw,y+7.6,3.8,f.to==='owner'?'#ffe066':'#ffffffcc',sv,'start');
   const rowTop=r=>y+HEAD+r*ROW_H;
   // bàn Master (rộng, 2 màn hình) ở đầu dãy
@@ -550,8 +564,8 @@ function render(){
  S.features.forEach((f,i)=>{const d=el('details');const k='feat:'+f.dir;
   d.open=OPEN.get(k)===true; // trang làm mới 3 giây một lần: giữ nguyên khung bạn đang mở
   d.addEventListener('toggle',()=>OPEN.set(k,d.open));
-  const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' · '+stVi(f.status)+' ('+f.items.length+' file)');d.append(sm);
-  const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,stVi(it.status)),el('td',null,'→ '+(it.to==='owner'?'bạn':it.to==='none'?'không ai':it.to)));t.append(tr)});d.append(t);files.append(d)});
+  const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' · '+stOf(f)+' ('+f.items.length+' file)');d.append(sm);
+  const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,stOf(it)),el('td',null,'→ '+(it.to==='owner'?'bạn':it.to==='none'?'không ai':it.to)));t.append(tr)});d.append(t);files.append(d)});
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
  if(openId)showDetail();
 }
