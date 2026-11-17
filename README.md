@@ -22,7 +22,7 @@ Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-ki
 - `watch.sh` tự đánh thức agent có việc;
 - trang monitor văn phòng pixel chạy trên máy bạn, mở kèm `sh workflow/watch.sh` (dừng: `--stop`, chạy lại: `--restart`);
 - thông báo Telegram một chiều;
-- chặn `git push` khi chưa được bạn cho phép bằng hook git (mọi công cụ AI), thêm hộp xác nhận của Claude Code mỗi lần push.
+- chặn push thẳng lên nhánh chính (khi team gộp code qua MR) bằng hook git, với mọi người và mọi công cụ AI; Master chỉ push nhánh tính năng khi bạn bảo.
 
 **Đang xây:** chat với Master và bấm duyệt ngay trên trang monitor; bộ công cụ `ag` với hàng rào tự động đầy đủ. Bấm **Watch → Releases** trên GitHub để được báo.
 

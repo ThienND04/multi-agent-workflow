@@ -34,20 +34,23 @@
       "Bash(pnpm dev:*)",
       "Bash(pnpm run dev:*)",
       "Bash(pnpm run test:*)",
-      "Bash(yarn dev:*)"
-    ],
-    "ask": [
-      "Bash(git push:*)",
-      "Bash(git * push)",
-      "Bash(git * push *)",
-      "Bash(WORKFLOW_PUSH_OK=*)"
+      "Bash(yarn dev:*)",
+      "Bash(git push:*)"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./workflow/.env)",
       "Bash(git * --no-verify)",
-      "Bash(git * --no-verify *)"
+      "Bash(git * --no-verify *)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push * --force)",
+      "Bash(git push * --force *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git push * --force-with-lease*)"
     ]
   }
 }

@@ -152,7 +152,7 @@ Coder vẫn hỏi được (câu hỏi `to: <bạn>`, bước 4–6). Câu hỏi
   - tạo `DECISIONS.md` và `journal/`;
   - `<nhánh chính>` chưa có commit nào thì xin chủ dự án cho tạo commit đầu tiên (bộ khởi đầu, và `workflow/` nếu `WORKFLOW_IN_GIT=yes`), vì Coder cần ít nhất một commit mới tạo được worktree;
   - dự án đã có code thì khảo sát (cấu trúc, build, test, quy ước, **quy ước thông điệp commit**), ghi vào `DECISIONS.md`;
-  - kiểm hook chặn push: `sh workflow/hooks/install.sh --check`. Chưa cài thì nhờ chủ dự án chạy `sh workflow/hooks/install.sh` (sau `git init` nếu vừa tạo repo);
+  - kiểm hook chặn push thẳng lên nhánh chính: `sh workflow/hooks/install.sh --check`. Chưa cài thì nhờ chủ dự án chạy `sh workflow/hooks/install.sh` (sau `git init` nếu vừa tạo repo);
   - ghi vào `DECISIONS.md` mục **"Lệnh"**: lệnh build, lệnh chạy test, **lệnh chạy sản phẩm và địa chỉ mở trên trình duyệt** (ví dụ `pnpm dev`, `http://localhost:5173`; cần đăng nhập thì ghi tài khoản thử lấy ở đâu). Dự án mới thì chốt cùng chủ dự án ở tính năng đầu tiên. Đối chiếu với danh sách `allow` trong `.claude/settings.json`: lệnh nào chưa có thì đưa chủ dự án đúng dòng cần thêm (ví dụ `"Bash(./gradlew test:*)"`), chủ dự án đồng ý thì mới thêm. Thiếu quyền thì Coder, Tester chạy ngầm (`auto`) không chạy được test, còn chạy dạng `subagent` thì chủ dự án bị hỏi quyền liên tục.
 - **Làn trực tiếp** (mục 2). Bạn làm như một phiên code thường, ở thư mục gốc:
   - `git switch -c <MR_PREFIX><mã-Jira-hoặc-tên-ngắn> <nhánh chính>`. **Không bao giờ commit lên `<nhánh chính>`**;
@@ -205,9 +205,9 @@ Coder vẫn hỏi được (câu hỏi `to: <bạn>`, bước 4–6). Câu hỏi
   - Cả hai cách: xoá các nhánh việc và nhánh tích hợp (`git branch -D`: nhánh việc đã được gom thành commit khác nên `-d` không nhận). Còn worktree nào của tính năng thì `git worktree remove`.
   - `WORKFLOW_IN_GIT=yes`: commit các file trong `workflow/` của tính năng lên `<nhánh chính>` (với `DELIVERY=mr` thì commit lên nhánh `<MR_PREFIX><tên-ngắn>`). `WORKFLOW_IN_GIT=no`: không commit file nào trong `workflow/`, vì chúng chỉ có trên máy chủ dự án.
 - **Push** (sau giao hàng, hoặc khi chủ dự án yêu cầu): chỉ khi **chủ dự án cho phép đúng lần push đó trong phiên chat** (`AGENTS.md` mục 6).
-  - Hỏi một câu nêu rõ nhánh và remote, kèm số commit sẽ lên: *"Push `feat/x` (2 commit) lên `origin`?"*. Chủ dự án chưa trả lời, hay trả lời không rõ, thì không push; báo lệnh để chủ dự án tự chạy: `WORKFLOW_PUSH_OK=1 git push -u origin <nhánh>`.
-  - Được đồng ý: `WORKFLOW_PUSH_OK=1 git push -u origin <nhánh>` (Claude Code còn hiện hộp xác nhận, chủ dự án bấm cho phép). Báo kết quả.
-  - Không `--force`, không `--no-verify`. `DELIVERY=mr` thì không bao giờ push `<nhánh chính>`. Push bị từ chối (nhánh xa đã đổi) thì dừng và báo, không tự gộp hay ép.
+  - Hỏi một câu nêu rõ nhánh và remote, kèm số commit sẽ lên: *"Push `feat/x` (2 commit) lên `origin`?"*. Chủ dự án chưa trả lời, hay trả lời không rõ, thì không push; báo lệnh để chủ dự án tự chạy: `git push -u origin <nhánh>`.
+  - Được đồng ý: `git push -u origin <nhánh>`. Báo kết quả.
+  - Không `--force`, không `--no-verify`. `DELIVERY=mr` thì không bao giờ push `<nhánh chính>` (hook `pre-push` cũng chặn). Push bị từ chối (nhánh xa đã đổi, hay bị hook chặn) thì dừng và báo, không tự gộp, ép hay tìm cách khác.
 - **Kiểm bất thường:** trước khi báo cáo, và khi chủ dự án bảo "xử lý việc đang chờ", chạy `sh workflow/watch.sh --lint`. Nó liệt kê việc không ai cầm, `status` và `to` lệch nhau, ID không có trong `agents.txt`, câu trả lời thiếu `Nguồn:`, file chờ quá lâu. Sửa những gì thuộc tính năng của bạn.
 - **Chỉ sửa** trong thư mục tính năng của mình, cộng `DECISIONS.md` khi chủ dự án đồng ý. Ngoại lệ duy nhất: code sản phẩm ở làn trực tiếp.
 - **Gọi agent chế độ `subagent`** (xem `workflow/agents.txt`): sau mỗi bước làm cho một file chuyển `to:` sang agent đó, bạn tự gọi subagent ghi ở cột cuối (`coder`, `coder-pro`, `tester` trong `.claude/agents/`).

@@ -84,7 +84,7 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 |---|---|---|
 | 1 | Master cùng tôi làm rõ, viết tài liệu, chia việc cho cấp 2 | Master hỏi tới khi đủ, viết `SPEC.md` (tiêu chí kiểm được, mục "Cách thử") và các file việc nhỏ |
 | 2 | Cấp 2 khảo sát, hỏi chỗ chưa rõ; Master giải quyết; không chắc thì hỏi tôi | Bước ② ③. Mỗi câu hỏi là một file `questions/D-NN.md`, chuyển qua lại bằng `to:` |
-| 3 | Rõ mới code; test lỗi thì Coder sửa; đạt thì báo Master, Master báo tôi; tôi quyết và push | Bước ④ ⑤ ⑥. Chỉ Master được push, và chỉ khi bạn cho phép đúng lần push đó trong phiên chat. Hook git `pre-push` chặn mọi lần push thiếu `WORKFLOW_PUSH_OK=1`, với mọi công cụ AI; Claude Code còn hiện hộp xác nhận mỗi lần push. Coder, Tester không bao giờ push. Bạn tự push bằng `WORKFLOW_PUSH_OK=1 git push` |
+| 3 | Rõ mới code; test lỗi thì Coder sửa; đạt thì báo Master, Master báo tôi; tôi quyết và push | Bước ④ ⑤ ⑥. Chỉ Master được push, và chỉ khi bạn bảo trong phiên chat. Coder, Tester không bao giờ push. Khi team gộp code qua MR (`DELIVERY=mr`), hook git `pre-push` chặn mọi người push thẳng lên nhánh chính, với mọi công cụ AI. Push nhánh khác thì dùng `git push` bình thường |
 | 4, 11 | Theo dõi mọi agent: trạng thái, việc đang làm | **Trang monitor local** (`sh workflow/watch.sh` mở kèm): văn phòng pixel, mỗi tính năng một dãy bàn (mục 6). Thêm `workflow/STATUS.md` dạng bảng |
 | 5, 12 | Thông báo qua Telegram, chỉ một chiều | `watch.sh` gọi `notify.sh` khi có việc chờ bạn hoặc chờ một agent đánh thức tay. Bot chỉ gửi, không nhận lệnh |
 | 6 | Không tự quyết theo phán đoán | Mọi câu trả lời phải kèm **nguồn**. Không có nguồn thì chuyển `to: owner` |

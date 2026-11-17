@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-# Cài hook pre-push chặn push khi chưa được phép (WORKFLOW_PUSH_OK=1). Có tác dụng với mọi công cụ AI, không riêng Claude Code.
+# Cài hook pre-push chặn push thẳng lên nhánh chính (BASE_BRANCH) khi DELIVERY=mr, xem workflow/project.conf.
+# Có tác dụng với mọi người và mọi công cụ AI, không riêng Claude Code. Push nhánh khác đi qua bình thường.
 # Chạy lại để cập nhật hook đã cài bản cũ.
 #
 # Dùng (ở thư mục dự án, Git Bash trên Windows):
@@ -46,7 +47,7 @@ fi
 [ -f "$src" ] || { echo "Thiếu $src."; exit 1; }
 if [ -f "$dst" ] && ! installed; then
   echo "Dự án đã có hook pre-push riêng ($dst), không ghi đè."
-  echo "Gộp tay: chép nội dung của $src (bỏ dòng đầu #!) vào ngay sau dòng #! của hook đó."
+  echo "Gộp tay: chép nội dung của $src (bỏ dòng đầu #!) vào ngay sau dòng #! của hook đó. Phần của team phía sau vẫn chạy như cũ."
   [ "$husky" = 1 ] && echo "Lưu ý: $dst của husky thường được commit cho cả team. Đừng commit phần chặn push."
   exit 1
 fi
@@ -62,4 +63,10 @@ if [ "$husky" = 1 ]; then
 else
   echo "Đã cài hook chặn push: $dst"
 fi
-echo "Từ giờ git push bị chặn trừ khi có WORKFLOW_PUSH_OK=1. Bạn push bằng: WORKFLOW_PUSH_OK=1 git push origin <nhánh>"
+base=$(sed -n 's/^BASE_BRANCH=//p' workflow/project.conf 2>/dev/null | tail -n 1 | tr -d '" ')
+delivery=$(sed -n 's/^DELIVERY=//p' workflow/project.conf 2>/dev/null | tail -n 1 | tr -d '" ')
+if [ "$delivery" = mr ] && [ -n "$base" ]; then
+  echo "Từ giờ không ai push thẳng được lên $base; push nhánh tính năng rồi mở MR/PR. Nhánh khác push bình thường."
+else
+  echo "Hiện DELIVERY=${delivery:-merge} nên hook chưa chặn gì. Đặt DELIVERY=mr trong workflow/project.conf để chặn push thẳng lên ${base:-nhánh chính}."
+fi
