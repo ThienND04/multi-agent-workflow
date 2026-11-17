@@ -456,7 +456,10 @@ function render(){
   need.append(box)});
  build();
  const files=$('#files');files.replaceChildren();
- S.features.forEach((f,i)=>{const d=el('details');const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' · '+stVi(f.status)+' ('+f.items.length+' file)');d.append(sm);
+ S.features.forEach((f,i)=>{const d=el('details');const k='feat:'+f.dir;
+  d.open=OPEN.get(k)===true; // trang làm mới 3 giây một lần: giữ nguyên khung bạn đang mở
+  d.addEventListener('toggle',()=>OPEN.set(k,d.open));
+  const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' · '+stVi(f.status)+' ('+f.items.length+' file)');d.append(sm);
   const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,stVi(it.status)),el('td',null,'→ '+(it.to==='owner'?'bạn':it.to==='none'?'không ai':it.to)));t.append(tr)});d.append(t);files.append(d)});
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
  if(openId)showDetail();
