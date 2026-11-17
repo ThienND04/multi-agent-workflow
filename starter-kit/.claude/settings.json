@@ -13,7 +13,21 @@
       "Bash(git switch:*)",
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
-      "Bash(sh workflow/notify.sh:*)"
+      "Bash(git worktree list:*)",
+      "Bash(git merge-base:*)",
+      "Bash(sh workflow/watch.sh --lint)",
+      "Bash(sh workflow/notify.sh:*)",
+      "Bash(sh workflow/hooks/install.sh --check)",
+      "Bash(node --test:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(yarn test:*)",
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(go test:*)",
+      "Bash(cargo test:*)"
     ],
     "deny": [
       "Bash(git push:*)",

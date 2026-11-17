@@ -22,7 +22,7 @@ Thứ để chép vào dự án của bạn: **toàn bộ thư mục [starter-ki
 - `watch.sh` tự đánh thức agent có việc;
 - trang monitor văn phòng pixel chạy trên máy bạn (`node workflow/monitor.js`);
 - thông báo Telegram một chiều;
-- chặn `git push` cho Claude Code.
+- chặn `git push` của agent bằng hook git (mọi công cụ AI), thêm luật quyền của Claude Code.
 
 **Đang xây:** chat với Master và bấm duyệt ngay trên trang monitor; bộ công cụ `ag` với hàng rào tự động đầy đủ. Bấm **Watch → Releases** trên GitHub để được báo.
 

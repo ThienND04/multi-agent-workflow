@@ -29,9 +29,9 @@ Chép **toàn bộ nội dung** thư mục [starter-kit/](starter-kit/) vào **t
 ```
 AGENTS.md                  luật chung cho mọi agent, quy tắc to: (công cụ nào cũng tự đọc)
 CLAUDE.md                  Claude Code tự đọc: phiên chính là Master
-.gitattributes             giữ script .sh xuống dòng LF
+.gitattributes             giữ script .sh và hook xuống dòng LF
 .claude/
-  settings.json            quyền cho Claude Code: chặn git push, chặn đọc .env
+  settings.json            quyền cho Claude Code: cho chạy git và lệnh test thường gặp, chặn git push, chặn đọc .env
   agents/                  subagent Coder, Tester mà Master tự gọi
 workflow/
   agents.txt               danh sách agent và cách đánh thức (bạn điền ở bước 4)
@@ -39,13 +39,25 @@ workflow/
   watch.sh                 theo dõi file, đánh thức agent, sinh STATUS.md
   monitor.js               trang theo dõi local
   notify.sh                gửi Telegram
+  hooks/                   hook git chặn push (pre-push) và script cài (install.sh)
   .gitignore               bỏ qua các file do watch.sh sinh ra
 ```
+
+**Cài hook chặn push** (Git Bash trên Windows, tại thư mục dự án):
+```bash
+sh workflow/hooks/install.sh
+```
+- Dự án mới, chưa là repo git: chạy lệnh này **sau khi Master `git init`** (Master sẽ nhắc).
+- Từ đó **mọi** lần `git push` đều bị chặn, dù agent dùng Claude Code, Codex, Gemini hay Antigravity. Hook nằm trong thư mục hook chung nên áp dụng cho mọi worktree.
+- **Bạn** push bằng `git push --no-verify origin <nhánh>`. Agent bị cấm dùng `--no-verify`.
+- Dự án đã có hook `pre-push` riêng (ví dụ husky): script không ghi đè mà in hướng dẫn gộp tay.
 
 **Dự án đã có `AGENTS.md`, `CLAUDE.md`, `.gitattributes` hay `.claude/settings.json` riêng:** đừng ghi đè.
 - `AGENTS.md`: đổi tên file của bộ khởi đầu thành `AGENTS-WORKFLOW.md`, rồi thêm vào cuối file cũ dòng `Đọc và làm theo AGENTS-WORKFLOW.md.`
 - `CLAUDE.md`, `.gitattributes`: chép nội dung của bộ khởi đầu vào cuối file cũ.
 - `.claude/settings.json`: gộp các dòng trong `allow` và `deny` vào file cũ.
+
+**Vì sao trạng thái luôn ghi ở thư mục gốc:** Coder và Tester code, test trong worktree riêng (thư mục `../<tên-dự-án>-wt/…`). Worktree cũng có một bản sao `workflow/`, nhưng đó là bản cũ. Luật trong `AGENTS.md` yêu cầu mọi file trong `workflow/` chỉ được sửa ở thư mục gốc, để `watch.sh` và Master thấy được. Trước khi gộp, Master kiểm tra: nhánh nào lỡ đụng tới `workflow/` thì không gộp.
 
 ## 2. Bật Telegram (tuỳ chọn, khoảng 5 phút)
 
@@ -120,7 +132,9 @@ master-01     master  manual    phiên chat chính
 coder-01      coder   subagent  coder
 tester-01     tester  subagent  tester
 ```
-Với chế độ `subagent`, cột cuối là tên file trong `.claude/agents/`: `coder` (model nhanh), `coder-pro` (model mạnh, cho việc khó), `tester`.
+Với chế độ `subagent`, cột cuối là tên file trong `.claude/agents/`: `coder` (model nhanh), `coder-pro` (model mạnh, cho việc khó), `tester` (model mạnh, **khác model** với `coder`).
+
+**Tester nên khác model với Coder.** Hai model giống nhau dễ mù cùng một chỗ, nên subagent `tester` mặc định dùng `opus`, còn `coder` dùng `sonnet`. Tester giờ cũng là người đọc code, nên model mạnh có ích. Đổi lại thì việc kiểm tra tốn hạn mức hơn; muốn tiết kiệm thì sửa `model:` trong `.claude/agents/tester.md`. Việc giao cho `coder-pro` (cũng `opus`) thì tốt nhất có một Tester chạy công cụ khác (Codex, Gemini, Antigravity) ở chế độ `window` hoặc `auto`.
 
 **Ví dụ có thêm công cụ khác:**
 ```
@@ -143,7 +157,7 @@ Lệnh mẫu (kiểm tra lại theo phiên bản bạn cài). Lệnh phải **k�
 
 **Master** luôn để `manual`, vì bạn đang chat với nó. Khi có việc chờ Master, `watch.sh` báo bạn và bạn nói với Master một câu *"Xử lý việc đang chờ"*.
 
-**Cấp quyền cho agent Claude** (cả `subagent` lẫn `auto`) để nó chạy được lệnh build và test của dự án: thêm vào danh sách `allow` trong `.claude/settings.json`, ví dụ `"Bash(npm test:*)"` hoặc `"Bash(./gradlew test:*)"`. `git push` đã bị chặn sẵn. Công cụ khác có cách cấp quyền riêng, xem tài liệu của công cụ đó. Agent `auto` chạy không có người canh, nên chỉ cấp đúng những gì cần.
+**Cấp quyền cho agent Claude** (cả `subagent` lẫn `auto`) để nó chạy được lệnh build và test của dự án. `.claude/settings.json` đã cho sẵn các lệnh test thường gặp: `node --test`, `npm test`, `npm run test`, `npm run build`, `pnpm test`, `yarn test`, `pytest`, `go test`, `cargo test`. Dự án dùng lệnh khác thì thêm vào danh sách `allow`, ví dụ `"Bash(./gradlew test:*)"`; lần đầu mở, Master sẽ ghi các lệnh của dự án vào `DECISIONS.md` và đưa bạn đúng dòng cần thêm. Thiếu quyền thì agent `auto` không chạy được test (không có ai bấm cho phép), còn `subagent` thì bạn bị hỏi quyền liên tục. Lệnh nào dự án không dùng thì có thể xoá. `git push` đã bị chặn sẵn. Công cụ khác có cách cấp quyền riêng, xem tài liệu của công cụ đó. Agent `auto` chạy không có người canh, nên chỉ cấp đúng những gì cần.
 
 **Thử một agent `auto` có chạy đúng tài khoản không** (tại thư mục dự án):
 ```bash
@@ -178,7 +192,21 @@ sh workflow/watch.sh
 Để cửa sổ đó chạy; bấm `Ctrl+C` khi muốn dừng.
 - `--interval 60`: quét mỗi 60 giây (mặc định 30 giây).
 - `--once`: quét đúng một lần.
+- `--lint`: chỉ liệt kê trạng thái bất thường rồi thoát, không đánh thức ai.
 - Mỗi lần đánh thức một agent `auto` hoặc mở cửa sổ cho agent `window` đều có log trong `workflow/logs/`.
+
+**Hàng rào tự động của `watch.sh`:**
+- **Giới hạn số lần đánh thức** (`--max-wakes 6`): một agent `auto` hoặc `window` bị đánh thức quá 6 lần trong 1 giờ mà vẫn còn việc thì bị **tạm dừng**, và bạn được báo. Thường là agent bị kẹt: ghi thêm vào file mà không đổi `to:`, nên cứ bị đánh thức lại. Xem log, sửa file nếu cần, rồi cho chạy lại:
+  ```bash
+  sh workflow/watch.sh --resume coder-03
+  ```
+- **Giới hạn thời gian chạy** (`--timeout 60`, tính bằng phút): agent `auto` chạy quá lâu thì bị dừng và bạn được báo. Agent kết thúc với lỗi cũng được báo. Trên macOS cần cài `coreutils` để có lệnh `timeout`; không có thì bỏ qua giới hạn này.
+- **Kiểm tra bất thường** mỗi lần quét, kết quả ghi vào mục "Bất thường" của `STATUS.md` và trang monitor, báo Telegram khi danh sách thay đổi:
+  - việc, câu hỏi, lỗi **không ai cầm** (`to: none` mà chưa xong, không còn câu hỏi nào đang mở);
+  - `status` và `to` lệch nhau (ví dụ `in_test` mà `to:` là Coder);
+  - `to:` trỏ tới ID không có trong `agents.txt`;
+  - câu trả lời thiếu dòng `Nguồn:`;
+  - file chờ một agent quá `--stale 24` giờ mà không đổi.
 
 **Trang monitor:** mở thêm một terminal tại thư mục dự án:
 ```bash
@@ -216,8 +244,8 @@ Từ đây:
 | Có câu Master không chắc (`to: owner`) | `watch.sh` báo, kể cả qua Telegram. Bạn trả lời Master và bàn tới khi chốt |
 | Có việc cho agent `manual` | `watch.sh` báo và chép sẵn lời nhắn vào clipboard. Bạn mở công cụ, dán |
 | Có việc mới cho agent `window` mà cửa sổ của nó đang mở | `watch.sh` báo. Bạn gõ vào cửa sổ đó: *"Xử lý việc đang chờ"* |
-| Báo cáo xong (`SPEC.md` có `to: owner`) | Bạn tự thử theo mục "Cách thử", rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt |
-| Master đã gộp code | **Bạn push:** `git push origin main` |
+| Báo cáo xong (`SPEC.md` có `to: owner`) | Bạn tự thử theo mục "Cách thử", trên **worktree tích hợp** (`../<tên-dự-án>-wt/F-NNN-integration`): đó đúng là bản sẽ vào `main`, đã ghép mọi việc của tính năng. Rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt |
+| Master đã gộp code | **Bạn push:** `git push --no-verify origin main` (hook chặn mọi lần push thường) |
 
 **Lời nhắn cho agent `manual`**, nếu máy không chép được vào clipboard (lời nhắn cũng được lưu ở `workflow/.run/<ID>.prompt`):
 ```text
@@ -245,7 +273,7 @@ Một `watch.sh` lo cho mọi tính năng. Phiên mới cũng dùng chung hạn 
 ## 9. Khi một phiên bị dừng
 
 - **Agent `subagent`:** nói với Master *"Tiếp tục"*; Master gọi lại subagent, subagent đọc bàn giao rồi làm tiếp.
-- **Agent `auto`:** không cần làm gì. Lần tới file của nó thay đổi, nó được đánh thức lại. Nếu `STATUS.md` hoặc trang monitor báo *"đã đánh thức nhưng chưa xử lý xong"*, hãy xem log trong `workflow/logs/`.
+- **Agent `auto`:** không cần làm gì. Lần tới file của nó thay đổi, nó được đánh thức lại. Nếu `STATUS.md` hoặc trang monitor báo *"đã đánh thức nhưng chưa xử lý xong"*, hãy xem log trong `workflow/logs/`. Nếu agent bị **tạm dừng** (đánh thức quá nhiều lần), xem log rồi chạy `sh workflow/watch.sh --resume <ID>`.
 - **Master:** mở phiên mới tại thư mục dự án, dán:
   ```text
   Đọc AGENTS.md và làm theo. Bạn là Master, ID master-01, làm tiếp.

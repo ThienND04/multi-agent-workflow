@@ -1,2 +1,4 @@
 # Script shell luôn xuống dòng LF, để chạy được trên Linux và macOS
 *.sh text eol=lf
+# Hook git không có đuôi .sh nhưng cũng là script shell
+starter-kit/workflow/hooks/* text eol=lf

@@ -36,6 +36,9 @@ master-01     master  manual    phiên chat chính
 coder-01      coder   subagent  coder
 tester-01     tester  subagent  tester
 
+# Tester nên khác model với Coder của việc (dễ mù cùng một chỗ): subagent coder dùng sonnet, tester dùng opus.
+# Việc giao cho coder-pro (opus) thì tốt nhất có một Tester chạy công cụ khác, như tester-02 bên dưới.
+#
 # Ví dụ khác:
 # coder-02    coder   subagent  coder-pro          (việc khó, model mạnh hơn)
 # coder-03    coder   auto      claude -p --permission-mode acceptEdits --model sonnet
