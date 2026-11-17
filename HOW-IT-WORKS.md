@@ -99,20 +99,21 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **http://localhost:4300**.
 
 ```
-┌─ tường: tủ sách · cửa (mở khi có việc chờ bạn) · bảng các tính năng · cây nước ─┐
-│                                                                                 │
-│  ┌─ F-001 · Đặt hàng [đang làm] ─────────────────────────────────────────────┐  │
-│  │  [bàn lớn] master-01       [bàn] coder-01 …    [bàn] tester-01 1          │  │
-│  └───────────────────────────────────────────────────────────────────────────┘  │
-│  ┌─ F-003 · Thông báo [đang làm] ────────────────────────────────────────────┐  │
-│  │  master-02      coder-01  coder-02  coder-03 …  coder-04  coder-05        │  │
-│  │                 tester-02            (dãy dài thì tự xuống hàng)          │  │
-│  └───────────────────────────────────────────────────────────────────────────┘  │
+┌─ tủ sách · cây nước · cửa (mở khi có việc chờ bạn) · bảng tính năng · ──── BẠN ─┐
+│                                                                            ░░░  │
+│  ┌─ F-001 · Đặt hàng [đang làm] ────────────────────────────────────┐      ░░░  │
+│  │  [bàn lớn] master-01   [bàn] coder-01 …   [bàn] tester-01 1      │      ░░░  │
+│  └──────────────────────────────────────────────────────────────────┘      ░░░  │
+│  ┌─ F-003 · Thông báo [đang làm] ───────────────────────────────────┐      ░░░  │
+│  │  master-02   coder-01  coder-02  coder-03 …  coder-04  coder-05  │      ░░░  │
+│  │              tester-02      (dãy dài thì tự xuống hàng)          │      ░░░  │
+│  └──────────────────────────────────────────────────────────────────┘      ░░░  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Văn phòng pixel, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy. Tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
-- **Bong bóng trên đầu:** `…` đang chạy, số là số việc đang chờ, `z` là rảnh, `!` là Master đang chờ bạn, `?` là ID chưa khai trong `agents.txt`. Agent rảnh đứng ở cây nước. Cửa mở nghĩa là có việc chờ bạn.
+- **Bàn của bạn** (biển tên "BẠN") ở góc phải, có lối đi thảm đỏ chạy thẳng xuống (`░` trong sơ đồ). Có việc chờ bạn thì bong bóng trên đầu bạn hiện `!` kèm số việc; bấm vào bàn để tới mục "Cần bạn". Một chú chó đi lang thang dọc chân tường và lối đi; bấm vào nó thử xem.
+- **Bong bóng trên đầu:** `…` đang chạy, số là số việc đang chờ, `z` là rảnh, `!` là Master đang chờ bạn, `?` là ID chưa khai trong `agents.txt`. Agent rảnh đứng ở cây nước bên trái, tay cầm cốc nước. Cửa mở nghĩa là có việc chờ bạn.
 - **Mục "Cần bạn"** (tô vàng khi có việc): ghi rõ bạn cần làm gì (duyệt, trả lời, nghiệm thu), câu cần nói với Master, và hiện sẵn mục "Cách thử" của tính năng chờ nghiệm thu.
 - **Bấm vào một agent:** xem file đang chờ nó và log gần nhất.
 - **Chỉ đọc**, tự làm mới 3 giây một lần, chỉ mở trên máy bạn. Trang đọc đúng các file mà `watch.sh` đọc, và không cần cài thư viện nào.

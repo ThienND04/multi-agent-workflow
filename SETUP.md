@@ -190,7 +190,8 @@ Rồi mở **http://localhost:4300**. Đổi cổng bằng `--port 5000`.
   - mỗi tính năng là **một dãy bàn** có thảm màu riêng;
   - Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp; dãy dài thì tự xuống hàng;
   - bong bóng trên đầu: `…` đang chạy, số là số việc đang chờ, `z` là rảnh;
-  - agent rảnh đứng ở cây nước, cửa mở nghĩa là có việc chờ bạn.
+  - agent rảnh đứng ở cây nước, cửa mở nghĩa là có việc chờ bạn;
+  - bàn "BẠN" ở góc phải là của bạn: có việc chờ bạn thì hiện `!`, bấm vào để tới mục "Cần bạn".
 - **Bấm vào một agent** để xem file đang chờ nó và log gần nhất.
 - Trang tự làm mới 3 giây một lần, **chỉ đọc**, và chỉ mở trên máy bạn: máy khác trong mạng không vào được.
 
