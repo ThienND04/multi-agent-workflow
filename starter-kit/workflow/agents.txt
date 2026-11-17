@@ -2,20 +2,27 @@
 #
 # Mỗi dòng:  <ID>  <vai>  <chế độ>  <lệnh, tên subagent, hoặc ghi chú>
 #
-# Ba chế độ:
+# Bốn chế độ:
 #   subagent : Master tự gọi subagent này ngay trong phiên chat của Master (Claude Code, ứng dụng desktop
 #              hoặc dòng lệnh). Cột cuối là tên subagent trong .claude/agents/ (coder, coder-pro, tester).
 #              Không cần cài thêm gì. watch.sh không đánh thức, không báo.
-#   auto     : watch.sh tự chạy lệnh và thêm lời nhắn đánh thức vào cuối lệnh. Cần công cụ AI chạy được
-#              bằng lệnh (xem SETUP.md, bước 3). Agent chạy KHÔNG có người canh: chỉ cấp quyền cần thiết,
-#              không bao giờ cấp quyền push.
-#   manual   : watch.sh chỉ báo (màn hình và Telegram) rằng agent này có việc; bạn tự mở phiên cho nó.
-#              Hợp với công cụ không chạy được bằng lệnh, ví dụ Antigravity.
+#   auto     : watch.sh tự chạy lệnh ở chế độ chạy ngầm, thêm lời nhắn vào cuối lệnh, ghi log vào
+#              workflow/logs/. Agent chạy KHÔNG có người canh: chỉ cấp quyền cần thiết, không cấp quyền push.
+#   window   : watch.sh mở một CỬA SỔ terminal mới, chạy công cụ ở dạng tương tác với lời nhắn gửi sẵn.
+#              Bạn thấy agent làm gì, trả lời được khi nó xin quyền. Cửa sổ còn mở mà có việc mới thì
+#              watch.sh không mở thêm, chỉ báo bạn gõ "Xử lý việc đang chờ" vào cửa sổ đó.
+#   manual   : watch.sh báo (màn hình và Telegram) và chép sẵn lời nhắn vào clipboard; bạn mở công cụ
+#              rồi dán. Hợp với công cụ chỉ có giao diện, ví dụ ứng dụng Antigravity.
+# Chế độ auto và window cần công cụ AI dòng lệnh (xem SETUP.md, bước 3). Lệnh phải kết thúc bằng tham số
+# nhận lời nhắn, vì watch.sh thêm lời nhắn vào cuối lệnh.
 #
-# Lệnh mẫu cho chế độ auto (kiểm tra lại theo phiên bản công cụ bạn cài):
-#   Claude Code : claude -p --permission-mode acceptEdits --model sonnet
-#   Codex CLI   : codex exec --full-auto
-#   Gemini CLI  : gemini --yolo -p
+# Lệnh mẫu (kiểm tra lại theo phiên bản công cụ bạn cài):
+#   Công cụ         auto (chạy ngầm)                                         window (cửa sổ)
+#   Claude Code   : claude -p --permission-mode acceptEdits --model sonnet  claude --model sonnet
+#   Antigravity   : agy --mode accept-edits --model <model> -p              agy --model <model> -i
+#   Codex CLI     : codex exec --sandbox workspace-write                    codex
+#   Gemini CLI    : gemini --approval-mode auto_edit -p                     gemini -i
+#   Xem model của Antigravity: agy models. Thêm --effort low cho việc nhẹ (khảo sát, kiểm tra đơn giản).
 #   Tài khoản Claude thứ hai:
 #     env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
 #
@@ -32,4 +39,5 @@ tester-01     tester  subagent  tester
 # Ví dụ khác:
 # coder-02    coder   subagent  coder-pro          (việc khó, model mạnh hơn)
 # coder-03    coder   auto      claude -p --permission-mode acceptEdits --model sonnet
-# tester-02   tester  manual    Antigravity (tester độc lập, mở trang bằng trình duyệt)
+# tester-02   tester  window    agy --model <model> -i          (Antigravity CLI, mở cửa sổ riêng)
+# tester-03   tester  manual    Antigravity (ứng dụng giao diện, dán lời nhắn từ clipboard)

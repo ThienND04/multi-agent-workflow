@@ -39,8 +39,9 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
 **Script `watch.sh`** quét các file đó vài chục giây một lần:
 - **Không tốn token**, vì chỉ là script đọc file.
 - File chờ một agent chế độ **`subagent`**: script không làm gì, vì **Master tự gọi** agent đó ngay trong phiên chat. Đây là chế độ mặc định, chỉ cần ứng dụng Claude desktop.
-- File chờ một agent chế độ **`auto`** (Claude Code, Codex, Gemini CLI dòng lệnh): script mở cho agent đó một phiên mới bằng lệnh không tương tác, kèm danh sách file cần xử lý.
-- File chờ một agent **đánh thức tay** (ví dụ Antigravity, không chạy được bằng lệnh) hoặc chờ **bạn**: script báo lên màn hình và qua Telegram.
+- File chờ một agent chế độ **`auto`** (Claude Code, Antigravity, Codex, Gemini dòng lệnh): script mở cho agent đó một phiên mới **chạy ngầm**, kèm danh sách file cần xử lý.
+- File chờ một agent chế độ **`window`**: script **mở một cửa sổ terminal mới**, chạy công cụ ở dạng tương tác với lời nhắn gửi sẵn. Bạn thấy agent làm gì và xen vào được.
+- File chờ một agent **đánh thức tay** (`manual`, ví dụ ứng dụng Antigravity) hoặc chờ **bạn**: script báo lên màn hình và qua Telegram, chép sẵn lời nhắn vào clipboard.
 - Sinh **`STATUS.md`**: bảng ai đang làm gì, ai đang chờ gì.
 
 ## 3. Một tính năng đi từ đầu đến cuối
@@ -77,7 +78,7 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 | 8 | Lưu phiên, agent lỗi thì agent khác làm tiếp | Mọi trạng thái nằm trong file (`to:`, `status:`, bàn giao) và trong commit. Mỗi lần đánh thức là một phiên mới, đọc file là làm tiếp được |
 | 9 | Tối ưu context và token | Mục 5 |
 | 10 | Tôi chỉ làm việc với Master | Đúng. Các agent khác do Master gọi (chế độ `subagent`) hoặc do `watch.sh` đánh thức (chế độ `auto`); bạn không chat với họ |
-| 13 | Chọn AI và model cho từng agent | Mỗi agent một dòng trong `workflow/agents.txt`: chế độ (`subagent`, `auto`, `manual`), công cụ, model, tài khoản tuỳ bạn. Master chọn agent phù hợp cho từng việc |
+| 13 | Chọn AI và model cho từng agent | Mỗi agent một dòng trong `workflow/agents.txt`: chế độ (`subagent`, `auto`, `window`, `manual`), công cụ, model, tài khoản tuỳ bạn. Master chọn agent phù hợp cho từng việc |
 | 14 | Nhiều tính năng cùng lúc, không phải chờ | Mỗi tính năng một thư mục. Mỗi phiên chat là một Master (`master-01`); làm song song thì mở thêm phiên `master-02`. Một `watch.sh` đánh thức agent cho mọi tính năng |
 
 ## 5. Tối ưu context và token (yêu cầu 9)
@@ -86,11 +87,12 @@ Ngoài ra, khi `watch.sh` báo có việc chờ Master, bạn nói với Master 
 |---|---|
 | **Script quét thay cho AI** | Lúc chờ không tốn token. AI chỉ chạy khi thật sự có việc |
 | **Mỗi lần đánh thức là một phiên mới, ngắn** | Không phiên nào phình to vì giữ lịch sử dài. Trạng thái được đọc từ file |
+| **`AGENTS.md` ngắn, việc từng vai tách riêng** | `AGENTS.md` (công cụ nào cũng tự nạp, có công cụ nạp lại mỗi lượt) chỉ giữ phần chung. Việc riêng nằm trong `workflow/roles/master.md`, `coder.md`, `tester.md`: Coder, Tester chỉ đọc file vai của mình, không đọc phần của Master. Áp dụng cho mọi công cụ, không riêng Claude |
 | **Chỉ đọc file có `to:` là mình, cộng những gì `can_doc:` chỉ tới** | Agent không đọc cả dự án |
 | **Phiên Master gọn** | Master không đọc code hay log, chỉ đọc tài liệu, câu hỏi và báo cáo ngắn |
 | **Model theo việc** | Việc thường giao cho agent dùng model nhanh, rẻ; việc khó giao cho agent dùng model mạnh (khai trong `agents.txt`) |
-| **`AGENTS.md` ổn định** | Ít sửa thì công cụ dùng lại được bộ nhớ đệm prompt, rẻ hơn |
-| **Tính năng có sẵn của công cụ** | Claude Code: `/compact`, `/clear`, tắt các máy chủ MCP không dùng (`/mcp`), xem mức dùng bằng `/cost` hoặc `/usage` (tuỳ phiên bản) |
+| **`AGENTS.md` và `workflow/roles/` ổn định** | Ít sửa thì công cụ dùng lại được bộ nhớ đệm prompt, rẻ hơn |
+| **Tính năng có sẵn của công cụ** | Claude Code: `/compact`, `/clear`, tắt các máy chủ MCP không dùng (`/mcp`), xem mức dùng bằng `/cost` hoặc `/usage` (tuỳ phiên bản). Antigravity: `--effort low` cho việc nhẹ. Codex: mức suy luận `model_reasoning_effort` |
 
 ## 6. Trang monitor
 
@@ -125,7 +127,7 @@ Chạy `node workflow/monitor.js` (cần Node.js 18 trở lên), rồi mở **ht
 |---|---|---|
 | Master | Ứng dụng Claude desktop, tài khoản 1 | Bạn chat trực tiếp |
 | Coder, Tester | Subagent trong phiên của Master, cùng tài khoản 1 | **Master tự gọi** |
-| Tester độc lập (tuỳ chọn) | Antigravity | **Tay**: `watch.sh` báo, bạn mở phiên |
+| Tester độc lập (tuỳ chọn) | Antigravity CLI (`agy`), tài khoản Antigravity | **Tự mở cửa sổ** (`window`). Dùng ứng dụng Antigravity thì để `manual`: `watch.sh` chép sẵn lời nhắn, bạn dán |
 
 Ở cách này, Coder và Tester **dùng chung hạn mức** với Master.
 
