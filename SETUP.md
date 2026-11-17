@@ -265,10 +265,12 @@ sh workflow/watch.sh
 - Khu **"Cần bạn"** ngay bên dưới.
 - **Văn phòng pixel:**
   - mỗi tính năng là **một dãy bàn** có thảm màu riêng;
-  - Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp; dãy dài thì tự xuống hàng;
-  - bong bóng trên đầu: `…` đang chạy, số là số việc đang chờ, `z` là rảnh;
-  - agent rảnh đứng ở cây nước, cửa mở nghĩa là có việc chờ bạn;
+  - Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp, quay mặt ra; dãy dài thì tự xuống hàng;
+  - nhìn hành động là biết trạng thái: gõ phím là đang làm, gõ ngón tay là có việc chờ, giơ tay "?" là đang chờ Master trả lời, bọ đỏ trên bàn là có lỗi Tester báo, Master đứng giơ tờ giấy "!" là chờ bạn, gật gù "z" là rảnh. Dưới mỗi bàn có biển tên kèm trạng thái;
+  - agent rảnh đứng uống nước ở cây nước; được gọi vào việc thì đi bộ về bàn;
+  - cửa mở nghĩa là có việc chờ bạn; đồng hồ đứng và đèn tắt nghĩa là `watch.sh` không chạy; tính năng vừa xong thì có pháo giấy;
   - bàn "BẠN" ở góc phải là của bạn: có việc chờ bạn thì hiện `!`, bấm vào để tới mục "Cần bạn".
+- **Xem thử giao diện** mà không cần dự án: `node workflow/monitor.js --demo --port 4321`. Dữ liệu giả nằm trong thư mục tạm, cứ 9 giây đổi một cảnh (đi bộ, pháo giấy, tắt đèn).
 - **Bấm vào một agent** để xem file đang chờ nó và log gần nhất.
 - Trang tự làm mới 3 giây một lần, **chỉ đọc**, và chỉ mở trên máy bạn: máy khác trong mạng không vào được.
 
