@@ -140,6 +140,13 @@ lint() {
       rel=${f#$W/}
       to=$(fm "$f" to); [ -n "$to" ] || to="none"
       st=$(fm "$f" status)
+      # Người được giao (assignee, tester, master) phải có trong agents.txt, kể cả khi chưa đến lượt họ:
+      # bắt lỗi ngay lúc Master viết file việc, trước khi to: chuyển tới một ID không ai đánh thức được
+      for k in assignee tester master; do
+        v=$(fm "$f" "$k")
+        [ -n "$v" ] || continue
+        case "$ids" in *" $v "*) ;; *) echo "\`$rel\`: $k: $v không có trong agents.txt" ;; esac
+      done
       case "$ids" in
         *" $to "*) ;;
         *) echo "\`$rel\`: to: $to không có trong agents.txt"; continue ;;
