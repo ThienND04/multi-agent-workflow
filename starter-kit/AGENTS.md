@@ -39,7 +39,7 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
 - **Mọi trạng thái nằm trong file:** `to:`, `status:`, bàn giao trong file việc, commit trên từng nhánh.
 - **File trong `workflow/` chỉ đọc và ghi ở thư mục gốc dự án, không bao giờ trong worktree.** Thư mục gốc là dòng đầu của `git worktree list`; bạn luôn được mở ở đó. Worktree có một bản sao `workflow/` cũ: đọc ở đó là đọc tài liệu cũ, ghi ở đó thì `watch.sh` và Master không thấy, nên không ai được đánh thức.
   - **Code** viết và commit trong worktree của việc.
-  - **`SPEC.md`, file việc, câu hỏi, lỗi, nhật ký** luôn sửa ở `<thư mục gốc>/workflow/`, và **không commit** lên nhánh việc. Master commit các file này lên `main`.
+  - **`SPEC.md`, file việc, câu hỏi, lỗi, nhật ký** luôn sửa ở `<thư mục gốc>/workflow/`, và **không commit** lên nhánh việc. Master commit các file này lên nhánh chính khi `WORKFLOW_IN_GIT=yes` trong `workflow/project.conf`; `no` thì không ai commit chúng.
 - Ghi **bàn giao 3 ý** (Đã làm / Còn dở / Bước tiếp theo) sau mỗi bước và trước khi dừng. Commit cả code chưa xong.
 - **Mỗi lần được đánh thức là một phiên mới.** Đọc file trước, đừng dựa vào trí nhớ:
   - đọc file đang chờ bạn và bàn giao trong đó;

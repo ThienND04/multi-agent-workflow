@@ -55,7 +55,8 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
    đọc diff, chạy test, chèn lỗi thử bộ test, chạy sản phẩm thật   ⇄ có lỗi thì to: coder-01 để sửa
 ⑤ Mọi việc đạt → Master gộp các nhánh vào nhánh tích hợp F-001/integration → Tester chạy toàn bộ
    kế hoạch kiểm thử trên đó → Master viết báo cáo → to: owner → watch.sh báo bạn
-⑥ Bạn thử trên nhánh tích hợp → "đạt": Master gộp vào main, BẠN push   /   "chưa đạt": quay lại ④
+⑥ Bạn thử trên nhánh tích hợp → "đạt": Master gộp vào nhánh chính (hoặc tạo nhánh feat/… để bạn mở MR,
+   tuỳ workflow/project.conf), BẠN push   /   "chưa đạt": quay lại ④
 ```
 
 **Bạn chỉ phải quyết định 3 lần cho mỗi tính năng:**

@@ -7,6 +7,7 @@
 ```
 workflow/
   agents.txt                  # danh sách agent và cách đánh thức (chủ dự án điền)
+  project.conf                # nhánh chính, cách giao tính năng, workflow có lên git không (chủ dự án điền)
   roles/                      # việc của từng vai: master.md, coder.md, tester.md
   watch.sh                    # script theo dõi và đánh thức
   monitor.js                  # trang theo dõi local (chủ dự án chạy)
@@ -92,11 +93,13 @@ Câu trả lời không có dòng `Nguồn:` sẽ bị `watch.sh` báo là bất
 | 10c. Tích hợp | Master | Mọi việc `kind: code` `verified`: dựng nhánh tích hợp (mục 3, "Nhánh tích hợp") | Việc "Kế hoạch kiểm thử": `status: in_test`, `branch: <F-NNN>/integration`, `to: <tester>`. Được miễn thì đặt `verified` kèm lý do |
 | 10d. Kiểm tích hợp | Tester | Chạy toàn bộ kế hoạch kiểm thử trên nhánh tích hợp | Đạt: việc "Kế hoạch kiểm thử" `status: verified`, `to: <master>`. Trượt: tạo lỗi cho việc liên quan như bước 9; việc "Kế hoạch kiểm thử" về `status: reviewed`, `to: none` |
 | 11. Báo cáo | Master | Mọi việc `verified`, kể cả "Kế hoạch kiểm thử": viết mục "Báo cáo" (đã làm, test gì, lỗi đã sửa, cách thử **trên worktree tích hợp**), rồi báo chủ dự án trong phiên chat | Mỗi việc `to: none`; `SPEC.md` `status: acceptance`, `to: owner` |
-| 12. Nghiệm thu | Chủ dự án | Tự thử **trên worktree tích hợp**, nói "đạt" với Master | Master gộp nhánh tích hợp vào `main`, đặt `SPEC.md` `status: done`, `to: none`. **Chủ dự án push** |
+| 12. Nghiệm thu | Chủ dự án | Tự thử **trên worktree tích hợp**, nói "đạt" với Master | Master giao hàng theo `DELIVERY` (mục 3, "Giao hàng"), đặt `SPEC.md` `status: done`, `to: none`. **Chủ dự án push** |
 
 Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
 
 ## 3. Việc của Master
+
+**Đọc `workflow/project.conf` trước tiên.** Trong file này, `<nhánh chính>` là giá trị `BASE_BRANCH` (ví dụ `main`, `develop`); `DELIVERY`, `MR_PREFIX`, `WORKFLOW_IN_GIT` quyết định cách giao hàng và có commit `workflow/` không.
 
 - **Làm rõ trước khi viết.** Hỏi tới khi đủ: đầu vào, đầu ra, trường hợp lỗi, cái gì **không** làm. Không điền chỗ trống bằng giả định.
 - **ID của bạn** là ID chủ dự án nêu khi mở phiên. **Không được nêu thì đừng tự nhận ngay:**
@@ -106,9 +109,9 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
 
   Hai phiên cùng một ID sẽ cùng xử lý những file `to:` ID đó và giẫm lên nhau. Phiên của bạn làm xong tính năng này rồi sang tính năng khác vẫn **giữ nguyên ID**. `agents.txt` khai sẵn `master-01` tới `master-03`; cần nhiều hơn thì chủ dự án thêm dòng.
 - **Lần đầu trong dự án:**
-  - hỏi chủ dự án trước khi `git init -b main` (nếu chưa là repo git);
+  - hỏi chủ dự án trước khi `git init -b <nhánh chính>` (nếu chưa là repo git);
   - tạo `DECISIONS.md` và `journal/`;
-  - nhánh `main` chưa có commit nào thì xin chủ dự án cho tạo commit đầu tiên (bộ khởi đầu và `workflow/`), vì Coder cần ít nhất một commit mới tạo được worktree;
+  - `<nhánh chính>` chưa có commit nào thì xin chủ dự án cho tạo commit đầu tiên (bộ khởi đầu, và `workflow/` nếu `WORKFLOW_IN_GIT=yes`), vì Coder cần ít nhất một commit mới tạo được worktree;
   - dự án đã có code thì khảo sát (cấu trúc, build, test, quy ước), ghi vào `DECISIONS.md`;
   - kiểm hook chặn push: `sh workflow/hooks/install.sh --check`. Chưa cài thì nhờ chủ dự án chạy `sh workflow/hooks/install.sh` (sau `git init` nếu vừa tạo repo);
   - ghi vào `DECISIONS.md` mục **"Lệnh"**: lệnh build, lệnh chạy test, lệnh chạy sản phẩm (dự án mới thì chốt cùng chủ dự án ở tính năng đầu tiên). Đối chiếu với danh sách `allow` trong `.claude/settings.json`: lệnh nào chưa có thì đưa chủ dự án đúng dòng cần thêm (ví dụ `"Bash(./gradlew test:*)"`), chủ dự án đồng ý thì mới thêm. Thiếu quyền thì Coder, Tester chạy ngầm (`auto`) không chạy được test, còn chạy dạng `subagent` thì chủ dự án bị hỏi quyền liên tục.
@@ -119,21 +122,27 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
   - **chọn Tester khác model với Coder** của việc đó (xem cột cuối `agents.txt` và model trong `.claude/agents/`), tốt hơn nữa là khác công cụ (Codex, Gemini, Antigravity). Hai model giống nhau dễ mù cùng một chỗ. Không có lựa chọn khác thì vẫn giao, và ghi điều đó vào "Báo cáo";
   - tạo thêm một việc **"Kế hoạch kiểm thử"** cho Tester (`assignee` và `tester` đều là Tester, `kind: test-plan`): Tester viết các ca kiểm thử ở bước 3, rồi chạy toàn bộ trên nhánh tích hợp ở bước 10d.
 - **Trả lời câu hỏi:** chỉ khi **dẫn được nguồn**. Đổi phạm vi (thêm, bớt yêu cầu) thì luôn hỏi chủ dự án. Gom các câu cần chủ dự án lại, hỏi một lần, kèm phương án và đề xuất của bạn.
-- **Nhánh tích hợp** (bước 10c). Chủ dự án nghiệm thu đúng bản sẽ vào `main`, không phải từng nhánh lẻ:
-  - kiểm từng nhánh việc: `git diff --name-only main...<nhánh>` chỉ được có file trong `files:` của việc. Có file trong `workflow/` hoặc ngoài `files:` thì **không gộp**: đặt việc `status: reopened`, `to: <assignee>`, ghi rõ file nào sai (trạng thái phải ghi ở thư mục gốc, xem `AGENTS.md` mục 4);
-  - tạo (hoặc dùng lại) nhánh `<F-NNN>/integration` từ `main` mới nhất, trong worktree `../<tên-dự-án>-wt/<F-NNN>-integration`:
+- **Nhánh tích hợp** (bước 10c). Chủ dự án nghiệm thu đúng bản sẽ vào `<nhánh chính>`, không phải từng nhánh lẻ:
+  - kiểm từng nhánh việc: `git diff --name-only <nhánh chính>...<nhánh>` chỉ được có file trong `files:` của việc. Có file trong `workflow/` hoặc ngoài `files:` thì **không gộp**: đặt việc `status: reopened`, `to: <assignee>`, ghi rõ file nào sai (trạng thái phải ghi ở thư mục gốc, xem `AGENTS.md` mục 4);
+  - tạo (hoặc dùng lại) nhánh `<F-NNN>/integration` từ `<nhánh chính>` mới nhất, trong worktree `../<tên-dự-án>-wt/<F-NNN>-integration`:
     ```bash
-    git worktree add ../<tên-dự-án>-wt/<F-NNN>-integration -b <F-NNN>/integration main
+    git worktree add ../<tên-dự-án>-wt/<F-NNN>-integration -b <F-NNN>/integration <nhánh chính>
     ```
-    Dựng lại sau khi sửa lỗi thì vào worktree đó, `git merge main` rồi gộp tiếp các nhánh việc;
+    Dựng lại sau khi sửa lỗi thì vào worktree đó, `git merge <nhánh chính>` rồi gộp tiếp các nhánh việc;
   - trong worktree đó, `git merge --no-ff` từng nhánh việc, rồi chạy toàn bộ test (lệnh trong `DECISIONS.md`);
-  - **xung đột hoặc test đỏ:** `git merge --abort`, không tự sửa code. Đặt việc gây ra `status: reopened`, `to: <assignee>`, ghi file xung đột hoặc test đỏ. Coder gộp `main` hoặc nhánh tích hợp vào nhánh của mình để giải, rồi giao kiểm tra lại;
-  - **được miễn kiểm tích hợp** khi tính năng chỉ có một nhánh việc và `main` chưa đổi kể từ khi nhánh đó tách ra (`git merge-base --is-ancestor main <nhánh>` trả mã 0). Khi đó bản tích hợp giống hệt bản Tester đã kiểm: đặt việc "Kế hoạch kiểm thử" `verified`, ghi lý do, không cần gọi Tester.
-- **Gộp vào `main`** (khi chủ dự án nói "đạt"):
-  - tạo khoá `workflow/.merging`; đã có khoá thì chờ, vì Master khác đang gộp;
-  - ở thư mục gốc, `git merge --no-ff <F-NNN>/integration`, chạy lại test. Đỏ thì huỷ gộp và báo (thường do `main` vừa đổi vì tính năng khác: dựng lại nhánh tích hợp);
-  - xoá khoá, các worktree và nhánh của tính năng đã gộp (`git worktree remove`, `git branch -d`);
-  - commit các file trong `workflow/` của tính năng. **Không push.**
+  - **xung đột hoặc test đỏ:** `git merge --abort`, không tự sửa code. Đặt việc gây ra `status: reopened`, `to: <assignee>`, ghi file xung đột hoặc test đỏ. Coder gộp `<nhánh chính>` hoặc nhánh tích hợp vào nhánh của mình để giải, rồi giao kiểm tra lại;
+  - **được miễn kiểm tích hợp** khi tính năng chỉ có một nhánh việc và `<nhánh chính>` chưa đổi kể từ khi nhánh đó tách ra (`git merge-base --is-ancestor <nhánh chính> <nhánh>` trả mã 0). Khi đó bản tích hợp giống hệt bản Tester đã kiểm: đặt việc "Kế hoạch kiểm thử" `verified`, ghi lý do, không cần gọi Tester.
+- **Giao hàng** (khi chủ dự án nói "đạt"), theo `DELIVERY` trong `project.conf`:
+  - **`DELIVERY=merge`** (gộp ở máy):
+    - tạo khoá `workflow/.merging`; đã có khoá thì chờ, vì Master khác đang gộp;
+    - ở thư mục gốc, `git merge --no-ff <F-NNN>/integration` vào `<nhánh chính>`, chạy lại test. Đỏ thì huỷ gộp và báo (thường do `<nhánh chính>` vừa đổi vì tính năng khác: dựng lại nhánh tích hợp);
+    - xoá khoá. Chủ dự án push `<nhánh chính>`.
+  - **`DELIVERY=mr`** (team không cho commit thẳng lên nhánh chính): **không gộp gì vào `<nhánh chính>`**:
+    - trong worktree tích hợp, `git merge <nhánh chính>` nếu nhánh chính vừa đổi, chạy lại test. Đỏ thì báo, không tự sửa;
+    - `git branch <MR_PREFIX><tên-ngắn> <F-NNN>/integration`, rồi báo chủ dự án tên nhánh và lệnh `git push --no-verify -u origin <MR_PREFIX><tên-ngắn>`, để chủ dự án mở MR/PR vào `<nhánh chính>`. Giữ nhánh đó tới khi MR được gộp.
+  - Cả hai cách: xoá các worktree của tính năng (`git worktree remove`) và các nhánh việc đã được gộp (`git branch -d`).
+  - `WORKFLOW_IN_GIT=yes`: commit các file trong `workflow/` của tính năng lên `<nhánh chính>` (với `DELIVERY=mr` thì commit lên nhánh `<MR_PREFIX><tên-ngắn>`). `WORKFLOW_IN_GIT=no`: không commit file nào trong `workflow/`, vì chúng chỉ có trên máy chủ dự án.
+  - **Không push.**
 - **Kiểm bất thường:** trước khi báo cáo, và khi chủ dự án bảo "xử lý việc đang chờ", chạy `sh workflow/watch.sh --lint`. Nó liệt kê việc không ai cầm, `status` và `to` lệch nhau, câu trả lời thiếu `Nguồn:`, file chờ quá lâu. Sửa những gì thuộc tính năng của bạn.
 - **Chỉ sửa** trong thư mục tính năng của mình, cộng `DECISIONS.md` khi chủ dự án đồng ý.
 - **Gọi agent chế độ `subagent`** (xem `workflow/agents.txt`): sau mỗi bước làm cho một file chuyển `to:` sang agent đó, bạn tự gọi subagent ghi ở cột cuối (`coder`, `coder-pro`, `tester` trong `.claude/agents/`). Lời gọi gồm: **ID của agent** (ví dụ `coder-01`), danh sách file đang chờ nó, và câu *"Làm theo AGENTS.md và workflow/roles/<vai>.md"*. Subagent làm xong thì đổi `to:` như agent thường; bạn đọc lại file rồi đi tiếp. Các việc không chồng `files` thì gọi song song được.

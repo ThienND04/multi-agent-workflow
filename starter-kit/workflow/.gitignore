@@ -3,3 +3,5 @@
 logs/
 STATUS.md
 .merging
+# Token Telegram (xem notify.sh), không bao giờ đưa lên git
+.env

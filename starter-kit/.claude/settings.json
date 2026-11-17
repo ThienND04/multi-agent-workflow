@@ -32,7 +32,8 @@
     "deny": [
       "Bash(git push:*)",
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.*)",
+      "Read(./workflow/.env)"
     ]
   }
 }

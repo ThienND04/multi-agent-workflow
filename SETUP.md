@@ -36,13 +36,22 @@ GEMINI.md                  Gemini CLI tự đọc: nạp sẵn AGENTS.md
   agents/                  subagent Coder, Tester mà Master tự gọi
 workflow/
   agents.txt               danh sách agent và cách đánh thức (bạn điền ở bước 4)
+  project.conf             nhánh chính, cách giao tính năng (gộp ở máy hay MR), workflow có lên git không
   roles/                   việc riêng của từng vai: master.md, coder.md, tester.md
   watch.sh                 theo dõi file, đánh thức agent, sinh STATUS.md
   monitor.js               trang theo dõi local
   notify.sh                gửi Telegram
   hooks/                   hook git chặn push (pre-push) và script cài (install.sh)
-  .gitignore               bỏ qua các file do watch.sh sinh ra
+  .gitignore               bỏ qua các file do watch.sh sinh ra và workflow/.env
 ```
+
+**Điền `workflow/project.conf`** trước khi mở Master:
+
+| Khoá | Mặc định | Đổi khi |
+|---|---|---|
+| `BASE_BRANCH` | `main` | Nhánh chính của dự án khác, ví dụ `develop` |
+| `DELIVERY` | `merge` | Team không cho commit thẳng lên nhánh chính và gộp code qua MR/PR: đặt `mr`. Khi đó nghiệm thu xong, Master tạo nhánh `<MR_PREFIX><tên>` (mặc định `feat/<tên>`) để bạn push và mở MR, thay vì gộp ở máy |
+| `WORKFLOW_IN_GIT` | `yes` | Dự án của team, không muốn file workflow lên repo: đặt `no` và làm theo mục "Dự án của team" ngay dưới |
 
 **Cài hook chặn push** (Git Bash trên Windows, tại thư mục dự án):
 ```bash
@@ -51,7 +60,8 @@ sh workflow/hooks/install.sh
 - Dự án mới, chưa là repo git: chạy lệnh này **sau khi Master `git init`** (Master sẽ nhắc).
 - Từ đó **mọi** lần `git push` đều bị chặn, dù agent dùng Claude Code, Codex, Gemini hay Antigravity. Hook nằm trong thư mục hook chung nên áp dụng cho mọi worktree.
 - **Bạn** push bằng `git push --no-verify origin <nhánh>`. Agent bị cấm dùng `--no-verify`.
-- Dự án đã có hook `pre-push` riêng (ví dụ husky): script không ghi đè mà in hướng dẫn gộp tay.
+- Dự án dùng **husky** (`core.hooksPath` là `.husky/_`): script tự cài vào `.husky/pre-push` và thêm file đó vào `.git/info/exclude`, để hook không bao giờ bị commit rồi chặn push của cả team.
+- Dự án đã có hook `pre-push` riêng: script không ghi đè mà in hướng dẫn gộp tay.
 
 **Vì sao không cần gõ "Đọc AGENTS.md":** `CLAUDE.md` và `GEMINI.md` có dòng `@AGENTS.md` (bản Gemini là `@./AGENTS.md`), nên Claude Code và Gemini CLI tự nạp nội dung `AGENTS.md` mỗi khi mở phiên tại thư mục dự án. Codex tự đọc `AGENTS.md`. Công cụ khác không tự đọc thì lời nhắn của `watch.sh` đã có sẵn câu đó.
 
@@ -60,6 +70,30 @@ sh workflow/hooks/install.sh
 - `CLAUDE.md`, `GEMINI.md`, `.gitattributes`: chép nội dung của bộ khởi đầu vào cuối file cũ.
 - `.claude/settings.json`: gộp các dòng trong `allow` và `deny` vào file cũ.
 
+### Dự án của team: không đưa file workflow lên repo
+
+Dùng khi repo là của team và bạn chỉ muốn thử workflow trên máy mình (`WORKFLOW_IN_GIT=no`).
+
+1. **Cho git bỏ qua file workflow bằng `.git/info/exclude`**, không sửa `.gitignore`. File này có cú pháp như `.gitignore` nhưng chỉ có tác dụng trên máy bạn, không bao giờ lên repo. Sửa `.gitignore` thì chính thay đổi đó phải commit và push, cả team sẽ thấy.
+   ```bash
+   printf '
+# multi-agent workflow: chỉ trên máy này
+/workflow/
+/AGENTS.md
+/CLAUDE.local.md
+/GEMINI.md
+/.claude/agents/
+' >> .git/info/exclude
+   ```
+2. **Team đã commit `CLAUDE.md`:** đừng sửa nó. Chép `CLAUDE.md` của bộ khởi đầu thành **`CLAUDE.local.md`**. Claude Code tự nạp `CLAUDE.local.md` ngay sau `CLAUDE.md`, kể cả cho subagent, và dòng `@AGENTS.md` trong đó vẫn có tác dụng.
+3. **Team đã commit `.claude/settings.json`:** đừng sửa nó. Gộp `allow` và `deny` của bộ khởi đầu vào **`.claude/settings.local.json`** (file cá nhân, thường đã bị ignore; nếu chưa thì thêm `/.claude/settings.local.json` vào `.git/info/exclude`).
+4. Không chép `.gitattributes` của bộ khởi đầu: file workflow không lên git nên không cần.
+5. Trong `workflow/project.conf`: `WORKFLOW_IN_GIT=no`, thường kèm `DELIVERY=mr` và `BASE_BRANCH` đúng nhánh của team.
+6. Chạy `sh workflow/hooks/install.sh` (tự xử lý husky như trên).
+7. Kiểm: `git status --short` **không được** hiện file nào của workflow.
+
+Lưu ý: hook chặn push áp cho **mọi** lần push từ repo này, kể cả nhánh của bạn không liên quan workflow. Bạn push bằng `git push --no-verify`; muốn tắt thì xoá hook.
+
 **Vì sao trạng thái luôn ghi ở thư mục gốc:** Coder và Tester code, test trong worktree riêng (thư mục `../<tên-dự-án>-wt/…`). Worktree cũng có một bản sao `workflow/`, nhưng đó là bản cũ. Luật trong `AGENTS.md` yêu cầu mọi file trong `workflow/` chỉ được sửa ở thư mục gốc, để `watch.sh` và Master thấy được. Trước khi gộp, Master kiểm tra: nhánh nào lỡ đụng tới `workflow/` thì không gộp.
 
 ## 2. Bật Telegram (tuỳ chọn, khoảng 5 phút)
@@ -67,7 +101,7 @@ sh workflow/hooks/install.sh
 1. Trong Telegram, nhắn **@BotFather** lệnh `/newbot` và đặt tên cho bot. BotFather trả về một **token**. Giữ bí mật token này, không dán vào chat với AI.
 2. Mở chat với bot vừa tạo, bấm **Start**, gửi một tin bất kỳ.
 3. Trên trình duyệt, mở `https://api.telegram.org/bot<TOKEN>/getUpdates` và tìm `"chat":{"id":…}`. Con số đó là **chat ID**.
-4. Tạo file `.env` ở thư mục gốc dự án, rồi thêm `.env` vào `.gitignore`:
+4. Tạo file **`workflow/.env`** (`workflow/.gitignore` đã bỏ qua file này). Dự án mà `.env` ở gốc đang được commit lên repo thì **tuyệt đối không** ghi token vào đó:
    ```
    TELEGRAM_BOT_TOKEN=<token>
    TELEGRAM_CHAT_ID=<chat id>

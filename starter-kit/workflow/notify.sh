@@ -1,9 +1,10 @@
 #!/usr/bin/env sh
 # Gửi một tin Telegram cho chủ dự án. Chỉ gửi đi, không nhận lệnh.
 # Dùng:   sh workflow/notify.sh "[F-001] Cần bạn trả lời 2 câu hỏi"
-# Cấu hình trong file .env ở gốc dự án (không đưa lên git):
+# Cấu hình trong workflow/.env (ưu tiên; workflow/.gitignore đã bỏ qua file này), hoặc .env ở gốc dự án:
 #   TELEGRAM_BOT_TOKEN=...
 #   TELEGRAM_CHAT_ID=...
+# Dự án mà .env ở gốc đang được commit lên repo thì PHẢI dùng workflow/.env, kẻo token bị đẩy lên.
 # Không cấu hình thì chỉ in ra màn hình rồi thoát, không báo lỗi.
 # Không bao giờ in token ra màn hình.
 
@@ -11,9 +12,10 @@ msg="$1"
 [ -n "$msg" ] || { echo "Cách dùng: sh workflow/notify.sh \"nội dung\""; exit 1; }
 
 root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-env_file="$root/.env"
+env_file="$root/workflow/.env"
+[ -f "$env_file" ] || env_file="$root/.env"
 if [ ! -f "$env_file" ]; then
-  echo "Chưa có .env, không gửi Telegram. Nội dung: $msg"
+  echo "Chưa có workflow/.env hay .env, không gửi Telegram. Nội dung: $msg"
   exit 0
 fi
 

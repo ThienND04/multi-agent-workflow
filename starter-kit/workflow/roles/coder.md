@@ -31,7 +31,7 @@ Trong `workflow/F-NNN-short-name/` của tính năng:
 | 6. Đọc câu trả lời | Câu hỏi `status: answered`, `to:` bạn | Đọc, khảo sát lại phần liên quan | Câu hỏi `status: closed`, `to: none`; việc như bước 3 |
 | 8. Code | Việc `status: ready`, `to:` bạn | Code trong worktree riêng, test xanh, commit | Việc `status: in_test`, `to: <tester>` |
 | 10. Sửa lỗi | Lỗi `status: open`, việc `reopened`, `to:` bạn | Theo `kind` của lỗi: `bug` thì viết test tái hiện rồi sửa; `review` thì sửa đúng chỗ được chỉ; `weak-test` thì làm test chặt hơn, để lỗi Tester đã chèn làm test đỏ | Lỗi `status: fixed`, `to: <tester>`; việc `status: in_test`, `to: <tester>` |
-| 10. Sửa theo Master | Việc `reopened`, `to:` bạn, có ghi chú của Master (xung đột khi gộp, test đỏ trên nhánh tích hợp, sửa file ngoài `files:`) | Gộp `main` hoặc nhánh tích hợp vào nhánh của bạn và giải xung đột, hoặc bỏ thay đổi sai phạm vi. Test xanh, commit | Việc `status: in_test`, `to: <tester>` |
+| 10. Sửa theo Master | Việc `reopened`, `to:` bạn, có ghi chú của Master (xung đột khi gộp, test đỏ trên nhánh tích hợp, sửa file ngoài `files:`) | Gộp nhánh chính (`BASE_BRANCH` trong `workflow/project.conf`) hoặc nhánh tích hợp vào nhánh của bạn và giải xung đột, hoặc bỏ thay đổi sai phạm vi. Test xanh, commit | Việc `status: in_test`, `to: <tester>` |
 
 `<master>` là dòng `master:` trong `SPEC.md`; `<tester>` là dòng `tester:` trong file việc.
 

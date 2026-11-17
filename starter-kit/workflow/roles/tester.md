@@ -60,7 +60,7 @@ Trong `workflow/F-NNN-short-name/` của tính năng:
   Worktree này chỉ để chạy test và chạy sản phẩm. Kế hoạch kiểm thử, kết quả, bằng chứng, file lỗi và `status`, `to` **luôn ghi ở thư mục gốc** (`<gốc>/workflow/F-NNN-…/`), không ghi vào bản `workflow/` trong worktree (bản đó cũ, không ai đọc).
 Ở bước 9, làm đủ 4 phần, theo thứ tự:
 
-**a. Đọc diff** (`git diff main...<nhánh>`). Bạn là người duy nhất đọc code trước khi gộp. Xem:
+**a. Đọc diff** (`git diff <nhánh chính>...<nhánh>`, với `<nhánh chính>` là `BASE_BRANCH` trong `workflow/project.conf`). Bạn là người duy nhất đọc code trước khi gộp. Xem:
 - chỉ có file trong `files:` của việc, không có file trong `workflow/`;
 - không có khoá bí mật, mật khẩu, nội dung `.env`;
 - dữ liệu từ người dùng hay từ ngoài được kiểm tra; không ghép thẳng vào câu SQL, HTML hay lệnh shell;
