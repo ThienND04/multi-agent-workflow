@@ -29,9 +29,12 @@
 # Master: để manual, vì bạn đang chat với Master trong phiên chính. Khi có việc chờ Master, watch.sh báo bạn;
 # bạn nói với Master "Xử lý việc đang chờ".
 # Mỗi phiên chat là một Master. Một phiên làm lần lượt nhiều tính năng vẫn là master-01.
-# Mở thêm phiên để làm song song thì thêm master-02 và nói với phiên mới "Bạn là master-02".
+# Mở thêm phiên để làm song song thì câu đầu tiên nói với phiên mới: "Bạn là master-02." (master-02, master-03
+# đã khai sẵn bên dưới; cần nhiều hơn thì thêm dòng). Không nêu ID mà đang có tính năng dở, Master sẽ hỏi lại.
 
 master-01     master  manual    phiên chat chính
+master-02     master  manual    phiên chat song song thứ hai
+master-03     master  manual    phiên chat song song thứ ba
 
 coder-01      coder   subagent  coder
 tester-01     tester  subagent  tester

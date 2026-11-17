@@ -27,8 +27,9 @@
 Chép **toàn bộ nội dung** thư mục [starter-kit/](starter-kit/) vào **thư mục gốc** dự án:
 
 ```
-AGENTS.md                  luật chung cho mọi agent, quy tắc to: (công cụ nào cũng tự đọc)
-CLAUDE.md                  Claude Code tự đọc: phiên chính là Master
+AGENTS.md                  luật chung cho mọi agent, quy tắc to: (Codex tự đọc)
+CLAUDE.md                  Claude Code tự đọc: nạp sẵn AGENTS.md (dòng @AGENTS.md), phiên chính là Master
+GEMINI.md                  Gemini CLI tự đọc: nạp sẵn AGENTS.md
 .gitattributes             giữ script .sh và hook xuống dòng LF
 .claude/
   settings.json            quyền cho Claude Code: cho chạy git và lệnh test thường gặp, chặn git push, chặn đọc .env
@@ -52,9 +53,11 @@ sh workflow/hooks/install.sh
 - **Bạn** push bằng `git push --no-verify origin <nhánh>`. Agent bị cấm dùng `--no-verify`.
 - Dự án đã có hook `pre-push` riêng (ví dụ husky): script không ghi đè mà in hướng dẫn gộp tay.
 
-**Dự án đã có `AGENTS.md`, `CLAUDE.md`, `.gitattributes` hay `.claude/settings.json` riêng:** đừng ghi đè.
-- `AGENTS.md`: đổi tên file của bộ khởi đầu thành `AGENTS-WORKFLOW.md`, rồi thêm vào cuối file cũ dòng `Đọc và làm theo AGENTS-WORKFLOW.md.`
-- `CLAUDE.md`, `.gitattributes`: chép nội dung của bộ khởi đầu vào cuối file cũ.
+**Vì sao không cần gõ "Đọc AGENTS.md":** `CLAUDE.md` và `GEMINI.md` có dòng `@AGENTS.md` (bản Gemini là `@./AGENTS.md`), nên Claude Code và Gemini CLI tự nạp nội dung `AGENTS.md` mỗi khi mở phiên tại thư mục dự án. Codex tự đọc `AGENTS.md`. Công cụ khác không tự đọc thì lời nhắn của `watch.sh` đã có sẵn câu đó.
+
+**Dự án đã có `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.gitattributes` hay `.claude/settings.json` riêng:** đừng ghi đè.
+- `AGENTS.md`: đổi tên file của bộ khởi đầu thành `AGENTS-WORKFLOW.md`, rồi thêm vào cuối file cũ dòng `Đọc và làm theo AGENTS-WORKFLOW.md.` Trong `CLAUDE.md` và `GEMINI.md` của bộ khởi đầu, sửa `@AGENTS.md` thành `@AGENTS-WORKFLOW.md`.
+- `CLAUDE.md`, `GEMINI.md`, `.gitattributes`: chép nội dung của bộ khởi đầu vào cuối file cũ.
 - `.claude/settings.json`: gộp các dòng trong `allow` và `deny` vào file cũ.
 
 **Vì sao trạng thái luôn ghi ở thư mục gốc:** Coder và Tester code, test trong worktree riêng (thư mục `../<tên-dự-án>-wt/…`). Worktree cũng có một bản sao `workflow/`, nhưng đó là bản cũ. Luật trong `AGENTS.md` yêu cầu mọi file trong `workflow/` chỉ được sửa ở thư mục gốc, để `watch.sh` và Master thấy được. Trước khi gộp, Master kiểm tra: nhánh nào lỡ đụng tới `workflow/` thì không gộp.
@@ -129,6 +132,8 @@ Mỗi dòng một agent: `<ID> <vai> <chế độ> <lệnh, tên subagent, hoặ
 **Mặc định trong bộ khởi đầu** (chỉ cần ứng dụng Claude desktop):
 ```
 master-01     master  manual    phiên chat chính
+master-02     master  manual    phiên chat song song thứ hai
+master-03     master  manual    phiên chat song song thứ ba
 coder-01      coder   subagent  coder
 tester-01     tester  subagent  tester
 ```
@@ -170,13 +175,13 @@ Mở Claude Code **tại thư mục dự án** (với ứng dụng desktop: ch�
 
 **Dự án mới:**
 ```text
-Đọc AGENTS.md và làm theo. Bạn là Master. Đây là dự án mới.
+Bạn là Master. Đây là dự án mới.
 Dựng thư mục workflow/ theo workflow/roles/master.md (hỏi tôi trước khi git init).
 ```
 
 **Dự án đã có code:**
 ```text
-Đọc AGENTS.md và làm theo. Bạn là Master. Đây là dự án đã có code.
+Bạn là Master. Đây là dự án đã có code.
 Khảo sát dự án (cấu trúc, cách build, cách chạy test, quy ước đang dùng), chạy test để biết hiện trạng,
 ghi những gì tìm được vào workflow/DECISIONS.md. Cho tôi xem trước khi commit.
 ```
@@ -257,16 +262,13 @@ Xử lý các file trong workflow/ có dòng "to: tester-03". Xong phần của 
 
 **Làm lần lượt:** tính năng trước xong thì giao tính năng sau **ngay trong phiên Master cũ**. Master vẫn là `master-01`, không cần khai báo gì thêm. Trên trang monitor, tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
 
-**Làm song song:**
-1. Thêm một dòng vào `agents.txt`:
-   ```
-   master-02     master  manual    phiên chat thứ hai
-   ```
-2. Mở thêm một phiên Master tại cùng thư mục dự án, câu đầu tiên dán:
-   ```text
-   Đọc AGENTS.md và làm theo. Bạn là Master, ID master-02.
-   ```
-3. Làm lại bước 7 với tính năng khác.
+**Làm song song:** mở thêm một phiên tại cùng thư mục dự án, câu đầu tiên chỉ cần nêu ID và việc:
+```text
+Bạn là master-02. Tính năng mới: <bạn muốn gì>.
+```
+- `master-02`, `master-03` đã khai sẵn trong `agents.txt`. Cần phiên thứ tư thì thêm một dòng `master-04`.
+- **Nhớ nêu ID.** Quên thì Master thấy đang có tính năng dở của `master-01` và hỏi lại phiên này là ai, chứ không tự nhận `master-01`. Hai phiên cùng ID sẽ cùng xử lý một file và giẫm lên nhau.
+- Phần còn lại làm như bước 7.
 
 Một `watch.sh` lo cho mọi tính năng. Phiên mới cũng dùng chung hạn mức tài khoản, nên chỉ mở khi thật sự cần làm song song.
 
@@ -276,7 +278,7 @@ Một `watch.sh` lo cho mọi tính năng. Phiên mới cũng dùng chung hạn 
 - **Agent `auto`:** không cần làm gì. Lần tới file của nó thay đổi, nó được đánh thức lại. Nếu `STATUS.md` hoặc trang monitor báo *"đã đánh thức nhưng chưa xử lý xong"*, hãy xem log trong `workflow/logs/`. Nếu agent bị **tạm dừng** (đánh thức quá nhiều lần), xem log rồi chạy `sh workflow/watch.sh --resume <ID>`.
 - **Master:** mở phiên mới tại thư mục dự án, dán:
   ```text
-  Đọc AGENTS.md và làm theo. Bạn là Master, ID master-01, làm tiếp.
+  Bạn là master-01, làm tiếp phiên cũ đã dừng.
   Đọc SPEC.md của tính năng đang làm và các file có "to: master-01".
   ```
 

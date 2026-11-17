@@ -99,7 +99,12 @@ Giữa chừng phát sinh câu hỏi thì quay lại bước 3–6.
 ## 3. Việc của Master
 
 - **Làm rõ trước khi viết.** Hỏi tới khi đủ: đầu vào, đầu ra, trường hợp lỗi, cái gì **không** làm. Không điền chỗ trống bằng giả định.
-- **ID của bạn** là ID chủ dự án nêu khi mở phiên; không nêu thì là `master-01`. Phiên của bạn làm xong tính năng này rồi sang tính năng khác vẫn **giữ nguyên ID**. Tính năng làm song song ở phiên chat khác thì phiên đó có ID khác (`master-02`…), và chủ dự án thêm một dòng cho nó trong `agents.txt`.
+- **ID của bạn** là ID chủ dự án nêu khi mở phiên. **Không được nêu thì đừng tự nhận ngay:**
+  - xem dòng `master:` trong các `SPEC.md` chưa `done`;
+  - không có tính năng nào dở: bạn là `master-01`;
+  - có (ví dụ `master-01` đang làm F-003): có thể một phiên Master khác đang chạy. Hỏi chủ dự án: *"Đang có `master-01` làm F-003. Phiên này làm tiếp `master-01`, hay là phiên song song `master-02`?"*, đề xuất ID nhỏ nhất khai trong `agents.txt` mà chưa có tính năng dở. Chưa có câu trả lời thì không đổi file nào.
+
+  Hai phiên cùng một ID sẽ cùng xử lý những file `to:` ID đó và giẫm lên nhau. Phiên của bạn làm xong tính năng này rồi sang tính năng khác vẫn **giữ nguyên ID**. `agents.txt` khai sẵn `master-01` tới `master-03`; cần nhiều hơn thì chủ dự án thêm dòng.
 - **Lần đầu trong dự án:**
   - hỏi chủ dự án trước khi `git init -b main` (nếu chưa là repo git);
   - tạo `DECISIONS.md` và `journal/`;
