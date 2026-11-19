@@ -57,13 +57,15 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
 Làn đủ:
 
 ```
-① Bạn + Master làm rõ yêu cầu → Master viết SPEC.md, chia việc → bạn nói "duyệt"
+① Bạn + Master làm rõ yêu cầu → Master đối chiếu API với máy chủ thật (nếu có), viết SPEC.md,
+   chia việc (chỉ tách việc khi chạy song song được) → bạn nói "duyệt"
 ② Master giao việc (to: coder-01) → Master gọi Coder (hoặc watch.sh đánh thức) → Coder KHẢO SÁT
 ③ Chưa rõ → Coder ghi câu hỏi (to: master-01) → Master trả lời nếu có nguồn;
    KHÔNG chắc → câu hỏi chuyển sang to: owner → watch.sh báo bạn → bạn bàn với Master, chốt
-④ Rõ hết → Master mở cho làm (to: coder-01) → Coder code, test xanh, tự kiểm trên trình duyệt
-   → to: tester-01 → Tester kiểm tra: đọc diff, chạy test, chèn lỗi thử bộ test, chạy sản phẩm
-   trên trình duyệt   ⇄ có lỗi thì to: coder-01 để sửa
+④ Rõ hết → Master mở cho làm, chạy sản phẩm ở cổng cố định, bạn đăng nhập một lần
+   → Coder code, test cả module, tự chèn lỗi, tự kiểm trên trình duyệt
+   → to: tester-01 → Tester kiểm tra: đọc diff, chạy test, chèn lỗi thử bộ test (tối đa ~5 ca),
+   chạy sản phẩm trên trình duyệt   ⇄ có lỗi thì to: coder-01 để sửa (Master gửi tiếp cho đúng agent đó)
 ⑤ Mọi việc đạt → Master gom mỗi việc thành MỘT commit trên nhánh tích hợp F-001/integration,
    chạy toàn bộ test → viết báo cáo: nhánh, file đã đổi, lệnh xem diff, lệnh chạy test, cách thử
    → to: owner → watch.sh báo bạn

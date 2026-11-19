@@ -291,7 +291,20 @@ Master **chọn làn theo cỡ việc** trước, nói bạn biết một câu r
 - **làn nhanh**: *"Làn nhanh: SG-30027, SG-30012"*. Không có bước duyệt, Master kiểm thay Tester;
 - **làn đủ**: *"Làn đủ: …"*, cho tính năng lớn. Đi đủ các bước dưới đây.
 
-Muốn Coder, Tester (và Master ở làn trực tiếp) tự kiểm được trên trình duyệt, Master ghi lệnh chạy sản phẩm và địa chỉ mở vào `workflow/DECISIONS.md`. Subagent dùng chung công cụ trình duyệt của phiên chính (trình duyệt có sẵn trong ứng dụng Claude, Claude in Chrome).
+**Kiểm trên trình duyệt.** Coder, Tester (và Master ở làn trực tiếp) tự kiểm trên trình duyệt. Subagent dùng chung công cụ trình duyệt của phiên chính (trình duyệt có sẵn trong ứng dụng Claude, Claude in Chrome), nên dùng chung cả phiên đăng nhập. Để không phải đăng nhập lại nhiều lần:
+- Master ghi vào `workflow/DECISIONS.md` mục "Lệnh" một **cổng cố định** và cách chạy bản của một worktree trên đúng cổng đó, ví dụ:
+  ```text
+  Chạy sản phẩm: pnpm dev --port 5173 --strictPort, mở http://localhost:5173
+  Chạy bản của worktree: pnpm --dir <worktree> exec vite --port 5173 --strictPort
+  Đăng nhập: chủ dự án tự đăng nhập; agent không nhập mật khẩu
+  ```
+  Phiên đăng nhập gắn với `localhost:<cổng>`: đổi cổng là mất đăng nhập. `--strictPort` làm server báo lỗi thay vì tự nhảy sang cổng khác.
+- Đầu mỗi tính năng có giao diện, Master chạy server và nhờ **bạn đăng nhập một lần**; server chạy tới khi nghiệm thu. Agent **không bao giờ tự nhập mật khẩu**: gặp trang đăng nhập thì chúng dừng và báo.
+- Dùng công cụ xem trước của ứng dụng Claude (`.claude/launch.json`) thì đặt `"autoPort": false`, kẻo nó tự đổi cổng khi cổng đang bận. `launch.json` không cho chạy ở thư mục ngoài dự án, nên bản của worktree chạy bằng `pnpm --dir <worktree> …` như trên:
+  ```json
+  { "version": "0.0.1", "configurations": [
+    { "name": "dev", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev", "--port", "5173", "--strictPort"], "port": 5173, "autoPort": false } ] }
+  ```
 
 Từ đây (làn đủ; làn nhanh bỏ bước duyệt và khảo sát):
 

@@ -217,6 +217,15 @@ lint() {
       fi
     done
   done
+  # Subagent của Claude Code: giá trị trong phần đầu file có ": " hay " #" mà không đặt trong ngoặc kép thì YAML
+  # hỏng, Claude Code lặng lẽ bỏ qua cả agent đó và Master không gọi được
+  for af in "$ROOT"/.claude/agents/*.md; do
+    [ -f "$af" ] || continue
+    if awk 'NR==1 { next } /^---/ { exit } { v = $0; sub(/^[A-Za-z_]+:[ \t]*/, "", v); sub(/\r$/, "", v)
+          if (v !~ /^".*"$/ && (v ~ /: / || v ~ / #/)) { bad = 1; exit } } END { exit !bad }' "$af"; then
+      echo "\`.claude/agents/$(basename "$af")\`: phần đầu file có \": \" trong một giá trị mà không đặt trong ngoặc kép, Claude Code sẽ bỏ qua subagent này"
+    fi
+  done
 }
 
 # Chữ ký nội dung của một danh sách file (để biết có gì thay đổi)
