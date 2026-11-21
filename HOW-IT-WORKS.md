@@ -69,8 +69,9 @@ Làn đủ:
 ⑤ Mọi việc đạt → Master gom mỗi việc thành MỘT commit trên nhánh tích hợp F-001/integration,
    chạy toàn bộ test → viết báo cáo: nhánh, file đã đổi, lệnh xem diff, lệnh chạy test, cách thử
    → to: owner → watch.sh báo bạn
-⑥ Bạn thử ngay ở thư mục dự án (git switch F-001/integration) → "đạt": Master đưa vào nhánh chính
-   (hoặc tạo nhánh feat/… để bạn mở MR, tuỳ workflow/project.conf) → push: bạn tự push, hoặc cho phép Master push   /   "chưa đạt": quay lại ④
+⑥ Bạn thử trên bản Master chạy sẵn từ worktree tích hợp → "đạt": Master đưa vào nhánh chính
+   (hoặc tạo nhánh feat/… để bạn mở MR, tuỳ workflow/project.conf) → push: bạn tự push, hoặc cho phép Master push
+   → MR: tính năng "đã giao, chờ merge" tới khi MR vào nhánh chính thì "xong"   /   "chưa đạt": quay lại ④
 ```
 
 **Bạn chỉ phải quyết định 3 lần cho mỗi tính năng:**

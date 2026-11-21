@@ -60,6 +60,8 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
   - Không bao giờ `--force` (kể cả `--force-with-lease`), không push nhánh của người khác.
   - **Không push thẳng lên `BASE_BRANCH` khi `DELIVERY=mr`**: code vào nhánh chính qua MR/PR. Hook `pre-push` chặn việc này với mọi người; gặp nó thì dừng và báo chủ dự án, **không** tìm cách khác (`--no-verify`, sửa hay xoá hook, đổi `core.hooksPath`).
 - `git commit --no-verify`, `git push --no-verify`, viết lại lịch sử nhánh người khác.
+- Đổi trạng thái git ở **thư mục gốc** (`switch`, `checkout`, `rebase`, `merge`, `reset`, `stash`): thư mục gốc dùng chung cho chủ dự án và mọi phiên Master. Mọi việc code làm trong worktree. Ngoại lệ duy nhất: Master gộp ở máy khi `DELIVERY=merge`, theo `workflow/roles/master.md`.
+- Nối một lệnh đổi trạng thái (`git switch`, `checkout`, `reset`, xoá file…) sau một lệnh có thể lỗi bằng `;`. Dùng `&&`, để lệnh trước lỗi thì lệnh sau không chạy.
 - Sửa file ngoài vai, ngoài `files` của việc (trừ ba loại ở mục 3), hoặc ngoài thư mục tính năng của mình (Master).
 - Tự nhập mật khẩu hay mã đăng nhập vào trang web, nhất là trang gửi lên máy khác `localhost`. Gặp trang đăng nhập thì dừng phần kiểm trên trình duyệt và báo (Coder, Tester ghi vào bàn giao; Master nhờ chủ dự án đăng nhập).
 - Xoá hay sửa phần người khác đã ghi trong file trao đổi. Chỉ được ghi thêm, và đổi `status`, `to`.

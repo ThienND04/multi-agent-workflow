@@ -87,6 +87,9 @@ function demoSetup() {
     put('.run/watch.beat', (step === 3 ? t - 900 : t) + ' 30 1\n');
     // F-100: đã xong (chỉ còn trên bảng trắng)
     put('F-100-dang-nhap/SPEC.md', doc({ id: 'F-100', title: 'Trang đăng nhập mới', lane: 'full', status: 'done', to: 'none', master: 'master-01' }));
+    put('F-099-slug/SPEC.md', doc({ id: 'F-099', title: 'Slug cho media', lane: 'quick', status: 'delivered', to: 'none', master: 'master-02' }, '## Việc treo\n- chờ feat/media-slug: cập nhật tài liệu API\n'));
+    put('.run/coder-04.hist', '2026-11-21T08:10 2026-11-21T08:31 F-099 T-01 in_test\n2026-11-21T09:02 2026-11-21T09:15 F-102 T-01 in_test\n');
+    put('.run/tester-03.hist', '2026-11-21T07:40 2026-11-21T08:05 F-100 T-02 verified\n');
     // F-101: đang làm; coder-01 Master gọi, coder-02 có việc chờ, coder-03 (auto) đang chạy, tester-01 có việc kiểm
     const f1 = 'F-101-otp';
     put(f1 + '/SPEC.md', doc({ id: 'F-101', title: 'Đăng nhập bằng mã OTP', lane: 'full', status: 'in_dev', to: 'none', master: 'master-01' }));
@@ -164,7 +167,7 @@ function readFeatures() {
       if (!isDir(sd)) continue;
       for (const n of fs.readdirSync(sd).filter(n => n.endsWith('.md')).sort()) { const t = read(path.join(sd, n)); add(sub + '/' + n, frontmatter(t), sub, t); }
     }
-    return { dir, id: s.id || dir.split('-').slice(0, 2).join('-'), title: s.title || dir, status: s.status || '', to: s.to || 'none', master: s.master || '', items };
+    return { dir, id: s.id || dir.split('-').slice(0, 2).join('-'), title: s.title || dir, status: s.status || '', to: s.to || 'none', master: s.master || '', lane: s.lane || '', items };
   });
 }
 
@@ -220,6 +223,9 @@ function state() {
     a.runIn = [...new Set(((a.sub || a.job).match(/F-\d+/g) || []))];
     const m = masters.find(x => x.id === a.id);
     a.now = m ? m.text : ''; a.nowWait = !!(m && m.waitOwner);
+    // Lịch sử các lần Master gọi subagent: .run/<id>.hist, mỗi dòng "<bắt đầu> <xong> <F-NNN> <T-xx> <kết quả>"
+    a.hist = read(path.join(W, '.run', a.id + '.hist')).split(/\r?\n/).filter(l => l.trim()).slice(-6).reverse()
+      .map(l => { const p = l.trim().split(/\s+/); return { start: p[0] || '', end: p[1] || '', what: p.slice(2).join(' ') }; });
   }
   const features = readFeatures();
   const owner = [];
@@ -405,8 +411,10 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let S=null,openId=null;const OPEN=new Map();
 const MODE_NAME={auto:'chạy ngầm tự động',window:'tự mở cửa sổ',manual:'đánh thức tay',subagent:'subagent, Master tự gọi'};
 const MODE_WAIT={auto:'Có việc, chờ watch.sh đánh thức',window:'Có việc, chờ watch.sh mở cửa sổ',manual:'Có việc, cần mở phiên tay',subagent:'Có việc, chờ Master gọi'};
-const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
+const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',delivered:'đã giao, chờ merge',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
 const stVi=x=>ST[x]||x||'?';
+// Vì sao dãy bàn không có Tester: ghi theo làn của tính năng
+const LANE_NOTE={quick:'làn nhanh: Master tự kiểm, không có Tester'};
 // Nhãn trạng thái của tính năng / file: draft chỉ là "chờ bạn duyệt" khi to: owner; còn lại Master đang làm rõ
 const stOf=o=>o.status==='draft'&&o.to!=='owner'?'đang làm rõ':stVi(o.status);
 // Chủ dự án cần làm gì với một file to: owner
@@ -654,6 +662,7 @@ function shortOf(a,st,asking){
  if(st.kind==='run')return st.label.indexOf('Master đang gọi')===0?'đang làm (Master gọi)':'đang làm';
  if(st.kind==='wait')return 'có '+st.txt+' việc chờ';
  if(/^Đang chạy ở/.test(st.label))return 'đang ở '+((st.label.match(/F-\d+/)||[''])[0]);
+ if(a&&a.hist&&a.hist.length){const h=a.hist[0],m=(h.end||'').match(/T(\d\d:\d\d)/);if(m)return 'rảnh · lần cuối '+m[1]}
  return 'rảnh';
 }
 function confetti(cx,y,elapsed){let s='<g class="conf">';const c=['#d64545','#f2c14e','#3f8f4a','#2f6fe0','#8b4fd0'];
@@ -728,7 +737,7 @@ function build(){
  S.features.forEach(f=>{const p=PREV_STATUS.get(f.dir);if(p&&p!=='done'&&f.status==='done')PARTY.push({id:f.id,at:now});PREV_STATUS.set(f.dir,f.status)});
  PARTY=PARTY.filter(p=>now-p.at<6000);
  // tính năng đã xong rời văn phòng (chỉ còn trên bảng trắng); màu giữ theo thứ tự gốc
- const blocks=S.features.map((f,i)=>[f,i]).filter(([f])=>f.status!=='done').map(([f,i])=>{
+ const blocks=S.features.map((f,i)=>[f,i]).filter(([f])=>f.status!=='done'&&f.status!=='delivered').map(([f,i])=>{
   const ms=f.members.filter(m=>m===f.master);
   const others=f.members.filter(m=>m!==f.master).sort((a,b)=>{const ra=(byId[a]||{}).role||'',rb=(byId[b]||{}).role||'';return ra===rb?a.localeCompare(b):(ra==='coder'?-1:rb==='coder'?1:ra.localeCompare(rb))});
   const rows=Math.max(1,Math.ceil(others.length/PER_ROW));
@@ -736,7 +745,7 @@ function build(){
  });
  const busy=new Set(blocks.flatMap(b=>[b.master,...b.others]));
  const free=S.agents.filter(a=>!busy.has(a.id));
- const done=S.features.filter(f=>f.status==='done');
+ const done=S.features.filter(f=>f.status==='done'),delivered=S.features.filter(f=>f.status==='delivered');
  // agent đổi khu (cây nước ↔ bàn) so với lần vẽ trước: ghi mốc để ẩn ở chỗ mới tới khi người đi bộ tới nơi
  if(MOTION_OK)S.agents.forEach(a=>{const q=PREV_PLACE.get(a.id),z=busy.has(a.id)?'desk':'cooler';if(q&&q.zone!==z)ARRIVE.set(a.id,now)});
  // vị trí các dãy bàn, các lối đi ngang (cho thú cưng) và góc nghỉ dưới cùng
@@ -759,7 +768,7 @@ function build(){
  if(need)s+=bubble(323,6,'!'+need,'bad');
  // ---- bảng trắng: các tính năng đang làm, rồi các tính năng đã xong
  s+=T(436,26,8.5,'#3b2a20','CÁC TÍNH NĂNG');
- const board=blocks.map(b=>({f:b.f,color:b.color})).concat(done.slice().reverse().map(f=>({f,color:'#b9b0a3'})));
+ const board=blocks.map(b=>({f:b.f,color:b.color})).concat(delivered.map(f=>({f,color:'#7f9cc2'})),done.slice().reverse().map(f=>({f,color:'#b9b0a3'})));
  board.slice(0,4).forEach((b,i)=>{const y=31+i*16.5;
   s+=RR(371,y+1,6,6,1.5,b.color)+T(381,y+7.5,7.5,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(122/(CW*7.5))),'start')+T(381,y+15,6.6,b.f.to==='owner'?'#b23030':'#6b5c4e',stOf(b.f),'start')});
  if(board.length>4)s+=T(502,99,6.5,'#6b5c4e','+'+(board.length-4)+' nữa','end');
@@ -782,7 +791,8 @@ function build(){
   s+=rugBlock(LX,y,BR-LX,b.h,b.color);
   const sv=stOf(f),svw=sv.length*CW*7.5+12,lbl=cut(f.id+' · '+f.title,Math.floor((BR-LX-22-svw)/(CW*8.5))),lw=lbl.length*CW*8.5;
   s+=RR(LX+4,y+6,Math.min(lw+svw+24,BR-LX-12),18,4,b.color)+T(LX+10,y+18.5,8.5,'#ffffff',lbl,'start')
-   +'<rect x="'+(LX+16+lw)+'" y="'+(y+9)+'" width="'+svw+'" height="12" rx="3" fill="'+(f.to==='owner'?'#ffe066':'rgba(255,255,255,.88)')+'"/>'+T(LX+16+lw+svw/2,y+17.8,7.5,f.to==='owner'?'#7a2a00':'#3b2a20',sv);
+   +'<rect x="'+(LX+16+lw)+'" y="'+(y+9)+'" width="'+svw+'" height="12" rx="3" fill="'+(f.to==='owner'?'#ffe066':'rgba(255,255,255,.88)')+'"/>'+T(LX+16+lw+svw/2,y+17.8,7.5,f.to==='owner'?'#7a2a00':'#3b2a20',sv)
+   +(LANE_NOTE[f.lane]&&LX+28+lw+svw+LANE_NOTE[f.lane].length*CW*7<BR-8?T(LX+24+lw+svw,y+18,7,'#3b2a20',LANE_NOTE[f.lane],'start'):'');
   const rowTop=r=>y+HEAD+r*ROW_H;
   // đồ giữa các bàn (cây, tủ hồ sơ, thùng rác) và cây ở cuối dãy
   for(let r=0;r<b.rows;r++){const n=Math.min(PER_ROW,b.others.length-r*PER_ROW);
@@ -952,7 +962,7 @@ requestAnimationFrame(critLoop);
 /* ---------- các khu HTML ---------- */
 function render(){
  $('#proj').textContent='VĂN PHÒNG AGENT · '+S.project;
- {const d=S.features.filter(f=>f.status==='done').length;$('#bFeat').textContent=(S.features.length-d)+' ĐANG LÀM · '+d+' XONG'}
+ {const d=S.features.filter(f=>f.status==='done').length,g=S.features.filter(f=>f.status==='delivered').length;$('#bFeat').textContent=(S.features.length-d-g)+' ĐANG LÀM · '+(g?g+' CHỜ MERGE · ':'')+d+' XONG'}
  $('#bRun').textContent=S.agents.filter(a=>a.running).length+'/'+S.agents.length+' ĐANG CHẠY';
  {const mw=(S.masters||[]).filter(m=>m.waitOwner).length;$('#bNeed').textContent=(S.owner.length+mw)+' CHỜ BẠN'}
  {const w=S.watch||{state:'never'},bw=$('#bWatch');
@@ -1000,7 +1010,7 @@ function masterLine(m){const old=Date.now()-m.at>2*3600e3;
  return 'MASTER '+m.id+': '+m.text+(old?' (không đổi từ '+hm(m.at)+', phiên có thể đã đóng)':' ('+hm(m.at)+')')}
 function banner(){
  const b=$('#banner');b.replaceChildren();b.className='pix banner';
- const ms=S.masters||[],mw=ms.filter(m=>m.waitOwner),act=S.features.filter(f=>f.status!=='done');
+ const ms=S.masters||[],mw=ms.filter(m=>m.waitOwner),act=S.features.filter(f=>f.status!=='done'&&f.status!=='delivered');
  const wl=watchLine(act.length>0||ms.length>0);
  const turns=[];act.forEach(f=>f.items.forEach(it=>{if(it.to&&it.to!=='none'&&it.to!=='owner')turns.push({f,it})}));
  const run=S.agents.filter(a=>a.running);
@@ -1030,6 +1040,8 @@ function showDetail(){
  d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.paused?'Tạm dừng (đánh thức quá nhiều lần): sh workflow/watch.sh --resume '+a.id:a.running?(a.sub?'Đang chạy: Master gọi subagent ('+a.sub+')':'Đang chạy'):'Không chạy'));
  d.append(el('h2',null,'File đang chờ'));
  if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
+ if(a.hist&&a.hist.length){d.append(el('h2',null,'Các lần chạy gần đây'));const ul=el('ul');
+  a.hist.forEach(h=>{const li=el('li');li.append(el('code',null,(h.start||'').replace('T',' ')+' → '+((h.end||'').split('T')[1]||h.end)),document.createTextNode(' '+h.what));ul.append(li)});d.append(ul)}
  d.append(el('h2',null,'Log gần nhất'));
  if(a.lastLog)d.append(el('p','muted',a.lastLog.name+(a.lastLog.mtime?' · '+new Date(a.lastLog.mtime).toLocaleString():'')),el('pre',null,a.lastLog.tail||'(trống)'));
  else d.append(el('p','muted','Chưa có log (agent subagent hoặc đánh thức tay, hoặc chưa được đánh thức lần nào).'));

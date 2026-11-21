@@ -240,7 +240,11 @@ sh workflow/watch.sh
 
 - Chỉ một `watch.sh` chạy được cùng lúc; chạy thêm thì nó báo và dừng.
 - **Cập nhật workflow không cần khởi động lại:** `watch.sh` chạy từ một bản sao trong `workflow/.run/`, nên chép đè `watch.sh`, `monitor.js` lúc đang chạy không làm hỏng nó. Thấy file đổi, nó tự nạp bản mới ở lần quét kế tiếp.
-- **watch.sh chết ngang** (cửa sổ bị đóng, máy ngủ…): nó ghi nhịp tim mỗi lần quét, nên trang monitor hiện đỏ *"watch.sh đã dừng bất thường"* và huy hiệu **WATCH ĐÃ CHẾT**. Dừng đàng hoàng thì huy hiệu là **WATCH TẮT**, kèm cảnh báo khi đang có việc dở.
+- **watch.sh chết ngang** (cửa sổ bị đóng, máy khởi động lại…): nó ghi nhịp tim mỗi lần quét. Monitor chạy **tách khỏi terminal** (trên Windows là một tiến trình riêng), nên vẫn sống khi cửa sổ của `watch.sh` bị đóng, và hiện đỏ *"watch.sh đã dừng bất thường"* cùng huy hiệu **WATCH ĐÃ CHẾT**. Master cũng kiểm nhịp tim mỗi khi nhận yêu cầu và báo bạn. Dừng đàng hoàng (`Ctrl+C`, `--stop`) thì monitor dừng theo.
+- **Chạy bền hơn trên Windows** (tự chạy lại khi đăng nhập hay khi máy thức dậy): tạo một tác vụ trong Task Scheduler.
+  - Mở Task Scheduler, chọn *Create Task*. Tab *Triggers*: thêm *At log on*, và *On an event* (Log: System, Source: Power-Troubleshooter, Event ID: 1) để chạy khi máy thức dậy.
+  - Tab *Actions*: Program là `C:\Program Files\Git\bin\sh.exe` (đường dẫn Git Bash trên máy bạn), Arguments là `-lc "cd /f/Project/<dự-án> && sh workflow/watch.sh --restart"`.
+  - `--restart` dừng bản cũ (nếu còn) rồi chạy bản mới, nên chạy lại bao nhiêu lần cũng không bị trùng.
 - `--interval 60`: quét mỗi 60 giây (mặc định 30 giây).
 - `--once`: quét đúng một lần.
 - `--lint`: chỉ liệt kê trạng thái bất thường rồi thoát, không đánh thức ai.
@@ -316,8 +320,9 @@ Từ đây (làn đủ; làn nhanh bỏ bước duyệt và khảo sát):
 | Có câu Master không chắc (`to: owner`) | `watch.sh` báo, kể cả qua Telegram. Bạn trả lời Master và bàn tới khi chốt |
 | Có việc cho agent `manual` | `watch.sh` báo và chép sẵn lời nhắn vào clipboard. Bạn mở công cụ, dán |
 | Có việc mới cho agent `window` mà cửa sổ của nó đang mở | `watch.sh` báo. Bạn gõ vào cửa sổ đó: *"Xử lý việc đang chờ"* |
-| Báo cáo xong (`SPEC.md` có `to: owner`) | Báo cáo luôn có: nhánh, danh sách file đã đổi, lệnh xem diff, lệnh chạy test, cách thử. Bạn thử **ngay ở thư mục dự án**: `git switch F-NNN/integration` (Master đã xoá các worktree để bạn switch được, và trình soạn thảo thấy ngay thay đổi). Đó đúng là bản sẽ vào `main`, mỗi việc một commit. Thử xong `git switch main`, rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt |
+| Báo cáo xong (`SPEC.md` có `to: owner`) | Báo cáo luôn có: nhánh, danh sách file đã đổi, lệnh xem diff, lệnh chạy test, cách thử. Bạn thử trên server **Master đã chạy sẵn từ worktree tích hợp** (địa chỉ ghi trong báo cáo); xem code thì mở thư mục worktree đó trong trình soạn thảo. Đó đúng là bản sẽ vào `main`, mỗi việc một commit. Rồi nói **"đạt"** hoặc chỉ ra chỗ chưa đạt. Không cần `git switch` ở thư mục dự án: thư mục đó để yên cho bạn và các phiên Master khác |
 | Master đã gộp code | Master hỏi có push không. Đồng ý thì Master push; hoặc **bạn tự push:** `git push origin main` (với `DELIVERY=mr` thì push nhánh `feat/…` rồi mở MR) |
+| Đã push nhánh MR (`DELIVERY=mr`) | Tính năng ở trạng thái **đã giao, chờ merge** (`delivered`). Khi MR vào nhánh chính, Master thấy ở lần "xử lý việc đang chờ" kế tiếp và chuyển sang **xong** (`done`) |
 
 **Lời nhắn cho agent `manual`**, nếu máy không chép được vào clipboard (lời nhắn cũng được lưu ở `workflow/.run/<ID>.prompt`):
 ```text
@@ -335,6 +340,8 @@ Bạn là master-02. Tính năng mới: <bạn muốn gì>.
 ```
 - `master-02`, `master-03` đã khai sẵn trong `agents.txt`. Cần phiên thứ tư thì thêm một dòng `master-04`.
 - **Nhớ nêu ID.** Quên thì Master thấy đang có tính năng dở của `master-01` và hỏi lại phiên này là ai, chứ không tự nhận `master-01`. Hai phiên cùng ID sẽ cùng xử lý một file và giẫm lên nhau.
+- **Mỗi Master một bộ Coder, Tester riêng** (`master-02` dùng `coder-02`, `tester-02`…). Hai Master giao cho cùng `coder-01` thì hai subagent mang chung một ID, monitor và nhật ký lẫn lộn. `agents.txt` khai sẵn `coder-01..03`, `tester-01..03`; thêm Master thì thêm cả Coder, Tester. `watch.sh --lint` báo khi một ID bị dùng chung.
+- **Thư mục gốc là của bạn.** Mọi Master làm việc trong worktree riêng (`../<dự-án>-wt/…`), kể cả làn trực tiếp, và không đổi nhánh ở thư mục gốc. Bạn thử bản của tính năng trên server Master đã chạy sẵn từ worktree, xem code bằng cách mở thư mục worktree đó.
 - Phần còn lại làm như bước 7.
 
 Một `watch.sh` lo cho mọi tính năng. Phiên mới cũng dùng chung hạn mức tài khoản, nên chỉ mở khi thật sự cần làm song song.

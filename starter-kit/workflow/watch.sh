@@ -162,10 +162,28 @@ has_open_question() {
 # Cách chuyền lượt bằng to: hỏng nhất ở chỗ một việc không còn ai cầm; hàm này tìm những chỗ đó.
 lint() {
   ids=" owner none $(grep -v '^[[:space:]]*#' "$AGENTS" | awk 'NF {printf "%s ", $1}')"
+  base=$(sed -n 's/^BASE_BRANCH=//p' "$W/project.conf" 2>/dev/null | tail -n 1 | tr -d '\r" ')
+  [ -n "$base" ] || base=main
+  busy=""   # "<agent> <master> <tính năng>" của các việc đang chờ agent làm, để tìm ID dùng chung giữa các Master
   for fd in "$W"/F-*/; do
     [ -d "$fd" ] || continue
     fd=${fd%/}
-    sst=""; [ -f "$fd/SPEC.md" ] && sst=$(fm "$fd/SPEC.md" status)
+    sst=""; fmaster=""
+    [ -f "$fd/SPEC.md" ] && { sst=$(fm "$fd/SPEC.md" status); fmaster=$(fm "$fd/SPEC.md" master); }
+    # Việc treo: "- chờ <nhánh>: <việc>" trong mục "## Việc treo" của SPEC.md; nhánh đã vào nhánh chính thì tới lúc làm
+    if [ -f "$fd/SPEC.md" ]; then
+      awk '/^## +Việc treo/ { f = 1; next } /^## / { f = 0 } f && /^[-*] *chờ +[^ :]+ *:/' "$fd/SPEC.md" | while IFS= read -r line; do
+        b=$(printf '%s' "$line" | sed 's/^[-*] *chờ *\([^ :]*\) *:.*/\1/')
+        for r in "refs/remotes/origin/$b" "refs/heads/$b"; do
+          git -C "$ROOT" rev-parse -q --verify "$r" >/dev/null 2>&1 || continue
+          if git -C "$ROOT" merge-base --is-ancestor "$r" "refs/remotes/origin/$base" 2>/dev/null \
+             || git -C "$ROOT" merge-base --is-ancestor "$r" "refs/heads/$base" 2>/dev/null; then
+            echo "\`$(basename "$fd")/SPEC.md\`: việc treo tới lúc làm, $b đã vào $base: $(printf '%s' "$line" | sed 's/^[-*] *//' | tr -d '\r')"
+          fi
+          break
+        done
+      done
+    fi
     for f in "$fd/SPEC.md" "$fd"/tasks/*.md "$fd"/questions/*.md "$fd"/bugs/*.md; do
       [ -f "$f" ] || continue
       rel=${f#$W/}
@@ -182,10 +200,12 @@ lint() {
         *" $to "*) ;;
         *) echo "\`$rel\`: to: $to không có trong agents.txt"; continue ;;
       esac
-      # Tính năng đang viết tài liệu hoặc đã xong: chỉ kiểm ID
-      case "$sst" in draft|done) continue ;; esac
+      # Tính năng đang viết tài liệu, đã giao (chờ MR merge) hay đã xong: chỉ kiểm ID
+      case "$sst" in draft|done|delivered) continue ;; esac
       case "$rel" in
         */tasks/*)
+          case "$st" in ready|in_progress|reopened) [ "$to" != "none" ] && busy="$busy$to ${fmaster:-?} $(basename "$fd")
+" ;; esac
           if [ "$to" = "none" ]; then
             case "$st" in
               review|reviewed|ready|in_progress|in_test|reopened)
@@ -216,6 +236,11 @@ lint() {
         echo "\`$rel\`: chờ $to đã hơn $STALE giờ mà không đổi"
       fi
     done
+  done
+  # Một ID có việc dở ở tính năng của hai Master khác nhau: hai phiên sẽ cùng gọi một ID, giẫm lên nhau
+  printf '%s' "$busy" | awk 'NF == 3 { k = $1 SUBSEP $2; if (!(k in seen)) { seen[k] = 1; n[$1]++; ms[$1] = ms[$1] " " $2 } fs[$1] = fs[$1] " " $3 }
+    END { for (a in n) if (n[a] > 1) printf "%s|%s|%s\n", a, ms[a], fs[a] }' | while IFS='|' read -r a ms fs; do
+    echo "\`agents.txt\`: $a đang có việc dở ở nhiều Master ($(echo $ms | tr ' ' ','): $(echo $fs | tr ' ' ',')). Mỗi ID chỉ làm cho một Master một lúc: giao cho ID khác"
   done
   # Subagent của Claude Code: giá trị trong phần đầu file có ": " hay " #" mà không đặt trong ngoặc kép thì YAML
   # hỏng, Claude Code lặng lẽ bỏ qua cả agent đó và Master không gọi được
@@ -460,41 +485,61 @@ monitor_stop() {
   ' "$RUN/monitor.token" "$RUN/monitor.port"
 }
 
-MON_PID=""; MON_SIG=""
+MON_STARTED=0; MON_SIG=""
+# monitor_up: monitor trên cổng $PORT có trả lời không (không dựa vào PID: monitor chạy tách khỏi terminal)
+monitor_up() {
+  node -e '
+    const r = require("http").get({ host: "127.0.0.1", port: +process.argv[1], path: "/api/state", timeout: 3000 },
+      res => { res.resume(); process.exit(res.statusCode === 200 ? 0 : 1); });
+    r.on("error", () => process.exit(1)); r.on("timeout", () => { r.destroy(); process.exit(1); });
+  ' "$PORT" 2>/dev/null
+}
+# monitor_start: mở monitor TÁCH khỏi terminal, để terminal của watch.sh bị đóng (hay watch.sh chết) thì monitor vẫn
+# sống và hiện đỏ "watch.sh đã chết". Windows: Start-Process (tiến trình riêng); máy khác: nohup (và setsid nếu có).
 monitor_start() {
   [ "$NOMON" = 1 ] && return
   command -v node >/dev/null 2>&1 || { say "Không có node (cần Node.js 18+), không mở monitor."; NOMON=1; return; }
   [ -f "$W/monitor.js" ] || { NOMON=1; return; }
   MON_SIG=$(cksum < "$W/monitor.js")
-  node "$W/monitor.js" --port "$PORT" > "$RUN/monitor.log" 2>&1 &
-  MON_PID=$!
-  sleep 2
-  if kill -0 "$MON_PID" 2>/dev/null; then
-    say "Monitor: http://localhost:$PORT"
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*)
+      powershell.exe -NoProfile -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList '\"$W/monitor.js\"','--port','$PORT' -RedirectStandardOutput '$RUN/monitor.log' -RedirectStandardError '$RUN/monitor.err'" >/dev/null 2>&1 \
+        || node "$W/monitor.js" --port "$PORT" > "$RUN/monitor.log" 2>&1 & ;;
+    *)
+      if command -v setsid >/dev/null 2>&1; then setsid nohup node "$W/monitor.js" --port "$PORT" > "$RUN/monitor.log" 2>&1 < /dev/null &
+      else nohup node "$W/monitor.js" --port "$PORT" > "$RUN/monitor.log" 2>&1 < /dev/null &
+      fi ;;
+  esac
+  i=0; while [ $i -lt 8 ] && ! monitor_up; do sleep 1; i=$((i + 1)); done
+  if monitor_up; then
+    MON_STARTED=1; say "Monitor: http://localhost:$PORT"
   else
-    say "Không mở được monitor:"; sed 's/^/    /' "$RUN/monitor.log"
+    say "Không mở được monitor:"; cat "$RUN/monitor.log" "$RUN/monitor.err" 2>/dev/null | sed 's/^/    /'
     say "watch.sh vẫn chạy, không có monitor. Sửa xong thì: sh workflow/watch.sh --restart"
-    MON_PID=""; NOMON=1
+    NOMON=1
   fi
 }
 
 # monitor_check: mỗi vòng quét, monitor chết thì mở lại, monitor.js đổi thì nạp bản mới
 monitor_check() {
   [ "$NOMON" = 1 ] && return
-  if [ -n "$MON_PID" ] && [ "$(cksum < "$W/monitor.js" 2>/dev/null)" != "$MON_SIG" ]; then
+  if [ "$(cksum < "$W/monitor.js" 2>/dev/null)" != "$MON_SIG" ]; then
     say "monitor.js đã đổi, mở lại monitor."
-    monitor_stop || kill "$MON_PID" 2>/dev/null
-    sleep 1; monitor_start; return
+    monitor_stop; sleep 1; monitor_start; return
   fi
-  if [ -z "$MON_PID" ] || ! kill -0 "$MON_PID" 2>/dev/null; then say "Monitor đã dừng, mở lại."; monitor_start; fi
+  monitor_up || { say "Monitor đã dừng, mở lại."; monitor_start; }
 }
 
 beat() { echo "$(date +%s) $INTERVAL $$" > "$RUN/watch.beat"; }
 
-STOP_REASON=""
+STOP_REASON=""; KEEP_MON=0
 on_exit() {
-  [ -n "$MON_PID" ] && { monitor_stop || kill "$MON_PID" 2>/dev/null; }
-  rm -f "$RUN/watch.beat" "$RUN/watch.pid"
+  # Dừng chủ ý (Ctrl+C, --stop) thì dừng cả monitor. Terminal bị đóng thì để monitor sống, hiện đỏ cho chủ dự án thấy
+  # (giữ nguyên nhịp tim cũ để monitor báo "watch.sh đã chết" thay vì "đang tắt")
+  rm -f "$RUN/watch.pid"
+  if [ "$KEEP_MON" = 1 ]; then return; fi
+  [ "$MON_STARTED" = 1 ] && monitor_stop
+  rm -f "$RUN/watch.beat"
   echo "$(date +%s) ${STOP_REASON:-thoát}" > "$RUN/watch.stopped"
 }
 
@@ -548,7 +593,7 @@ rm -f "$RUN/watch.stopped"
 trap on_exit EXIT
 trap 'STOP_REASON="Ctrl+C"; exit 130' INT
 trap 'STOP_REASON="lệnh --stop"; exit 143' TERM
-trap 'STOP_REASON="terminal bị đóng"; exit 129' HUP
+trap 'STOP_REASON="terminal bị đóng"; KEEP_MON=1; exit 129' HUP
 SRC_SIG=$(cksum < "$W/watch.sh")
 beat
 say "Bắt đầu theo dõi $W, quét mỗi $INTERVAL giây. Dừng: Ctrl+C, hoặc sh workflow/watch.sh --stop ở terminal khác."
@@ -564,7 +609,7 @@ while true; do
     if [ "$(cksum < "$W/watch.sh" 2>/dev/null)" = "$s" ] && sh -n "$W/watch.sh" 2>/dev/null; then
       say "watch.sh đã được cập nhật, nạp lại bản mới."
       trap - EXIT INT TERM HUP
-      [ -n "$MON_PID" ] && { monitor_stop || kill "$MON_PID" 2>/dev/null; sleep 1; }
+      [ "$MON_STARTED" = 1 ] && { monitor_stop; sleep 1; }
       rm -f "$RUN/watch.pid"
       # shellcheck disable=SC2086
       exec sh "$W/watch.sh" $PASS_ARGS
