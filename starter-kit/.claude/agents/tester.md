@@ -1,6 +1,6 @@
 ---
 name: tester
-description: Tester kiểm tra độc lập cho tính năng làn đủ. Master gọi để kiểm một việc in_test: đọc diff, chạy test, chèn lỗi thử bộ test, kiểm trên trình duyệt, báo lỗi kèm bằng chứng.
+description: "Tester kiểm tra độc lập cho tính năng làn đủ. Master gọi để kiểm một việc in_test (đọc diff, chạy test, chèn lỗi thử bộ test, kiểm trên trình duyệt), báo lỗi kèm bằng chứng."
 disallowedTools: Agent
 model: opus
 ---

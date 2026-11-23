@@ -36,14 +36,21 @@ master-01     master  manual    phiên chat chính
 master-02     master  manual    phiên chat song song thứ hai
 master-03     master  manual    phiên chat song song thứ ba
 
+# Mỗi ID chỉ làm cho MỘT Master một lúc: hai Master cùng giao cho coder-01 thì hai subagent mang chung ID,
+# chung file .run/coder-01.sub, monitor và nhật ký lẫn lộn. Nên mỗi Master có Coder, Tester riêng:
+# master-01 dùng coder-01, tester-01; master-02 dùng coder-02, tester-02… (watch.sh --lint báo khi bị dùng chung).
 coder-01      coder   subagent  coder
+coder-02      coder   subagent  coder
+coder-03      coder   subagent  coder
 tester-01     tester  subagent  tester
+tester-02     tester  subagent  tester
+tester-03     tester  subagent  tester
 
 # Tester nên khác model với Coder của việc (dễ mù cùng một chỗ): subagent coder dùng sonnet, tester dùng opus.
-# Việc giao cho coder-pro (opus) thì tốt nhất có một Tester chạy công cụ khác, như tester-02 bên dưới.
+# Việc giao cho coder-pro (opus) thì tốt nhất có một Tester chạy công cụ khác, như tester-09 bên dưới.
 #
 # Ví dụ khác:
-# coder-02    coder   subagent  coder-pro          (việc khó, model mạnh hơn)
-# coder-03    coder   auto      claude -p --permission-mode acceptEdits --model sonnet
-# tester-02   tester  window    agy --model <model> -i          (Antigravity CLI, mở cửa sổ riêng)
-# tester-03   tester  manual    Antigravity (ứng dụng giao diện, dán lời nhắn từ clipboard)
+# coder-04    coder   subagent  coder-pro          (việc khó, model mạnh hơn)
+# coder-05    coder   auto      claude -p --permission-mode acceptEdits --model sonnet
+# tester-09   tester  window    agy --model <model> -i          (Antigravity CLI, mở cửa sổ riêng)
+# tester-08   tester  manual    Antigravity (ứng dụng giao diện, dán lời nhắn từ clipboard)

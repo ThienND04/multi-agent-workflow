@@ -57,18 +57,21 @@ Tôi là developer. Tôi muốn giao việc cho nhiều AI agent, nhưng:
 Làn đủ:
 
 ```
-① Bạn + Master làm rõ yêu cầu → Master viết SPEC.md, chia việc → bạn nói "duyệt"
+① Bạn + Master làm rõ yêu cầu → Master đối chiếu API với máy chủ thật (nếu có), viết SPEC.md,
+   chia việc (chỉ tách việc khi chạy song song được) → bạn nói "duyệt"
 ② Master giao việc (to: coder-01) → Master gọi Coder (hoặc watch.sh đánh thức) → Coder KHẢO SÁT
 ③ Chưa rõ → Coder ghi câu hỏi (to: master-01) → Master trả lời nếu có nguồn;
    KHÔNG chắc → câu hỏi chuyển sang to: owner → watch.sh báo bạn → bạn bàn với Master, chốt
-④ Rõ hết → Master mở cho làm (to: coder-01) → Coder code, test xanh, tự kiểm trên trình duyệt
-   → to: tester-01 → Tester kiểm tra: đọc diff, chạy test, chèn lỗi thử bộ test, chạy sản phẩm
-   trên trình duyệt   ⇄ có lỗi thì to: coder-01 để sửa
+④ Rõ hết → Master mở cho làm, chạy sản phẩm ở cổng cố định, bạn đăng nhập một lần
+   → Coder code, test cả module, tự chèn lỗi, tự kiểm trên trình duyệt
+   → to: tester-01 → Tester kiểm tra: đọc diff, chạy test, chèn lỗi thử bộ test (tối đa ~5 ca),
+   chạy sản phẩm trên trình duyệt   ⇄ có lỗi thì to: coder-01 để sửa (Master gửi tiếp cho đúng agent đó)
 ⑤ Mọi việc đạt → Master gom mỗi việc thành MỘT commit trên nhánh tích hợp F-001/integration,
    chạy toàn bộ test → viết báo cáo: nhánh, file đã đổi, lệnh xem diff, lệnh chạy test, cách thử
    → to: owner → watch.sh báo bạn
-⑥ Bạn thử ngay ở thư mục dự án (git switch F-001/integration) → "đạt": Master đưa vào nhánh chính
-   (hoặc tạo nhánh feat/… để bạn mở MR, tuỳ workflow/project.conf) → push: bạn tự push, hoặc cho phép Master push   /   "chưa đạt": quay lại ④
+⑥ Bạn thử trên bản Master chạy sẵn từ worktree tích hợp → "đạt": Master đưa vào nhánh chính
+   (hoặc tạo nhánh feat/… để bạn mở MR, tuỳ workflow/project.conf) → push: bạn tự push, hoặc cho phép Master push
+   → MR: tính năng "đã giao, chờ merge" tới khi MR vào nhánh chính thì "xong"   /   "chưa đạt": quay lại ④
 ```
 
 **Bạn chỉ phải quyết định 3 lần cho mỗi tính năng:**
@@ -125,8 +128,8 @@ Chạy `sh workflow/watch.sh` (tự mở kèm monitor; cần Node.js 18 trở l�
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Văn phòng pixel, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy. Tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
-- **Bàn của bạn** (biển tên "BẠN") ở góc phải, có lối đi thảm đỏ chạy thẳng xuống (`░` trong sơ đồ). Có việc chờ bạn thì bong bóng trên đầu bạn hiện `!` kèm số việc; bấm vào bàn để tới mục "Cần bạn". Một chú chó đi lang thang dọc chân tường và lối đi; một chú mèo rượt một chú chuột ra vào cái lỗ ở chân tường, chó đi ngang thì mèo giật mình. Bấm vào chúng thử xem.
+- **Văn phòng vẽ kiểu hoạt hình, mỗi tính năng một dãy bàn** có thảm màu riêng. Master ngồi bàn lớn đầu dãy, Coder và Tester ở các bàn kế tiếp. Nhiều tính năng thì nhiều dãy. Tính năng đã xong rời khỏi văn phòng, chỉ còn tên trên bảng trắng.
+- **Bàn của bạn** (biển tên "BẠN") ở góc phải, có lối đi thảm đỏ chạy thẳng xuống (`░` trong sơ đồ). Có việc chờ bạn thì bong bóng trên đầu bạn hiện `!` kèm số việc; bấm vào bàn để tới mục "Cần bạn". Phòng có tủ sách, góc pantry, cửa sổ có rèm, poster, cây giữa các bàn và góc nghỉ có sofa ở dưới cùng. Chó, mèo, chuột chạy khắp văn phòng theo các lối đi (sát chân tường, giữa các dãy bàn, hai bên, trước góc nghỉ): chó đi dạo, ra ngồi cạnh bàn bạn hay về ổ ngủ; chuột chui ra từ lỗ chân tường chạy một vòng, mèo rượt theo rồi ngồi canh lỗ; chó đi sát thì mèo giật mình bỏ chạy. Bấm vào chúng thử xem.
 - **Nhân vật ngồi quay lưng nhìn màn hình, hành động theo trạng thái:** màn hình chạy code, tay gõ phím (đang làm), gõ ngón tay (có việc chờ, số trên bong bóng), giơ tay "?" (đang chờ Master trả lời câu hỏi), bọ đỏ trên bàn (có lỗi Tester báo), Master đứng dậy quay lại giơ tờ giấy "!" (chờ bạn), gật gù "z" (rảnh), bóng mờ "?" (ID chưa khai trong `agents.txt`). Master đeo tai nghe, Coder mặc hoodie, Tester mặc áo blouse và có kính lúp trên bàn. Dưới mỗi bàn có biển tên kèm trạng thái ngắn; rê chuột vào ai thì hiện đầy đủ.
 - **Chuyển cảnh:** agent rảnh đứng uống nước ở cây nước bên trái, được gọi vào việc thì đi bộ về bàn (và ngược lại). Tính năng vừa xong thì bắn pháo giấy ở bảng trắng. Cửa mở nghĩa là có việc chờ bạn; đồng hồ treo tường đứng và đèn tắt nghĩa là `watch.sh` không chạy. Máy để chế độ tối thì ngoài cửa sổ là trời đêm. Hệ điều hành bật "giảm chuyển động" thì không có hoạt hình.
 - **Xem thử** không cần dự án: `node workflow/monitor.js --demo --port 4321` (dữ liệu giả trong thư mục tạm, 9 giây đổi một cảnh).
