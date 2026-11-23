@@ -81,7 +81,7 @@ function demoSetup() {
     put('agents.txt', [
       'master-01 master manual phiên chat chính', 'master-02 master manual phiên chat song song', 'master-03 master manual phiên chat thứ ba',
       'coder-01 coder subagent coder', 'coder-02 coder subagent coder', 'coder-03 coder auto claude -p --model sonnet',
-      'coder-04 coder subagent coder-pro', 'coder-05 coder subagent coder',
+      'coder-04 coder subagent coder-pro', 'coder-05 coder subagent coder', 'coder-06 coder subagent coder',
       'tester-01 tester subagent tester', 'tester-02 tester window agy -i', 'tester-03 tester manual Antigravity'].join('\n') + '\n');
     const t = Math.floor(Date.now() / 1000);
     put('.run/watch.beat', (step === 3 ? t - 900 : t) + ' 30 1\n');
@@ -355,14 +355,26 @@ h2{font:700 12.5px ui-monospace,Consolas,monospace;text-transform:uppercase;lett
 #needBox:focus{outline:none}
 .scene{padding:6px;background:#2a211b}
 /* Văn phòng không co nhỏ hơn 900px (chữ trong cảnh còn đọc được): màn hẹp thì vuốt ngang trong khung này.
-   Ba lớp cùng min-width nên người đi bộ, chó mèo vẫn nằm đúng chỗ trên cảnh */
+   Bốn lớp cùng min-width nên người đi bộ, hoạt hình vui, chó mèo vẫn nằm đúng chỗ trên cảnh */
 .sceneScroll{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch}
-#office,#walk,#pets{min-width:900px}
+#office,#walk,#fun,#pets{min-width:900px}
 #office{display:block;width:100%;height:auto}
-#walk,#pets{position:absolute;left:0;top:0;width:100%;height:auto;pointer-events:none}
+#walk,#fun,#pets{position:absolute;left:0;top:0;width:100%;height:auto;pointer-events:none}
+#fun{user-select:none}
 .swipe{display:none;color:#e9dcc6;font-size:12px;padding:0 4px 4px;margin:0}
 @media (max-width:949px){.swipe{display:block}}
-#pets .crit{pointer-events:auto;cursor:pointer}#pets.dim,#walk.dim{filter:brightness(.62)}#pets text{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+#pets .crit{pointer-events:auto;cursor:pointer}#pets.dim,#walk.dim,#fun.dim{filter:brightness(.62)}#pets text,#fun text{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+/* Chó mèo đang ở ngoài lối của chúng (ghé người ở cây nước, trèo lên bàn): không nhận chuột, cú bấm rơi xuống nhân vật bên dưới */
+#pets .crit.nohit{pointer-events:none}
+/* Hoạt hình vui: nhân vật đang ở lớp #fun (đi chơi, vươn vai, reo mừng) ẩn hình ở chỗ cũ; khung bấm (.sel) và biển tên
+   giữ nguyên nên vẫn bấm, Tab tới được đúng chỗ. Mắt chớp co theo chính nó, không theo tâm khung SVG */
+#office .ag.away .fig,#office .ag.away .sit{visibility:hidden}
+#fun .eyes{transform-box:fill-box}
+/* Nút "Hoạt hình vui": nền khung văn phòng tối ở cả hai chế độ màu nên dùng màu cố định như chú giải */
+.funbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:6px 4px 2px;font-size:12px;color:#e9dcc6}
+.funbtn{font:700 12px ui-monospace,Consolas,monospace;min-height:36px;padding:4px 12px;border:2px solid #e9dcc6;background:transparent;color:#e9dcc6;cursor:pointer;box-shadow:2px 2px 0 #000}
+.funbtn[aria-pressed="true"]{background:#e9dcc6;color:#2a211b}
+.funbtn:focus-visible{outline:3px solid #ffe066;outline-offset:2px}
 #office text{font-family:ui-monospace,Consolas,monospace;font-weight:700}
 #office .ag{cursor:pointer}
 #office .ag:focus{outline:none}
@@ -414,9 +426,12 @@ td:last-child{white-space:nowrap}
 <div class="sceneScroll">
 <svg id="office" role="group" aria-label="Văn phòng agent"></svg>
 <svg id="walk" aria-hidden="true"></svg>
+<svg id="fun" aria-hidden="true"><g id="funDeco"></g><g id="funActors"></g><g id="funSays"></g><g id="funFly"></g></svg>
 <svg id="pets" aria-hidden="true"></svg>
 </div>
 <div class="legend" id="legend"></div>
+<div class="funbar"><button type="button" class="funbtn" id="funBtn" aria-pressed="true">Hoạt hình vui<span id="funState" aria-hidden="true">: bật</span></button>
+<span id="funNote" hidden>Máy bạn đặt giảm chuyển động: chỉ hiện bong bóng thoại, không ai đi lại hay nhảy.</span></div>
 </section>
 <section class="pix"><h2>File của từng tính năng</h2><div id="files"></div></section>
 <p class="muted">Trang chỉ đọc, tự làm mới 3 giây một lần. Bấm vào nhân vật để xem chi tiết. Trả lời và duyệt: nói với Master.</p>
@@ -464,7 +479,8 @@ const keepScroll=(box,fn)=>{const ps=[...box.querySelectorAll('pre')].map(p=>p.s
 const MODE_NAME={auto:'chạy ngầm tự động',window:'tự mở cửa sổ',manual:'đánh thức tay',subagent:'subagent, Master tự gọi'};
 const MODE_WAIT={auto:'Có việc, chờ watch.sh đánh thức',window:'Có việc, chờ watch.sh mở cửa sổ',manual:'Có việc, cần mở phiên tay',subagent:'Có việc, chờ Master gọi'};
 const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',blocked:'đang chờ',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',delivered:'đã giao, chờ merge',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
-const stVi=x=>ST[x]||x||'?';
+// status/mode đọc từ file: chỉ tra khoá riêng của bảng, tránh trúng tên có sẵn của Object (constructor, toString…)
+const stVi=x=>(Object.hasOwn(ST,x)&&ST[x])||x||'?';
 // Vì sao dãy bàn không có Tester: ghi theo làn của tính năng. chip: nhãn ngắn trên tiêu đề khối (vừa cả khối gọn nửa hàng),
 // full: câu đầy đủ ở <title> (rê chuột) và aria-label (trình đọc màn hình)
 const LANE_NOTE={quick:{chip:'làn nhanh',full:'Làn nhanh: Master tự kiểm, không có Tester'}};
@@ -620,8 +636,10 @@ function sitBack(cx,y,L,role,color,pose){
   ?RR(x,y-12,5,20,2.5,o.shirt,K(.9))+C(x+2.5,y-12.5,2.7,L.skin,K(.8))
   :RR(x,y+2,5,15,2.5,o.shirt,K(.9))+C(x+2.5,y+2.5,2.3,L.skin,K(.8)))+'</g>';
  // tay vươn tới bàn phím vẽ trước thân, thân che phần trong
- s+=arm(cx-13,'armL',false);
- if(pose!=='hand')s+=arm(cx+8,'armR',false);
+ // stretch: vươn vai (hoạt hình vui), hai tay giơ cao chếch ra ngoài, vẽ sau đầu như tay giơ hỏi
+ const stretch=pose==='stretch';
+ if(!stretch)s+=arm(cx-13,'armL',false);
+ if(pose!=='hand'&&!stretch)s+=arm(cx+8,'armR',false);
  if(L.style==='long')s+=RR(cx-8,y+4,16,16,6,L.hair,K(.9));
  s+=RR(cx-10.5,y+12,21,20,7,o.shirt,K(1))+RR(cx-10.5,y+12,21,20,7,'url(#shd)');
  if(role==='coder')s+=E(cx,y+14.5,8.6,3.8,o.dark,K(.8))+E(cx,y+14,5.5,1.8,tint(o.dark,-.3));
@@ -632,18 +650,22 @@ function sitBack(cx,y,L,role,color,pose){
  s+=C(cx,y+7,7.3,L.hair,K(1))+E(cx-2.6,y+3.4,3,1.6,'rgba(255,255,255,.22)');
  if(role==='master')s+=headset(cx,y+.5,false);
  if(pose==='hand')s+=arm(cx+8,'armR',true);
+ if(stretch)s+='<g'+ROT(-14,cx-10.5,y+8)+'>'+arm(cx-13,'armL',true)+'</g><g'+ROT(14,cx+10.5,y+8)+'>'+arm(cx+8,'armR',true)+'</g>';
  return '<g class="sit '+pose+'">'+s+'</g>';
 }
 // Phần tóc phía trước (nhìn thẳng): chỏm tóc và mái
 function hairCap(cx,y){return 'M'+(cx-7.7)+' '+(y+7.5)+' C'+(cx-8.6)+' '+(y-4.6)+' '+(cx+8.6)+' '+(y-4.6)+' '+(cx+7.7)+' '+(y+7.5)
  +' Q'+(cx+5)+' '+(y+2.4)+' '+(cx+1)+' '+(y+3.3)+' Q'+(cx-4)+' '+(y+2.6)+' '+(cx-7.7)+' '+(y+7.5)+'Z'}
-// Người đứng nhìn thẳng. hold: cup (cốc nước), paper (giơ tờ giấy), lens (kính lúp) hoặc rỗng
+// Người đứng nhìn thẳng. hold: cup (cốc nước), paper (giơ tờ giấy), lens (kính lúp) hoặc rỗng.
+// Hoạt hình vui thêm: cheer (giơ hai tay reo mừng), book (cầm sách đọc), sit (ngồi nhìn thẳng: sofa, ghế lười)
 function standFront(cx,y,L,role,color,hold){
  const o=outfit(role,color);let s='';
  if(L.style==='long')s+=RR(cx-8.6,y+1,17.2,17,6,L.hair,K(.9));
  const leg=(x,cls)=>'<g class="'+cls+'">'+RR(x,y+24,5.5,12,2,L.pants,K(.9))+E(x+2.75,y+36.4,3.7,1.9,'#2b2118')+'</g>';
- s+=leg(cx-6,'legL')+leg(cx+.5,'legR');
- s+=RR(cx-12.5,y+14,5,12,2.5,o.shirt,K(.9))+C(cx-10,y+26,2.2,L.skin,K(.7));
+ // tay giơ cao, xoay quanh vai chếch ra ngoài (side -1 trái, 1 phải)
+ const armUp=(x,side)=>'<g'+ROT(side*18,x+2.5,y+15)+'>'+RR(x,y+1,5,15,2.5,o.shirt,K(.9))+C(x+2.5,y+.8,2.3,L.skin,K(.7))+'</g>';
+ if(hold!=='sit')s+=leg(cx-6,'legL')+leg(cx+.5,'legR');
+ s+=hold==='cheer'?armUp(cx-12.5,-1):RR(cx-12.5,y+14,5,12,2.5,o.shirt,K(.9))+C(cx-10,y+26,2.2,L.skin,K(.7));
  s+=RR(cx-9.5,y+12,19,15,6,o.shirt,K(1))+RR(cx-9.5,y+12,19,15,6,'url(#shd)');
  if(role==='tester')s+=P('M'+(cx-3.6)+' '+(y+12.5)+' l3.6 6 l3.6 -6z',o.inner,K(.6))+LN('M'+cx+' '+(y+18.5)+' l0 8',o.shade,.9)
   +RR(cx-7,y+19,4,4,.8,'none',' stroke="'+o.shade+'" stroke-width=".8"')+LN('M'+(cx-6)+' '+(y+19.5)+' l0 -2.5','#3f7ee0',.9);
@@ -655,10 +677,33 @@ function standFront(cx,y,L,role,color,hold){
  if(role==='master')s+=headset(cx,y,true);
  if(hold==='paper')s+='<g class="wave">'+RR(cx+7.5,y+3,5,13,2.5,o.shirt,K(.9))+RR(cx+6,y-10,14,12,1.2,'#ffffff',K(.8))
   +LN('M'+(cx+8.5)+' '+(y-7)+' l8 0 M'+(cx+8.5)+' '+(y-4.5)+' l8 0 M'+(cx+8.5)+' '+(y-2)+' l5 0','#9aa3b5',.8)+LN('M'+(cx+8.5)+' '+(y+.5)+' l6 0','#d64545',.8)+C(cx+10,y+3,2.3,L.skin,K(.7))+'</g>';
+ else if(hold==='cheer')s+=armUp(cx+7.5,1);
  else s+='<g class="'+(hold==='cup'?'sip':'')+'">'+RR(cx+7.5,y+14,5,12,2.5,o.shirt,K(.9))
   +(hold==='cup'?RR(cx+9,y+20,6.5,7.5,1.3,'#ffffff',K(.7))+R(cx+9.8,y+20.8,4.9,2,'#bfe3f5'):'')
   +(hold==='lens'?LN('M'+(cx+10)+' '+(y+26)+' l4 -5','#7a4a22',1.8)+C(cx+15.5,y+18,4,'#bfe3f5',K(.8))+C(cx+14.4,y+16.9,1,'#fff'):'')
   +C(cx+10,y+26,2.2,L.skin,K(.7))+'</g>';
+ // sách mở cầm trước bụng, hai tay đỡ hai mép
+ if(hold==='book')s+=P('M'+(cx-9)+' '+(y+17)+' l9 2 l0 8 l-9 -2z','#ffffff',K(.7))+P('M'+(cx+9)+' '+(y+17)+' l-9 2 l0 8 l9 -2z','#f4efe6',K(.7))
+  +LN('M'+(cx-7)+' '+(y+20)+' l5 1 M'+(cx-7)+' '+(y+22.5)+' l5 1 M'+(cx+7)+' '+(y+20)+' l-5 1','#9aa3b5',.6)+C(cx-9,y+24,2.2,L.skin,K(.7))+C(cx+9,y+24,2.2,L.skin,K(.7));
+ // ngồi nhìn thẳng: cẳng chân thõng xuống, đùi chĩa ra trước nên ngắn lại và che phần dưới thân
+ if(hold==='sit')s+=RR(cx-7.5,y+27,5.5,8,2,L.pants,K(.9))+RR(cx+2,y+27,5.5,8,2,L.pants,K(.9))+E(cx-4.75,y+35.3,3.6,1.8,'#2b2118')+E(cx+4.75,y+35.3,3.6,1.8,'#2b2118')
+  +RR(cx-8.5,y+22,8,7,3,L.pants,K(.9))+RR(cx+.5,y+22,8,7,3,L.pants,K(.9));
+ return s;
+}
+// Người đứng quay lưng (ngắm cửa sổ, pha cà phê, mua nước…): cùng khung với standFront (y: đỉnh đầu, chân ở y+38)
+function standBack(cx,y,L,role,color){
+ const o=outfit(role,color);
+ const leg=(x,cls)=>'<g class="'+cls+'">'+RR(x,y+24,5.5,12,2,L.pants,K(.9))+E(x+2.75,y+36.4,3.7,1.9,'#2b2118')+'</g>';
+ const arm=x=>RR(x,y+14,5,12,2.5,o.shirt,K(.9))+C(x+2.5,y+26,2.2,L.skin,K(.7));
+ let s=leg(cx-6,'legL')+leg(cx+.5,'legR')+arm(cx-12.5)+arm(cx+7.5);
+ if(L.style==='long')s+=RR(cx-8,y+4,16,16,6,L.hair,K(.9));
+ s+=RR(cx-9.5,y+12,19,15,6,o.shirt,K(1))+RR(cx-9.5,y+12,19,15,6,'url(#shd)');
+ if(role==='coder')s+=E(cx,y+14,7.6,3.4,o.dark,K(.8));
+ if(role==='tester')s+=LN('M'+cx+' '+(y+16)+' l0 10',o.shade,1);
+ if(L.style==='long')s+=RR(cx-7,y+10,14,9,4,L.hair);
+ s+=hairExtra(cx,y,L)+E(cx-7.2,y+7.5,1.6,2.2,L.skin,K(.7))+E(cx+7.2,y+7.5,1.6,2.2,L.skin,K(.7));
+ s+=C(cx,y+6.5,7.4,L.hair,K(1))+E(cx-2.6,y+3,3,1.6,'rgba(255,255,255,.22)');
+ if(role==='master')s+=headset(cx,y,false);
  return s;
 }
 /* ---------- bàn ghế, đồ trên bàn ---------- */
@@ -694,14 +739,20 @@ function deskDeco(id,x,b){switch(hashN(id+'#')%5){
 function chair(cx,y){return R(cx-1.5,y+18,3,6,'#2f333d')+RR(cx-11,y+23.5,22,2.5,1.2,'#2f333d')+C(cx-10,y+27,1.7,'#1f2229')+C(cx+10,y+27,1.7,'#1f2229')+C(cx,y+27,1.7,'#1f2229')
  +RR(cx-12,y+13,24,5.5,2.7,'#3d4250',K(.8))+RR(cx-10,y,20,16,5,'#4f5669',K(1))+RR(cx-8,y+2,16,3,1.5,'rgba(255,255,255,.18)')}
 /* ---------- bong bóng, biển tên ---------- */
+// Bề rộng bong bóng theo chữ (cỡ 8.5): dùng chung cho bong bóng trạng thái, bong bóng thoại và roi nhỏ đặt cạnh nó
+const bubbleW=t=>Math.max(15,t.length*5.4+9);
 function bubble(cx,y,txt,kind){
  const col={run:['#ffffff','#1f7a4d'],wait:['#fff6dc','#9a5a00'],idle:['#efe9df','#8a8278'],bad:['#ffe6e3','#b23030']}[kind];
- const w=Math.max(15,txt.length*5.4+9),x=cx-w/2;
+ const w=bubbleW(txt),x=cx-w/2;
  const cls=kind==='wait'||kind==='bad'?'bob':txt==='z'?'zz':'';
  return '<g class="bub '+cls+'">'
   +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="13" rx="3.5" fill="'+col[0]+'" stroke="'+OL+'" stroke-width="1.3"/>'
   +'<path d="M'+(cx-2.5)+' '+(y+12.3)+' l2.5 4 l2.5 -4" fill="'+col[0]+'" stroke="'+OL+'" stroke-width="1.3" stroke-linejoin="round"/>'
   +T(cx,y+9.6,8.5,col[1],txt)+'</g>'}
+// Roi nhỏ (x, y: góc trên trái, rộng ~15, cao ~14): gợi ý tĩnh "có việc mà chưa ai làm" thay cho quản đốc khi không có
+// chuyển động (tắt hoạt hình vui, máy giảm chuyển động). Cán chéo, dây cuộn lên, hai vạch "tách" ở đầu dây
+function whipIcon(x,y){return '<g class="whip">'+LN('M'+x+' '+(y+13)+' l3.6 -4.8',OL,3.4)+LN('M'+x+' '+(y+13)+' l3.6 -4.8','#a0652e',1.8)
+ +LN('M'+(x+3.6)+' '+(y+8.2)+' q.6 -7 6.4 -6.8 q3.4 .4 1.6 3.6',OL,1.2)+LN('M'+(x+12.4)+' '+(y+.6)+' l1.8 -1.8 M'+(x+13.4)+' '+(y+3.4)+' l2.4 0','#d64545',1)+'</g>'}
 // Biển tên: tên và trạng thái ngắn, cắt chữ cho vừa maxW để không đè lên biển bên cạnh
 const LBL_NAME=8,LBL_SHORT=7,LBL_H=20; // cỡ chữ dòng tên, dòng trạng thái; chiều cao biển
 function label(cx,y,name,short,kind,maxW){
@@ -743,7 +794,7 @@ function stateOf(a,dir){
  if(a.running&&!here)return{kind:'idle',txt:'z',label:'Đang chạy ở '+what,on:false};
  // Dòng .now của Master: có mã F-NNN thì chỉ hiện ở dãy bàn tính năng đó, không có mã thì hiện ở mọi dãy của Master
  if(a.now&&inF(a.now.match(/F-\d+/g)||[]))return a.nowWait?{kind:'wait',txt:'!',label:a.now,on:true}:{kind:'run',txt:'…',label:a.now,on:true};
- if(here)return{kind:'wait',txt:String(here),label:MODE_WAIT[a.mode]||'Có việc, cần mở phiên tay',on:true};
+ if(here)return{kind:'wait',txt:String(here),label:(Object.hasOwn(MODE_WAIT,a.mode)&&MODE_WAIT[a.mode])||'Có việc, cần mở phiên tay',on:true};
  // Bận ở tính năng khác (.now của Master, hay file chờ ở dãy khác): đừng ghi "Rảnh" kẻo bạn tưởng agent đang rảnh
  const nowIn=(a.now&&a.now.match(/F-\d+/g))||[];
  if(nowIn.length)return{kind:'idle',txt:'z',label:'Đang ở '+[...new Set(nowIn)].join(', ')+': '+a.now,on:false};
@@ -760,8 +811,9 @@ const cut=(t,n)=>t.length>n?t.slice(0,Math.max(1,n-1))+'…':t;
 // TOP: dãy bàn đầu tiên; lối chó mèo phía trên nó, q4(TOP-12)=204, nằm dưới hàng biển tên thứ ba ở cây nước (y 162-182),
 // để con vật (lớp #pets nằm trên cảnh) không che tên và không chặn cú bấm vào agent ở cây nước
 const W=720, FLOOR_Y=118, LX=24, BR=640, AX=652, AW=48, OWNER_X=AX+AW/2, COL0=LX+124, STEP=98, PER_ROW=5, ROW_H=130, HEAD=30, TOP=216, GAP=24;
-// HOLE_X: lỗ chuột ở chân tường, giữa cửa và bảng trắng, trên lối sát tường (lối này bắt đầu sau cây nước, xem BASE_X0)
-const BED_X=200, HOLE_X=360;
+// HOLE_X: lỗ chuột ở chân tường, giữa cửa và bảng trắng, trên lối sát tường (lối này bắt đầu sau cây nước, xem BASE_X0).
+// DOOR_X: mép trái cửa (quản đốc của hoạt hình vui ra vào ở đây)
+const BED_X=200, HOLE_X=360, DOOR_X=298;
 // Khối gọn: tính năng có tối đa COMPACT_SEATS chỗ (Master và 1-2 người: làn nhanh, đang làm rõ, làm trực tiếp) chỉ rộng
 // nửa hàng, hai khối gọn chung một hàng, để vài việc nhỏ không mỗi việc chiếm cả một dãy bàn trống, đẩy dãy khác xuống dưới.
 // HALF_W đủ chỗ cho bàn Master, hai bàn và biển tên của bàn cuối: SEAT_DX + STEP + 72/2 + DESK_LBL_W/2 = 306
@@ -771,8 +823,8 @@ const DIRECT_COLOR='#6f7f94';
 // Biển tên rộng tối đa bằng khoảng cách tâm hai bàn kề nhau trừ 2, để không đè biển bên cạnh.
 // Bàn Master (rộng 100) cách bàn đầu tiên 102 đơn vị: biển Master rộng tới 2*102 - DESK_LBL_W
 const DESK_LBL_W=STEP-2, MASTER_LBL_W=108;
-// Cây nước: tối đa COOLER_MAX người đứng cách nhau COOLER_STEP; biển tên so le COOLER_ROWS hàng để mỗi biển rộng hơn
-const COOLER_X=162, COOLER_STEP=28, COOLER_ROWS=3, COOLER_MAX=5;
+// Cây nước: tối đa COOLER_MAX người đứng cách nhau COOLER_STEP, đỉnh đầu ở COOLER_Y; biển tên so le COOLER_ROWS hàng để mỗi biển rộng hơn
+const COOLER_X=162, COOLER_Y=80, COOLER_STEP=28, COOLER_ROWS=3, COOLER_MAX=5;
 // Sàn trống dưới bảng trắng, giữa lối chó mèo sát chân tường và lối trên dãy bàn đầu: nhãn pháo giấy, dưới nó là
 // bong bóng "watch.sh ngừng bất thường" (hai cái hiện cùng lúc cũng không chồng nhau, không che người hay cửa)
 const NOTE_X=436, PARTY_Y=127, DEAD_Y=147;
@@ -785,7 +837,7 @@ const WALK_MS=1400;
 const arriving=id=>{const t=ARRIVE.get(id);if(!t)return null;const e=Date.now()-t;return e<WALK_MS+50?e:null};
 // key: chỗ ngồi ("<dãy>/<ID>", "cooler/<ID>"), riêng cho từng chỗ vì một agent có thể ngồi ở nhiều dãy bàn
 const agG=(id,label,inner,key)=>{const e=arriving(id);
- return '<g class="ag'+(openId===id?' on':'')+(e!=null?' arrive':'')+'"'+(e!=null?' style="animation-delay:-'+(e/1000).toFixed(2)+'s"':'')
+ return '<g class="ag'+(openId===id?' on':'')+(e!=null?' arrive':'')+(FUN.hide.has(key)?' away':'')+'"'+(e!=null?' style="animation-delay:-'+(e/1000).toFixed(2)+'s"':'')
   +' data-id="'+esc(id)+'" data-k="'+esc(key)+'" tabindex="0" role="button" aria-label="'+esc(id+': '+label)+'"><title>'+esc(id+': '+label)+'</title>'+inner+'</g>'};
 // Tìm lại nhân vật sau khi vẽ lại: đúng chỗ ngồi nếu còn, không thì (vừa đổi chỗ) chỗ đầu tiên của agent đó
 const findAg=(root,key,id)=>(key&&root.querySelector('.ag[data-k="'+CSS.escape(key)+'"]'))||(id?root.querySelector('.ag[data-id="'+CSS.escape(id)+'"]'):null);
@@ -820,7 +872,15 @@ function station(f,id,a,x,w,top,isMaster,color){
  // khối phiên chat: tiêu đề khối đã ghi dòng .now, biển tên chỉ ghi từ lúc nào (biết việc nhỏ kéo dài bao lâu)
  const short=f.direct?(standUp?'chờ bạn':nowOld?'không đổi':'đang làm')+' từ '+since:shortOf(a,st,asking,f.id);
  s+=bubble(cx,top+4,bubbleTxt,bubbleKind)+label(cx,Y+56,id,short,asking?'wait':st.kind,isMaster?MASTER_LBL_W:DESK_LBL_W);
- return agG(id,st.label+(asking?' · đang chờ Master trả lời câu hỏi':'')+(bugs?' · có lỗi Tester báo':''),s,(f.dir||'direct')+'/'+id);
+ // có việc mà chưa ai làm (bong bóng số, không giơ tay hỏi): quản đốc tới nhắc (hoạt hình vui); không có chuyển động
+ // thì chỉ vẽ cái roi nhỏ cạnh bong bóng, cùng ý. Đang chạy ở tính năng khác (subagent, auto có việc xếp hàng ở dãy này)
+ // thì không ai lười cả: không nhắc
+ const running=!!(a&&a.running);
+ if(pose==='wait'&&/^\d+$/.test(st.txt)&&!running&&!funMotion())s+=whipIcon(cx+bubbleW(bubbleTxt)/2+2,top+3);
+ const key=(f.dir||'direct')+'/'+id;
+ // chỗ ngồi cho hoạt hình vui (vươn vai, nói chuyện, reo mừng, quản đốc); y như người đứng ở bàn (Y-2), giống chỗ của người đi bộ
+ FUN.spots.set(key,{id,key,zone:'desk',x:cx,y:Y-2,pose:standUp?'stand':a?pose:'ghost',kind:st.kind,txt:st.txt,run:running,dir:f.dir,role,color});
+ return agG(id,st.label+(asking?' · đang chờ Master trả lời câu hỏi':'')+(bugs?' · có lỗi Tester báo':''),s,key);
 }
 
 // Tiêu đề khối: tên, nhãn trạng thái, nhãn làn. Mọi thứ cắt cho vừa bề rộng khối w (khối gọn chỉ nửa hàng).
@@ -854,8 +914,9 @@ function layoutRows(blocks){
 function build(){
  const byId=Object.fromEntries(S.agents.map(a=>[a.id,a]));
  const now=Date.now();
- // tính năng vừa chuyển sang "xong" ở lần làm mới này: pháo giấy 6 giây
- S.features.forEach(f=>{const p=PREV_STATUS.get(f.dir);if(p&&p!=='done'&&f.status==='done')PARTY.push({id:f.id,at:now});PREV_STATUS.set(f.dir,f.status)});
+ FUN.spots.clear(); // station() và cây nước ghi lại chỗ của từng nhân vật ở lần vẽ này
+ // tính năng vừa chuyển sang "xong" ở lần làm mới này: pháo giấy 6 giây, người trong nhóm reo mừng (hoạt hình vui)
+ S.features.forEach(f=>{const p=PREV_STATUS.get(f.dir);if(p&&p!=='done'&&f.status==='done'){PARTY.push({id:f.id,at:now});funCheer(f.members)}PREV_STATUS.set(f.dir,f.status)});
  PARTY=PARTY.filter(p=>now-p.at<6000);
  // tính năng đã xong hay đã giao rời văn phòng (chỉ còn trên bảng trắng); màu lấy từ FEAT_COLOR
  const blocks=S.features.filter(f=>f.status!=='done'&&f.status!=='delivered').map(f=>{
@@ -893,7 +954,7 @@ function build(){
  let s=defs()+'<g aria-hidden="true">'+wall()+R(0,FLOOR_Y,W,H-FLOOR_Y,'url(#fl)')+R(0,FLOOR_Y,W,5,'rgba(60,30,10,.12)');
  if(need)s+=P('M298 118 l50 0 l16 28 l-82 0z','rgba(255,214,140,.25)');
  s+=aisle(AX,FLOOR_Y,AW,H-FLOOR_Y)+bunting(64,290,11,4)+bunting(514,646,11,3);
- s+=bookshelf(10,28,48,84)+cooler(66)+pantry(102)+sconce(134,30)+windowPane(152,18,80,46)+clock(266,40,watch==='running')+door(298,need>0)
+ s+=bookshelf(10,28,48,84)+cooler(66)+pantry(102)+sconce(134,30)+windowPane(152,18,80,46)+clock(266,40,watch==='running')+door(DOOR_X,need>0)
   +P('M'+(HOLE_X-5)+' 117.5 l0 -4 q5 -7 10 0 l0 4z','#2b1d16')+whiteboard()+calendar(520,20)+poster(560,16)+sconce(604,30)+plantBig(616,FLOOR_Y);
  s+=lounge(laneB-4);
  if(NIGHT)s+=R(0,0,W,H,'rgba(20,30,70,.18)')+E(134,34,26,20,'url(#glow)')+E(604,34,26,20,'url(#glow)')+E(22,laneB-52,30,26,'url(#glow)');
@@ -909,10 +970,12 @@ function build(){
  // pháo giấy: một nhãn chung trên sàn dưới bảng trắng (nền trắng, đọc được), nhiều tính năng xong cùng lúc không chồng chữ
  if(PARTY.length){const last=PARTY[PARTY.length-1];s+=confetti(NOTE_X,14,now-last.at)+bubble(NOTE_X,PARTY_Y,cut('🎉 '+PARTY.map(p=>p.id).join(', ')+' xong!',26),'run')}
  // ---- cây nước: agent rảnh đứng uống nước; biển tên so le COOLER_ROWS hàng để không đè nhau
- free.slice(0,COOLER_MAX).forEach((a,k)=>{const cx=COOLER_X+k*COOLER_STEP,y=80,st=stateOf(a,'');
+ // .fig: hình và bong bóng, ẩn khi người đó đang ở lớp #fun (đi chơi); khung chọn và biển tên luôn ở lại
+ free.slice(0,COOLER_MAX).forEach((a,k)=>{const cx=COOLER_X+k*COOLER_STEP,y=COOLER_Y,st=stateOf(a,''),key='cooler/'+a.id;
   place.set(a.id,{x:cx,y,zone:'cooler'});
-  s+=agG(a.id,st.label,selBox(cx-13,y-22,26,66)+standFront(cx,y,look(a.id),a.role,'#8f9bb0','cup').replace('class="sip"','class="sip" style="animation-delay:-'+(k*0.9)+'s"')
-   +bubble(cx,y-18,st.txt,st.kind)+label(cx,y+40+(k%COOLER_ROWS)*(LBL_H+1),a.id,shortOf(a,st,false),st.kind,COOLER_ROWS*COOLER_STEP-2),'cooler/'+a.id)});
+  FUN.spots.set(key,{id:a.id,key,zone:'cooler',x:cx,y,pose:'stand',kind:st.kind,txt:st.txt,dir:'',role:a.role,color:'#8f9bb0'});
+  s+=agG(a.id,st.label,selBox(cx-13,y-22,26,66)+'<g class="fig">'+standFront(cx,y,look(a.id),a.role,'#8f9bb0','cup').replace('class="sip"','class="sip" style="animation-delay:-'+(k*0.9)+'s"')
+   +bubble(cx,y-18,st.txt,st.kind)+'</g>'+label(cx,y+40+(k%COOLER_ROWS)*(LBL_H+1),a.id,shortOf(a,st,false),st.kind,COOLER_ROWS*COOLER_STEP-2),key)});
  // ---- bàn của bạn, lối đi thảm đỏ chạy thẳng xuống
  {const cx=OWNER_X,L={hair:'#2d2d3a',skin:'#f5cfa6',style:'short',pants:'#3a3f5c'};
   let o=RR(cx-17,46,34,38,4,'#4a3b6b',K(1))+RR(cx-15,48,30,3,1.5,'#6a5a95');
@@ -922,7 +985,8 @@ function build(){
  // ---- các dãy bàn: mỗi ô (bx, bw) là một khối, khối gọn rộng nửa hàng
  rowsL.forEach(row=>row.cells.forEach(({b,x:bx,w:bw})=>{
   const f=b.f,y=row.y,right=bx+bw;
-  s+=rugBlock(bx,y,bw,b.h,b.color)+blockHead(b,bx,y,bw);
+  // .bh: bấm vào tiêu đề khối không tính là bấm sàn (không ném bóng cho chó)
+  s+=rugBlock(bx,y,bw,b.h,b.color)+'<g class="bh">'+blockHead(b,bx,y,bw)+'</g>';
   const rowTop=r=>y+HEAD+r*ROW_H;
   // đồ giữa các bàn (cây, tủ hồ sơ, thùng rác) và cây ở cuối dãy; khối chỉ có Master thì đặt cây ở góc phải
   for(let r=0;r<b.rows;r++){const n=Math.min(PER_ROW,b.others.length-r*PER_ROW);
@@ -942,7 +1006,9 @@ function build(){
  const walkers=[];
  if(MOTION_OK)place.forEach((p,id)=>{const q=PREV_PLACE.get(id);if(!q||q.zone===p.zone)return;
   const a=byId[id];if(!a)return;
-  walkers.push({x0:q.x,y0:q.y,x1:p.x,y1:p.y,svg:standFront(0,0,look(id),a.role,'#8f9bb0','')})});
+  // đang đi chơi (lớp #fun) thì được gọi vào bàn: đi từ chỗ đang đứng, không từ cây nước
+  const from=funTakeBack(id)||q;
+  walkers.push({x0:from.x,y0:from.y,x1:p.x,y1:p.y,svg:standFront(0,0,look(id),a.role,'#8f9bb0','')})});
  PREV_PLACE.clear();place.forEach((p,id)=>PREV_PLACE.set(id,p));
  ARRIVE.forEach((t,id)=>{if(now-t>WALK_MS+100)ARRIVE.delete(id)});
  // ---- watch.sh ngừng bất thường: tắt đèn. Lớp tối không nhận chuột để vẫn bấm được nhân vật bên dưới;
@@ -956,6 +1022,8 @@ function build(){
  // lớp người đi bộ, chó mèo nằm trên lớp tối của #office: tự làm tối theo, kẻo đèn tắt mà chúng vẫn sáng
  const wk=$('#walk');wk.setAttribute('viewBox','0 0 '+W+' '+H);wk.classList.toggle('dim',watch==='dead');
  const pets=$('#pets');pets.setAttribute('viewBox','0 0 '+W+' '+H);pets.classList.toggle('dim',watch==='dead');
+ const fun=$('#fun');fun.setAttribute('viewBox','0 0 '+W+' '+H);fun.classList.toggle('dim',watch==='dead');
+ funAfterBuild(laneB);
  walkers.forEach(w=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','walker');g.innerHTML=w.svg;wk.appendChild(g);
   const an=g.animate([{transform:'translate('+w.x0+'px,'+w.y0+'px)'},{transform:'translate('+w.x1+'px,'+w.y1+'px)'}],{duration:WALK_MS,easing:'ease-in-out',fill:'forwards'});
   an.onfinish=()=>g.remove();setTimeout(()=>g.remove(),WALK_MS+800)}); // dự phòng: tab chạy nền thì hoạt hình có thể dừng
@@ -973,7 +1041,9 @@ function build(){
  const lg=$('#legend');lg.replaceChildren();
  lg.append(el('span',null,'Màn hình chạy code, tay gõ phím = đang làm · gõ ngón tay = có việc chờ (số trên bong bóng) · giơ tay "?" = đang chờ Master trả lời · bọ đỏ trên bàn = có lỗi Tester báo · Master đứng dậy quay lại giơ giấy "!" = chờ bạn · gật gù "z" = không có việc ở dãy này · bóng mờ "?" = ID chưa khai trong agents.txt'),
   el('span',null,'Dãy bàn nhỏ (Master và 1-2 người) chỉ rộng nửa hàng · khối xám = Master đang làm trong phiên chat, không cầm tính năng nào đang mở: "Làm trực tiếp" là tự sửa việc nhỏ, không có file trong workflow/; "Phiên chat" là việc khác (chọn làn, chờ MR…)'),
-  el('span',null,'Cửa mở = có việc chờ bạn · đồng hồ đứng = watch.sh không chạy · đèn tắt = watch.sh ngừng bất thường · bấm (hoặc chạm) vào ai để mở chi tiết · bấm bàn "BẠN" để tới mục Cần bạn · bấm vào chó, mèo, chuột để nghe chúng kêu'));
+  el('span',null,'Cửa mở = có việc chờ bạn · đồng hồ đứng = watch.sh không chạy · đèn tắt = watch.sh ngừng bất thường · bấm (hoặc chạm) vào ai để mở chi tiết · bấm bàn "BẠN" để tới mục Cần bạn · bấm vào chó, mèo, chuột để vuốt ve (tắt hoạt hình vui thì chỉ nghe chúng kêu) · bấm sàn trống để ném bóng cho chó'),
+  el('span',null,'Hoạt hình vui (nút bên dưới, chỉ để vui, không phải trạng thái): ai rảnh ở cây nước thỉnh thoảng đi pha cà phê (máy bốc khói), đọc sách, ngắm cửa sổ, ngồi sofa rồi quay về; ai rảnh ở bàn vươn vai; bong bóng tán gẫu, máy bay giấy; tính năng xong thì cả nhóm reo mừng; chó ghé cây nước xin xoa đầu, mèo nằm sofa hay trèo lên bàn người đang chờ. Người đi vắng vẫn bấm được ở chỗ cũ (biển tên còn đó), bấm hay Tab tới là về ngay; chó mèo đang ngồi cạnh ai, trên bàn ai thì bấm vào đó vẫn mở chi tiết người đó'),
+  el('span',null,'Quản đốc cầm roi = có việc mà chưa ai làm (chưa được đánh thức): thỉnh thoảng quản đốc vào từ cửa, quất roi vào không khí cạnh người đó (với Master thì thổi còi) rồi đi tiếp. Tắt hoạt hình vui hay máy giảm chuyển động: chỉ có cái roi nhỏ cạnh bong bóng số'));
  if(free.length>COOLER_MAX)lg.append(el('span',null,'Ở cây nước, không hiện hết: '+free.slice(COOLER_MAX).map(a=>{const st=stateOf(a,'');return a.id+(st.kind==='idle'?'':' ('+st.label+')')}).join(', ')));
 }
 
@@ -1011,11 +1081,14 @@ function setGraph(g,laneB){
   CRIT.dog={x:at(BED).x,y:at(BED).y,dir:1,path:[],mode:'sleep',pose:'sleep',wait:120,spd:1.5,odo:0,say:'',sayT:0,jump:0};
   CRIT.cat={x:c.x,y:c.y,dir:-1,path:[],mode:'roam',pose:'sit',wait:40,spd:1.3,odo:0,say:'',sayT:0,jump:0,re:0};
   CRIT.mouse={x:at(HOLE).x,y:at(HOLE).y,dir:-1,path:[],mode:'hide',pose:'walk',wait:90,spd:2.6,odo:0,say:'',sayT:0,jump:0,hidden:true,trips:0};
+  Object.entries(CRIT).forEach(([n,a])=>petInit(n,a));
   return}
- // bố cục đổi (thêm, bớt dãy bàn): đặt từng con vào điểm gần nhất trên lối đi mới, đang ngủ thì ngủ tiếp
- Object.values(CRIT).forEach(a=>{const n=at(nodeAt(a.x,a.y));a.x=n.x;a.y=n.y;a.path=[];if(a.mode!=='sleep'&&a.mode!=='nap'&&a.mode!=='hide')a.mode='roam';a.wait=10});
+ // bố cục đổi (thêm, bớt dãy bàn): đặt từng con vào điểm gần nhất trên lối đi mới, đang ngủ thì ngủ tiếp. Con đang ngồi
+ // cạnh người ở cây nước, trên bàn, trên sofa thì giữ chỗ: petRelayout() cho nó đi theo chỗ đó
+ Object.values(CRIT).forEach(a=>{if(petKeepsPlace(a))return;const n=at(nodeAt(a.x,a.y));a.x=n.x;a.y=n.y;a.path=[];if(a.mode!=='sleep'&&a.mode!=='nap'&&a.mode!=='hide')a.mode='roam';a.wait=10});
  if(CRIT.dog.mode==='sleep'){const n=at(BED);CRIT.dog.x=n.x;CRIT.dog.y=n.y}
  if(CRIT.mouse.hidden){const n=at(HOLE);CRIT.mouse.x=n.x;CRIT.mouse.y=n.y}
+ petRelayout();
 }
 // Đi theo đường đã tính; k: số nhịp 50ms đã trôi qua. Trả về true khi tới nơi
 function move(a,k){let left=a.spd*k*(a.boost?1.6:1);const sx=a.x,sy=a.y;
@@ -1029,83 +1102,1058 @@ const say=(a,t,n)=>{a.say=t;a.sayT=n||14};
 function think(k){
  const d=CRIT.dog,c=CRIT.cat,m=CRIT.mouse;
  [d,c,m].forEach(a=>{if(a.sayT>0)a.sayT-=k;if(a.jump>0)a.jump-=k});
+ // con đang được vuốt ve (a.pet) đứng yên, giữ nguyên đường đang đi: vuốt xong đi tiếp
  // chuột: trốn trong lỗ, chui ra chạy một hai vòng rồi về
- if(m.mode==='hide'){if((m.wait-=k)<=0){m.hidden=false;m.mode='out';m.trips=1+Math.floor(Math.random()*2);goTo(m,randNode())}}
+ if(m.pet>0){}
+ else if(m.mode==='hide'){if((m.wait-=k)<=0){m.hidden=false;m.mode='out';m.trips=1+Math.floor(Math.random()*2);goTo(m,randNode())}}
  else if(move(m,k)){
   if(m.mode==='home'){m.mode='hide';m.hidden=true;m.wait=160+Math.random()*260;if(c.mode==='chase'){c.mode='guard';c.wait=90+Math.random()*90;goTo(c,GUARD)}}
   else if(m.trips-->0)goTo(m,randNode());else{m.mode='home';goTo(m,HOLE)}}
  m.boost=!m.hidden&&c.mode==='chase'&&dist(m,c)<16;
  if(m.boost&&m.sayT<=0)say(m,'Chít!',12);
- // mèo: thấy chuột thì rượt (đang ngủ thì thỉnh thoảng mới tỉnh)
- if(!m.hidden&&c.mode!=='chase'&&c.mode!=='flee'&&(c.mode!=='nap'||Math.random()<.008*k)){c.mode='chase';c.re=0;say(c,'Meo!')}
- if(c.mode==='chase'){c.spd=2.1;if((c.re-=k)<=0){c.re=6;goTo(c,nodeAt(m.x,m.y))}move(c,k)}
+ // mèo: thấy chuột thì rượt (đang ngủ thì thỉnh thoảng mới tỉnh); đang được vuốt ve, đang trèo lên bàn hay sofa thì kệ chuột
+ if(!m.hidden&&c.pet<=0&&c.mode!=='chase'&&c.mode!=='flee'&&c.mode!=='perch'&&(c.mode!=='nap'||Math.random()<.008*k)){c.mode='chase';c.re=0;say(c,'Meo!')}
+ if(c.pet>0){}
+ else if(c.mode==='perch')catPerch(c,k);
+ // chuột đang được vuốt ve: mèo dừng lại cách một quãng, không đè lên nó
+ else if(c.mode==='chase'){c.spd=2.1;if((c.re-=k)<=0){c.re=6;goTo(c,nodeAt(m.x,m.y))}if(m.pet<=0||dist(c,m)>PET_CHASE_HOLD)move(c,k)}
  else if(c.mode==='guard'){c.spd=1.5;if(move(c,k)){c.dir=HOLE_X<c.x?-1:1;if((c.wait-=k)<=0){c.mode='roam';c.wait=10}}}
  else if(c.mode==='flee'){c.spd=3;if(move(c,k)){c.mode='roam';c.wait=30}}
  else if(c.mode==='nap'){if((c.wait-=k)<=0){c.mode='roam';c.wait=0}}
  else{c.spd=1.3;if(c.path.length)move(c,k);else if((c.wait-=k)<=0){if(Math.random()<.3){c.mode='nap';c.wait=220+Math.random()*260}else{goTo(c,randNode());c.wait=25+Math.random()*90}}}
- c.pose=c.mode==='nap'?'sleep':c.path.length?'walk':'sit';
- // chó: đi dạo, ra ngồi cạnh bàn bạn, hay về ổ ngủ
- if(d.mode==='sleep'){if((d.wait-=k)<=0){d.mode='roam';d.wait=0}}
+ c.pose=critPose(c);
+ // chó: đi dạo, ra ngồi cạnh bàn bạn, hay về ổ ngủ; nhặt bóng, ghé cây nước thì dogPlay lo
+ d.spd=d.mode==='fetch'||d.mode==='bring'?FETCH_DOG_SPD:DOG_SPD;
+ if(d.pet>0){}
+ else if(dogPlay(d,k)){}
+ else if(d.mode==='sleep'){if((d.wait-=k)<=0){d.mode='roam';d.wait=0}}
  else if(d.mode==='bed'){if(move(d,k)){d.mode='sleep';d.wait=260+Math.random()*320}}
  else if(d.path.length)move(d,k);
  else if((d.wait-=k)<=0){const r=Math.random();
   if(r<.15){d.mode='bed';goTo(d,BED)}else if(r<.3){goTo(d,SPOT);d.wait=60+Math.random()*80}else{goTo(d,randNode());d.wait=20+Math.random()*70}}
- d.pose=d.mode==='sleep'?'sleep':d.path.length?'walk':'sit';
- // chó đi sát mèo: mèo giật mình nhảy lên rồi chạy đi; chó thấy chuột thì sủa
- if(d.pose==='walk'&&c.mode!=='flee'&&c.jump<=0&&dist(d,c)<14){c.jump=12;say(c,'!',12);say(d,'Gâu!');c.mode='flee';goTo(c,farNode(c))}
- if(!m.hidden&&d.pose!=='sleep'&&d.sayT<=0&&dist(d,m)<18)say(d,'Gâu!');
+ d.pose=critPose(d);
+ // chó đi sát mèo: mèo giật mình nhảy lên rồi chạy đi; chó thấy chuột thì sủa (đang ngậm bóng thì không sủa được)
+ if(d.pose==='walk'&&c.mode!=='flee'&&c.mode!=='perch'&&c.pet<=0&&c.jump<=0&&dist(d,c)<14){c.jump=12;say(c,'!',12);if(!d.carry)say(d,'Gâu!');c.mode='flee';goTo(c,farNode(c))}
+ if(!m.hidden&&d.pose!=='sleep'&&!d.carry&&d.sayT<=0&&dist(d,m)<18)say(d,'Gâu!');
 }
+// Dáng: ngủ (cả lúc mèo cuộn tròn trên bàn, sofa), được vuốt (ngồi, chó vui quá thì lăn ngửa), đi hay ngồi
+function critPose(a){
+ if(a.mode==='nap'||a.mode==='sleep'||a.perch&&a.perch.phase==='sit'&&a.perch.nap&&a.perch.t>=CAT_NAP_AFTER)return 'sleep';
+ if(a.pet>0)return a.roll?'roll':'sit';
+ return a.path.length||a.free.length?'walk':'sit'}
+// Nhấc lên khỏi chân: nhảy giật mình (jump) và nhảy lên sofa, ghế lười (hopLift)
+const critLift=a=>(a.jump>0?-Math.sin(Math.max(0,Math.min(1,(12-a.jump)/12))*Math.PI)*9:0)-(a.hopLift||0);
 /* hình con vật: gốc toạ độ ở giữa chân, mặt quay sang phải */
-function dogArt(pose,fr,wag){const c='#c98d52',d='#8a5a30',l='#f3dcb8';
+// carry: ngậm bóng (ném bóng cho chó); roll: lăn ra ngửa bụng, bốn chân chổng lên (được vuốt ve nhiều)
+function dogArt(pose,fr,wag,carry){const c='#c98d52',d='#8a5a30',l='#f3dcb8';
  const head=(x,y)=>C(x,y,5,c,K(.9))+E(x+4,y+1.5,3.2,2.3,l,K(.6))+C(x+6.8,y+.7,1,OL)+C(x+1.2,y-1.4,.9,OL)+P('M'+(x-3)+' '+(y-4)+' q-3.5 2 -2 8 q2.5 -1 3 -6z',d,K(.6));
+ const ball=(x,y)=>carry?'<g transform="translate('+x+','+y+')">'+ballArt()+'</g>':'';
+ if(pose==='roll')return LN('M-9 -4 q-5 '+(wag?-5:0)+' -8 '+(wag?-7:-2),c,2.4)
+  +[-7.5,-3.5,1,5].map((x,i)=>RR(x,-16+(i%3?-1:0),3,8,1.4,c,K(.6))+E(x+1.5,-15.6+(i%3?-1:0),1.9,1.3,l,K(.4))).join('')
+  +E(0,-5,10,5,c,K(.9))+E(-.6,-7.4,6.6,2.4,l)+RR(5.4,-8.4,2.2,5.4,1,'#d64545')
+  +C(10.4,-4.6,4.8,c,K(.9))+P('M7.4 -1.6 q-1.6 4 1.6 5.4 q1 -2.4 .8 -4.6z',d,K(.6))+E(13.4,-3.2,2.6,1.8,l,K(.6))+C(15.4,-3.6,.9,OL)
+  +LN('M8.4 -6.8 q1 -1.2 2 0 M11.6 -7 q1 -1.2 2 0',OL,.7)+E(12.8,-.8,1.1,1.6,'#f08a9a',K(.4));
  if(pose==='sleep')return LN('M-10 -3 q-4 3 1 4',c,2.4)+E(0,-4.6,11,4.8,c,K(.9))+E(-2,-2.6,6,1.6,l)+C(8,-4.6,4.6,c,K(.9))+P('M5.5 -8 q-3 1 -2 6 q2 -1 3 -4z',d,K(.6))
   +E(11.4,-3.3,2.6,1.9,l,K(.6))+C(13.7,-3.7,.9,OL)+LN('M7.6 -5.4 q1 .9 2 0',OL,.7)+T(6,-13,7,'#8a7a6a','z','middle').replace('<text','<text class="zzz"');
  if(pose==='sit')return LN('M-6 -2 q-5 '+(wag?-3:1)+' -8 '+(wag?-6:-3),c,2.4)+E(-2,-3,6,3,c,K(.8))+E(0,-9,6,7,c,K(.9))+E(2,-8,3,4,l)
-  +RR(2,-6,3,6,1.4,c,K(.6))+RR(5,-6,3,6,1.4,c,K(.6))+head(4,-17)+RR(1,-12.5,6,2,1,'#d64545')+C(4,-10.2,1,'#f2c14e');
+  +RR(2,-6,3,6,1.4,c,K(.6))+RR(5,-6,3,6,1.4,c,K(.6))+head(4,-17)+RR(1,-12.5,6,2,1,'#d64545')+C(4,-10.2,1,'#f2c14e')+ball(10,-10.4);
  const o=fr?1.6:-1.6;
  return LN('M-9 -9 q-5 '+(wag?-4:-2)+' -4 -9',c,2.4)+RR(-8-o,-6,3,6,1.4,d,K(.6))+RR(4+o,-6,3,6,1.4,d,K(.6))
-  +E(0,-9,10,5,c,K(.9))+E(1,-6.6,7,1.8,l)+RR(-6+o,-6,3,6,1.4,c,K(.6))+RR(6-o,-6,3,6,1.4,c,K(.6))+head(10,-14)+RR(6,-10.6,5,2,1,'#d64545')+C(8.5,-8.4,1,'#f2c14e')}
-function catArt(pose,fr,jump){const c='#8d96a8',d='#5d6576',w='#eef1f6';
+  +E(0,-9,10,5,c,K(.9))+E(1,-6.6,7,1.8,l)+RR(-6+o,-6,3,6,1.4,c,K(.6))+RR(6-o,-6,3,6,1.4,c,K(.6))+head(10,-14)+RR(6,-10.6,5,2,1,'#d64545')+C(8.5,-8.4,1,'#f2c14e')+ball(16,-7.4)}
+// happy: được vuốt ve, mắt nhắm tít
+function catArt(pose,fr,jump,happy){const c='#8d96a8',d='#5d6576',w='#eef1f6';
+ const eye=(x,y)=>happy?LN('M'+(x+.6)+' '+(y-.2)+' q1 -1.3 2 0',OL,.7):C(x+1.6,y-.6,jump?1.2:.9,jump?'#ffffff':'#2b2b2b',jump?K(.5):'');
  const head=(x,y)=>P('M'+(x-3)+' '+(y-2.5)+' l.6 -5 l3.2 3z',c,K(.6))+P('M'+(x+1.6)+' '+(y-3.6)+' l2.4 -3.8 l1 4.6z',c,K(.6))+C(x,y,4.3,c,K(.8))
-  +E(x+2.8,y+1.2,1.9,1.3,w)+C(x+1.6,y-.6,jump?1.2:.9,jump?'#ffffff':'#2b2b2b',jump?K(.5):'')+C(x+4.3,y+.6,.6,'#f3a3a3')+LN('M'+(x+3)+' '+(y+1.2)+' l3.2 -.6 M'+(x+3)+' '+(y+1.8)+' l3.2 .7',d,.4);
+  +E(x+2.8,y+1.2,1.9,1.3,w)+eye(x,y)+C(x+4.3,y+.6,.6,'#f3a3a3')+LN('M'+(x+3)+' '+(y+1.2)+' l3.2 -.6 M'+(x+3)+' '+(y+1.8)+' l3.2 .7',d,.4);
  if(pose==='sleep')return LN('M-7 -1.5 q2 3 10 2',d,1.8)+E(0,-3.6,7.5,3.6,c,K(.8))+LN('M-3 -6.6 l.8 2 M0 -7 l.4 2 M3 -6.8 l0 2',d,.7)+C(5,-4,3.3,c,K(.7))
   +P('M3 -6 l.6 -3 l2 2z',c,K(.5))+P('M6 -6.6 l1.8 -2.4 l.6 3z',c,K(.5))+LN('M5 -4 q.8 .7 1.6 0',OL,.6)+'<text class="zzz" x="2" y="-11" font-size="6" fill="#8a7a6a" text-anchor="middle">z</text>';
  if(pose==='sit')return LN('M-3 -1 q-7 0 -5 -7',c,2)+E(0,-6,5,6,c,K(.8))+E(2,-5,2.4,4,w)+RR(1,-4,2.2,4,1,c,K(.5))+RR(3.6,-4,2.2,4,1,c,K(.5))+head(2,-13.5);
  const o=fr?1.2:-1.2;
  return LN('M-7 -7 q-6 -1 -6 '+(fr?-9:-8),c,2)+RR(-6-o,-4,2,4,1,d)+RR(4+o,-4,2,4,1,d)+E(0,-6.5,8,3.6,c,K(.8))
   +LN('M-3 -9.6 l1 2.4 M0 -10 l.5 2.4 M3 -9.8 l0 2.3',d,.8)+RR(-5+o,-4,2,4,1,c,K(.5))+RR(5-o,-4,2,4,1,c,K(.5))+head(8,-10)}
-function mouseArt(fr){const c='#a5978a';
- return LN('M-4 -2 q-4 -2.4 -7 0',' #d8b4a8',.8)+C(-2+(fr?1:0),-.4,.8,c)+C(2-(fr?1:0),-.4,.8,c)+E(0,-2.6,4.2,2.6,c,K(.6))+C(2.4,-4.6,1.6,'#f3b3b3',K(.4))
-  +E(4.2,-2.4,1.9,1.6,c)+C(6.1,-2.6,.55,'#f3a3a3')+C(4.4,-3,.45,OL)}
-function critSay(y,t){const w=t.length*4.4+8;return RR(-w/2,y,w,11,3,'#ffffff',K(.9))+P('M-2 '+(y+10.4)+' l2 3 l2 -3z','#ffffff')+T(0,y+8,7,'#3b2a20',t)}
+// blush: được vuốt ve, má ửng hồng, mắt nhắm
+function mouseArt(fr,blush){const c='#a5978a';
+ return LN('M-4 -2 q-4 -2.4 -7 0',' #d8b4a8',.8)+C(-2+(fr?1:0),-.4,.8,c)+C(2-(fr?1:0),-.4,.8,c)+E(0,-2.6,4.2,2.6,c,K(.6))+C(2.4,-4.6,1.6,blush?'#ff8fa8':'#f3b3b3',K(.4))
+  +E(4.2,-2.4,1.9,1.6,c)+C(6.1,-2.6,.55,'#f3a3a3')+(blush?E(4,-1.3,1.5,.8,'#ff5f86',' opacity=".85"')+LN('M3.7 -3.1 q.6 -.7 1.2 0',OL,.5):C(4.4,-3,.45,OL))}
+const critSayW=t=>t.length*4.4+8;
+function critSay(y,t){const w=critSayW(t);return RR(-w/2,y,w,11,3,'#ffffff',K(.9))+P('M-2 '+(y+10.4)+' l2 3 l2 -3z','#ffffff')+T(0,y+8,7,'#3b2a20',t)}
 function drawCrit(){
  const svg=$('#pets');if(!svg||!CRIT.dog)return;
  const t=performance.now();
  ['dog','cat','mouse'].forEach(n=>{const a=CRIT[n];let g=svg.querySelector('[data-c="'+n+'"]');
   if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('data-c',n);g.setAttribute('class','crit');svg.appendChild(g);g.addEventListener('pointerdown',()=>poke(n))}
-  const hide=n==='mouse'&&a.hidden,fr=Math.floor(a.odo/5)%2,wag=a.pose==='sit'&&n==='dog'?Math.floor(t/180)%2:0;
-  const talk=a.sayT>0?a.say:'',key=[a.pose,fr,a.dir,talk,a.jump>0,hide,wag].join('|');
-  const lift=a.jump>0?-Math.sin(Math.max(0,Math.min(1,(12-a.jump)/12))*Math.PI)*9:0;
-  g.setAttribute('transform','translate('+a.x.toFixed(1)+','+(a.y+lift).toFixed(1)+')');
+  // đang được vuốt ve: chó vẫy đuôi nhanh hơn, mèo nhắm mắt, chuột đỏ má
+  const hide=n==='mouse'&&a.hidden,fr=Math.floor(a.odo/5)%2,wag=(a.pose==='sit'||a.pose==='roll')&&n==='dog'?Math.floor(t/(a.pet>0?PET_WAG_MS:180))%2:0;
+  const happy=a.pet>0,talk=a.sayT>0?a.say:'',key=[a.pose,fr,a.dir,talk,a.jump>0,hide,wag,happy,a.carry,!!a.hand].join('|');
+  g.setAttribute('transform','translate('+a.x.toFixed(1)+','+(a.y+critLift(a)).toFixed(1)+')');
+  g.classList.toggle('nohit',!!a.nohit);
   if(g._k===key)return;g._k=key;
   if(hide){g.innerHTML='';return}
-  const art=n==='dog'?dogArt(a.pose,fr,wag):n==='cat'?catArt(a.pose,fr,a.jump>0):mouseArt(fr);
-  const top=n==='dog'?(a.pose==='sit'?-36:a.pose==='sleep'?-24:-32):n==='cat'?(a.pose==='sit'?-32:-27):-20;
-  g.innerHTML=R(-12,n==='mouse'?-8:-20,24,n==='mouse'?9:21,'transparent')+'<g transform="scale('+a.dir+',1)">'+art+'</g>'+(talk?critSay(top,talk):'');
+  const art=n==='dog'?dogArt(a.pose,fr,wag,a.carry):n==='cat'?catArt(a.pose,fr,a.jump>0,happy):mouseArt(fr,happy);
+  // đang có tay vuốt: bong bóng nằm trên tay (petSayTop). Bong bóng không nhận chuột: không che cú bấm vào biển tên, bàn BẠN
+  const top=Math.min(n==='dog'?(a.pose==='sit'?-36:a.pose==='sleep'?-24:a.pose==='roll'?-28:-32):n==='cat'?(a.pose==='sit'?-32:-27):-20,petSayTop(a));
+  g.innerHTML=R(-12,n==='mouse'?-8:-20,24,n==='mouse'?9:21,'transparent')+'<g transform="scale('+a.dir+',1)">'+art+'</g>'+(talk?'<g pointer-events="none">'+critSay(top,talk)+'</g>':'');
  })}
-// Bấm vào con vật: nó kêu; đang ngủ thì tỉnh dậy
-function poke(n){const a=CRIT[n];if(!a)return;
- if(n==='dog'){say(a,'Gâu!',16);if(a.mode==='sleep'){a.mode='roam';a.wait=12}}
- else if(n==='cat'){say(a,'Meo!',16);if(a.mode==='nap'){a.mode='roam';a.wait=12}}
- else if(!a.hidden)say(a,'Chít!',16);
+// Bấm vào con vật: đang ngủ thì tỉnh dậy; hoạt hình vui bật thì được vuốt ve (petStart: kêu, tay, tim), tắt thì chỉ kêu như cũ
+function poke(n){const a=CRIT[n];if(!a||(n==='mouse'&&a.hidden))return;
+ if(n==='dog'&&a.mode==='sleep'){a.mode='roam';a.wait=12}
+ if(n==='cat'&&a.mode==='nap'){a.mode='roam';a.wait=12}
+ if(FUN.on)petStart(n,a);else say(a,PET_PLAIN[n],16);
  drawCrit()}
 let lastT=0;
 function critLoop(t){requestAnimationFrame(critLoop);
  if(!G||!CRIT.dog){lastT=t;return}
  const k=lastT?Math.min(3,(t-lastT)/50):1;lastT=t;
  if(MOTION_OK)think(k);else[CRIT.dog,CRIT.cat,CRIT.mouse].forEach(a=>{if(a.sayT>0)a.sayT-=k});
+ petFrame(k);
  drawCrit()}
 requestAnimationFrame(critLoop);
+
+/* ---------- Hoạt hình vui: lớp #fun, vòng lặp chung, điểm đến (POI). Chỉ để vui, không phải trạng thái ----------
+ Chạy hoàn toàn trong trình duyệt, không đọc hay ghi gì thêm. Vẽ trên lớp #fun (aria-hidden, không nhận chuột) nằm giữa
+ #walk và #pets: lần làm mới 3 giây (thay cả #office) không cắt ngang, chó mèo vẫn ở trên cùng và bấm được.
+ Một vòng requestAnimationFrame với đồng hồ riêng FUN.clock: tab ẩn hay nút "Hoạt hình vui" tắt thì đồng hồ đứng, mọi thứ dừng.
+ API cho các phần sau:
+  funMotion()                 được chuyển động: đang bật và máy không đặt giảm chuyển động (không thì chỉ hiện bong bóng thoại)
+  FUN.spots                   chỗ của từng nhân vật ở lần vẽ gần nhất, key giống data-k ("<dãy>/<ID>", "direct/<ID>", "cooler/<ID>"):
+                              {id,key,zone:'desk'|'cooler',x,y (đỉnh đầu người đứng),pose (type|wait|idle|hand|stand|ghost),kind,
+                              txt (chữ trên bong bóng trạng thái: số việc chờ, "…", "z", "!", "?"),run (chỉ ở bàn: agent đang
+                              chạy, có khi ở tính năng khác),dir,role,color}
+  FUN_POI, funSeatY(def)      điểm đến lấy theo đồ đã vẽ: {zone:'top'|'lounge',seats:[x…],pose:'front'|'back'|'sit',hold,say:[…],carry}
+  funEvery(ms,fn)             việc định kỳ; funLater(ms,fn): hẹn một lần. Cả hai theo FUN.clock
+  funSay(x,y,text,ms)         bong bóng thoại, (x,y): tâm và mép trên; trả về bong bóng (funUnsay(b) để gỡ sớm),
+                              chồng lên bong bóng đang hiện thì bỏ qua và trả về false
+  funDialog(whereA,whereB,[câu,đáp])  hai người nói lần lượt; where(): {x,y} của bong bóng lúc nói, null nếu người đó đã đi
+  funBorrow(spot,kind)        mượn nhân vật ở chỗ spot (chưa ai mượn: !FUN.hide.has(spot.key); muốn có chuyển động thì kiểm
+                              funMotion() trước): ẩn hình ở #office (khung bấm, biển tên giữ nguyên), trả về actor
+                              {id,x,y,pose:'front'|'back'|'sit'|'seat',hold,carry,lift,t,tick(actor)}; tick chạy mỗi khung (nhảy, vươn vai)
+  funWalk(actor,{x,y},done)   đi trên sàn trống: dải chân tường (y = FUN_TOP_Y), lối dọc mép trái, dải trước góc nghỉ
+                              (y = FUN.loungeY); điểm ngoài ba dải đó thì đi thẳng như người đi bộ đổi chỗ. Đường dài thì đi
+                              nhanh hơn FUN_SPEED cho tới nơi trong FUN_WALK_MAX_MS (đặt actor.speed). Tới nơi gọi done().
+                              Giảm chuyển động thì tới thẳng nơi; nhảy, vươn vai (tick) thì phần gọi tự kiểm funMotion()
+  funRelease(actor)           xoá actor khỏi #fun, hiện lại hình ở #office (kèm bong bóng a.bubble nếu có)
+  funStep(obj,dt)             cho đối tượng tự quản (không mượn ai, như quản đốc) đi theo obj.path; obj.speed: tốc độ riêng
+                              (mặc định FUN_SPEED); chỉ vẽ bằng funDraw khi obj nằm trong FUN.actors
+  funAddon({frame,build,clear})  phần thêm tự lo vòng đời: frame(dt) mỗi khung khi đồng hồ chạy, build() sau mỗi lần vẽ
+                              #office (FUN.spots đã đủ), clear() khi tắt nút (lớp #fun bị xoá sạch ngay sau đó) */
+const SVGNS='http://www.w3.org/2000/svg';
+const FUN_PREF_KEY='monitor.funAnim';
+const FUN_DT_MAX_MS=100; // một khung tiến tối đa ngần này: tab vừa hiện lại thì không nhảy cóc
+// Sàn trống cho người (cao 38): dải chân tường (đỉnh đầu như người ở cây nước, chân ngay trên hàng biển tên đầu), lối dọc
+// bên trái thảm các dãy bàn (LX), dải trước đồ góc nghỉ. Lối giữa các dãy bàn chỉ đủ cho chó mèo: người đi ở đó che biển tên
+const FUN_TOP_Y=COOLER_Y,FUN_AISLE_X=12,FUN_LOUNGE_DY=40;
+const FUN_SPEED=.06; // đơn vị cảnh mỗi ms: đi dạo, chậm hơn người được gọi vào bàn
+// Một chặng đi chơi tối đa ngần này: đi đủ tốc độ dạo xuống góc nghỉ của văn phòng nhiều dãy bàn mất gần nửa phút mỗi chiều,
+// phần lớn ở lối dọc ngoài màn hình, cây nước vắng hẳn (hết người tán gẫu)
+const FUN_WALK_MAX_MS=9000;
+const FUN_MAX_AWAY=2; // tối đa ngần này người đi chơi cùng lúc, cây nước không vắng hẳn
+const FUN_TRIP_EVERY_MS=4000,FUN_TRIP_CHANCE=.35,FUN_STAY_MS=6000,FUN_STAY_VAR_MS=7000;
+const FUN_CHAT_EVERY_MS=6500,FUN_CHAT_CHANCE=.5,FUN_SAY_MS=2300,FUN_REPLY_GAP_MS=250,FUN_NEAR=50;
+const FUN_STRETCH_EVERY_MS=5000,FUN_STRETCH_CHANCE=.3,FUN_STRETCH_MS=2600,FUN_STRETCH_RISE=4,FUN_YAWN_CHANCE=.3;
+const FUN_CHEER_WAIT_MS=250,FUN_CHEER_MS=2600,FUN_CHEER_HOP_MS=420,FUN_CHEER_HOP=6;
+// Chỗ bong bóng: ở dải chân tường cao hơn bong bóng "z" của người ở cây nước; ở bàn đè lên màn hình (dưới bong bóng
+// trạng thái, trên đầu người ngồi); ở góc nghỉ ngay trên đầu
+const FUN_TOP_TALK_DY=36,FUN_DESK_TALK_DY=24,FUN_HEAD_TALK_DY=18,FUN_BUBBLE_H=13,FUN_BUBBLE_TAIL=4;
+// Người ngồi ở bàn: đỉnh đầu và ghế so với y của chỗ (người đứng), đúng như station() vẽ
+const FUN_SEAT_DY=8,FUN_CHAIR_DY=21;
+const FUN_WINDOW_R=232; // mép phải cửa sổ: người ở cây nước đứng trước cửa sổ thì quay lưng ngắm trời ngay tại chỗ
+const FUN_SIT_POSES=['type','wait','idle','hand'];
+// x là tâm người. cooler: người ở cây nước đã ở đây rồi, để dành cho phần sau (người từ bàn ra uống nước)
+const FUN_POI={
+ cooler:{zone:'top',seats:[79],pose:'front',hold:'cup',say:['💧'],noTrip:true},
+ bookshelf:{zone:'top',seats:[34],pose:'front',hold:'book',say:['📖 Hay ghê','📖'],carry:'book'},
+ coffee:{zone:'top',seats:[114],pose:'back',hold:'',say:['☕ Cà phê nào','☕'],carry:'cup'},
+ window:{zone:'top',seats:[],here:true,pose:'back',hold:'',say:[NIGHT?'🌙 Khuya rồi':'☀️ Đẹp trời ghê','☁️']},
+ whiteboard:{zone:'top',seats:[520],pose:'back',hold:'',say:['📋']},
+ plant:{zone:'top',seats:[598],pose:'back',hold:'',say:['🌱','🌱 Lớn nhanh nhé']},
+ sofa:{zone:'lounge',seats:[76,120],pose:'sit',hold:'',say:['😌 Nghỉ tí','🛋️']},
+ beanbag:{zone:'lounge',seats:[290],pose:'sit',hold:'',say:['😴']},
+ vending:{zone:'lounge',seats:[558],pose:'back',hold:'',say:['🥤','🥤 Hết nước ngọt?'],carry:'cup'},
+};
+const FUN_SMALL_TALK=[['Trưa nay ăn gì?','Bún chả nhé!'],['Cà phê không?','Đi luôn ☕'],['Bug này lạ ghê','Tắt bật lại chưa?'],
+ ['Mai deploy à?','Thứ Sáu thì thôi 😅'],['Rảnh quá 😎','Sướng thế!'],['Ai lấy cốc tôi?','Con mèo đấy 🐱'],['Mưa to ghê','Ở lại code tiếp']];
+const FUN_DESK_TALK=[['Test xanh chưa?','Đợi tí'],['Test xanh chưa?','Xanh rồi ✓'],['Có bug nào không?','Một con 🐞'],['Có bug nào không?','Sạch bong ✨'],['Xem giúp nhé?','Ok, để tôi']];
+// Bong bóng reo mừng: ở cây nước chỉ một biểu tượng (người đứng cách nhau 28, chữ dài sẽ chồng lên nhau)
+const FUN_CHEER_DESK=['🎉 Yeah!','Xong rồi! 🎉','Tuyệt! 🙌'],FUN_CHEER_COOLER=['🎉','🙌','🥳'];
+const FUN={on:true,clock:0,loungeY:0,spots:new Map(),hide:new Set(),actors:new Set(),timers:[],jobs:[],says:[],addons:[]};
+const funMotion=()=>FUN.on&&MOTION_OK;
+const funPick=arr=>arr[Math.floor(Math.random()*arr.length)];
+const funSeatY=def=>def.zone==='lounge'?FUN.loungeY:FUN_TOP_Y;
+function funEvery(ms,fn){FUN.jobs.push({ms,fn,next:FUN.clock+ms})}
+function funLater(ms,fn){FUN.timers.push({at:FUN.clock+ms,fn})}
+function funAddon(o){FUN.addons.push(o)}
+const funMarkAway=(key,on)=>{const n=findAg($('#office'),key,null);if(n)n.classList.toggle('away',on)};
+const funFocusId=()=>{const fe=document.activeElement;return fe&&fe.classList&&fe.classList.contains('ag')?fe.getAttribute('data-id'):null};
+
+function funSay(x,y,text,ms){
+ if(!FUN.on)return false;
+ const w=bubbleW(text),bx=Math.max(2,Math.min(W-2-w,x-w/2)),tx=Math.max(bx+5,Math.min(bx+w-5,x));
+ const box={x:bx,y,w,h:FUN_BUBBLE_H+FUN_BUBBLE_TAIL};
+ if(FUN.says.some(b=>b.x<box.x+box.w&&box.x<b.x+b.w&&b.y<box.y+box.h&&box.y<b.y+b.h))return false;
+ const g=document.createElementNS(SVGNS,'g');
+ g.innerHTML=RR(bx,y,w,FUN_BUBBLE_H,3.5,'#ffffff',' stroke="'+OL+'" stroke-width="1.3"')
+  +'<path d="M'+(tx-2.5)+' '+(y+12.3)+' l2.5 4 l2.5 -4" fill="#ffffff" stroke="'+OL+'" stroke-width="1.3" stroke-linejoin="round"/>'
+  +T(bx+w/2,y+9.6,8.5,'#3b2a20',text);
+ $('#funSays').appendChild(g);box.g=g;FUN.says.push(box);
+ funLater(ms,()=>funUnsay(box));
+ return box}
+// Gỡ một bong bóng sớm (người nói đã về chỗ hay bị gọi đi)
+function funUnsay(box){if(!box)return;box.g.remove();FUN.says=FUN.says.filter(b=>b!==box)}
+function funDialog(whereA,whereB,lines){
+ const a=whereA();if(!a||!funSay(a.x,a.y,lines[0],FUN_SAY_MS))return;
+ // người kia đáp khi bong bóng đầu đã tắt: hai bong bóng không bao giờ chồng nhau
+ funLater(FUN_SAY_MS+FUN_REPLY_GAP_MS,()=>{const b=whereB();if(b)funSay(b.x,b.y,lines[1],FUN_SAY_MS)});
+}
+// Chỗ bong bóng của người ở chỗ key, lúc nói (người đó đã đi vắng hay đổi chỗ thì null)
+const funSpotTalk=(key,dy)=>()=>{const s=FUN.spots.get(key);return s&&!FUN.hide.has(key)?{x:s.x,y:s.y-dy}:null};
+
+function funBorrow(spot,kind){
+ const g=document.createElementNS(SVGNS,'g');$('#funActors').appendChild(g);
+ const a={id:spot.id,home:spot.key,kind,role:spot.role,color:spot.color,L:look(spot.id),x:spot.x,y:spot.y,hx:spot.x,hy:spot.y,
+  pose:'front',hold:'',carry:'',lift:0,t:0,path:[],arrive:null,tick:null,seat:null,staying:false,homing:false,bubble:null,g,art:''};
+ FUN.actors.add(a);FUN.hide.add(spot.key);funMarkAway(spot.key,true);
+ return a}
+function funRelease(a){
+ if(!FUN.actors.delete(a))return;
+ a.g.remove();funUnsay(a.bubble);FUN.hide.delete(a.home);funMarkAway(a.home,false)}
+// Đang ở dải nào của sàn trống (top: chân tường, lounge: góc nghỉ, aisle: lối dọc trái), other: chỗ khác (bàn)
+function funZoneOf(p){
+ if(Math.abs(p.y-FUN_TOP_Y)<1)return 'top';
+ if(FUN.loungeY&&Math.abs(p.y-FUN.loungeY)<1)return 'lounge';
+ return Math.abs(p.x-FUN_AISLE_X)<1?'aisle':'other'}
+// Cùng dải thì đi thẳng; khác dải thì vòng qua lối dọc bên trái (không băng qua các dãy bàn)
+function funPath(from,to){
+ const zf=funZoneOf(from),zt=funZoneOf(to);
+ if(zf==='other'||zt==='other'||zf===zt)return[{x:to.x,y:to.y}];
+ const pts=zf==='aisle'?[]:[{x:FUN_AISLE_X,y:from.y}];
+ return pts.concat(zt==='aisle'?[{x:to.x,y:to.y}]:[{x:FUN_AISLE_X,y:to.y},{x:to.x,y:to.y}])}
+// Máy đặt giảm chuyển động: không lướt trên sàn, tới thẳng nơi (khung sau gọi done).
+// Đường dài (văn phòng nhiều dãy bàn: góc nghỉ ở rất xa) thì rảo bước cho kịp trong FUN_WALK_MAX_MS
+function funWalk(a,to,done){
+ if(!MOTION_OK){a.x=to.x;a.y=to.y}
+ a.path=funPath(a,to);a.arrive=done||null;
+ let len=0,at=a;
+ a.path.forEach(p=>{len+=Math.hypot(p.x-at.x,p.y-at.y);at=p});
+ a.speed=Math.max(FUN_SPEED,len/FUN_WALK_MAX_MS)}
+function funStep(a,dt){
+ a.t+=dt;
+ let left=(a.speed||FUN_SPEED)*dt;
+ while(left>0&&a.path.length){const p=a.path[0],dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy);
+  if(d<=left){a.x=p.x;a.y=p.y;left-=d;a.path.shift()}else{a.x+=dx/d*left;a.y+=dy/d*left;left=0}}
+ if(!a.path.length&&a.arrive){const f=a.arrive;a.arrive=null;f()}
+ if(a.tick)a.tick(a);
+ if(FUN.actors.has(a))funDraw(a)}
+// Chỉ vẽ lại hình khi đổi dáng; mỗi khung chỉ đổi transform
+function funDraw(a){
+ const walking=a.path.length>0,key=a.pose+'|'+(walking?a.carry:a.hold)+'|'+walking;
+ if(key!==a.art){a.art=key;a.g.setAttribute('class',walking?'walker':'');
+  const art=walking?standFront(0,0,a.L,a.role,a.color,a.carry):a.pose==='back'?standBack(0,0,a.L,a.role,a.color)
+   :a.pose==='seat'?sitBack(0,0,a.L,a.role,a.color,'stretch'):standFront(0,0,a.L,a.role,a.color,a.pose==='sit'?'sit':a.hold);
+  // ngồi ở bàn: ghế vẽ lại phía trước người (như ở #office), người nhổm lên thì ghế đứng yên
+  a.g.innerHTML='<g>'+art+'</g>'+(a.pose==='seat'?chair(a.x,a.y+FUN_CHAIR_DY):'')}
+ a.g.firstChild.setAttribute('transform','translate('+a.x.toFixed(1)+','+(a.y-a.lift).toFixed(1)+')')}
+
+/* ----- người rảnh ở cây nước đi chơi rồi về ----- */
+const funCount=kind=>[...FUN.actors].filter(a=>a.kind===kind).length;
+// Chỉ người rảnh thật (không chạy, không có việc chờ), chưa đi, không vừa đi bộ tới, và không đang được bạn chọn hay Tab tới
+const funCanLeave=s=>s.zone==='cooler'&&s.kind==='idle'&&!FUN.hide.has(s.key)&&s.id!==openId&&s.id!==funFocusId()&&arriving(s.id)==null;
+function funFreeSeats(spot){
+ const out=[];
+ Object.entries(FUN_POI).forEach(([name,def])=>{
+  if(def.noTrip||(def.zone==='lounge'&&!FUN.loungeY))return;
+  if(def.here){if(spot.x<=FUN_WINDOW_R)out.push({name,def,x:spot.x});return}
+  def.seats.forEach(x=>{if(![...FUN.actors].some(a=>a.seat&&a.seat.name===name&&a.seat.x===x))out.push({name,def,x})})});
+ return out}
+function funTrip(){
+ if(!funMotion()||funCount('trip')>=FUN_MAX_AWAY||Math.random()>FUN_TRIP_CHANCE)return;
+ const spot=funPick([...FUN.spots.values()].filter(funCanLeave));if(!spot)return;
+ const seat=funPick(funFreeSeats(spot));if(!seat)return;
+ const a=funBorrow(spot,'trip');a.seat=seat;
+ funWalk(a,{x:seat.x,y:funSeatY(seat.def)},()=>funArrive(a));
+}
+const funTalkAt=a=>FUN.actors.has(a)&&a.staying?{x:a.x,y:a.y-(funZoneOf(a)==='top'?FUN_TOP_TALK_DY:FUN_HEAD_TALK_DY)}:null;
+function funArrive(a){
+ const d=a.seat.def;a.pose=d.pose;a.hold=d.hold;a.staying=true;
+ // có người đi chơi khác ngồi, đứng gần (sofa hai chỗ…): nói chuyện với nhau thay vì nói một mình; đợi bong bóng
+ // lúc tới nơi của người kia tắt đã, kẻo hai bong bóng chồng nhau và câu chuyện bị bỏ qua
+ const mate=[...FUN.actors].find(b=>b!==a&&b.kind==='trip'&&b.staying&&Math.abs(b.y-a.y)<1&&Math.abs(b.x-a.x)<=FUN_NEAR);
+ if(mate)funLater(FUN_SAY_MS+FUN_REPLY_GAP_MS,()=>funDialog(()=>funTalkAt(a),()=>funTalkAt(mate),funPick(FUN_SMALL_TALK)));
+ else{const p=funTalkAt(a);a.bubble=funSay(p.x,p.y,funPick(d.say),FUN_SAY_MS)}
+ funLater(FUN_STAY_MS+Math.random()*FUN_STAY_VAR_MS,()=>funGoHome(a));
+}
+// Về chỗ ở cây nước (chỗ có thể đã dời vì người khác tới, đi); mất chỗ thì biến mất luôn
+function funGoHome(a){
+ if(!FUN.actors.has(a)||a.homing)return;
+ const s=FUN.spots.get(a.home);if(!s){funRelease(a);return}
+ a.homing=true;a.staying=false;a.carry=a.seat?a.seat.def.carry||'':'';
+ funWalk(a,{x:s.x,y:s.y},()=>funRelease(a));
+}
+// Bạn bấm hay Tab tới chỗ của người đang đi vắng: về ngay (không đi bộ), để khung chọn, bảng chi tiết khớp với hình
+function funRecall(){const fid=funFocusId();FUN.actors.forEach(a=>{if(a.kind==='trip'&&(a.id===openId||a.id===fid))funRelease(a)})}
+// build(): người đang đi chơi được gọi vào bàn. Trả về chỗ đang đứng (người đi bộ xuất phát từ đó) và xoá hình ở #fun
+function funTakeBack(id){
+ const a=[...FUN.actors].find(b=>b.id===id&&b.kind==='trip');if(!a)return null;
+ const at={x:a.x,y:a.y};funRelease(a);return at}
+
+/* ----- vươn vai ở bàn, nói chuyện, reo mừng ----- */
+const funSeat=(a,spot)=>{a.pose='seat';a.y=spot.y+FUN_SEAT_DY};
+function funStretch(){
+ if(!funMotion()||Math.random()>FUN_STRETCH_CHANCE)return;
+ const spot=funPick([...FUN.spots.values()].filter(s=>s.zone==='desk'&&s.pose==='idle'&&!FUN.hide.has(s.key)&&arriving(s.id)==null));if(!spot)return;
+ const a=funBorrow(spot,'stretch');funSeat(a,spot);
+ a.tick=b=>{b.lift=Math.sin(Math.min(1,b.t/FUN_STRETCH_MS)*Math.PI)*FUN_STRETCH_RISE;if(b.t>=FUN_STRETCH_MS)funRelease(b)};
+ if(Math.random()<FUN_YAWN_CHANCE)funSay(spot.x,spot.y-FUN_DESK_TALK_DY,'🥱',FUN_SAY_MS);
+}
+// Tán gẫu: hai người rảnh đứng cạnh nhau ở cây nước, hoặc Coder hỏi Tester cùng dãy bàn
+function funChat(){
+ if(Math.random()>FUN_CHAT_CHANCE)return;
+ const all=[...FUN.spots.values()].filter(s=>s.pose!=='ghost'&&!FUN.hide.has(s.key));
+ const cool=all.filter(s=>s.zone==='cooler'&&s.kind==='idle').sort((p,q)=>p.x-q.x);
+ const near=cool.slice(1).map((s,i)=>[cool[i],s]).filter(([p,q])=>q.x-p.x<=COOLER_STEP+1);
+ const desk=all.filter(s=>s.zone==='desk'),pairs=[];
+ desk.filter(s=>s.role==='coder').forEach(c=>desk.forEach(t=>{if(t.role==='tester'&&t.dir===c.dir)pairs.push([c,t])}));
+ if(pairs.length&&(!near.length||Math.random()<.5)){const [c,t]=funPick(pairs);
+  funDialog(funSpotTalk(c.key,FUN_DESK_TALK_DY),funSpotTalk(t.key,FUN_DESK_TALK_DY),funPick(FUN_DESK_TALK));return}
+ if(!near.length)return;
+ const pr=funPick(near);if(Math.random()<.5)pr.reverse();
+ funDialog(funSpotTalk(pr[0].key,FUN_TOP_TALK_DY),funSpotTalk(pr[1].key,FUN_TOP_TALK_DY),funPick(FUN_SMALL_TALK));
+}
+// build(): tính năng vừa xong. Chờ người đi bộ (bàn → cây nước) tới nơi rồi mới reo
+function funCheer(ids){if(FUN.on)funLater(WALK_MS+FUN_CHEER_WAIT_MS,()=>ids.forEach((id,i)=>funCheerOne(id,i)))}
+function funCheerOne(id,i){
+ const trip=[...FUN.actors].find(a=>a.id===id&&a.kind==='trip');
+ if(trip){const p=funTalkAt(trip);if(p)funSay(p.x,p.y,FUN_CHEER_COOLER[i%3],FUN_CHEER_MS);return}
+ const spot=[...FUN.spots.values()].find(s=>s.id===id&&s.pose!=='ghost'&&!FUN.hide.has(s.key));if(!spot)return;
+ const atCooler=spot.zone==='cooler';
+ funSay(spot.x,spot.y-(atCooler?FUN_TOP_TALK_DY:FUN_DESK_TALK_DY),(atCooler?FUN_CHEER_COOLER:FUN_CHEER_DESK)[i%3],FUN_CHEER_MS);
+ // giảm chuyển động hay Master đang đứng chờ bạn: chỉ bong bóng
+ if(!funMotion()||!(atCooler||FUN_SIT_POSES.includes(spot.pose)))return;
+ const a=funBorrow(spot,'cheer'),hop=atCooler?FUN_CHEER_HOP:FUN_CHEER_HOP/2;
+ if(atCooler)a.hold='cheer';else funSeat(a,spot);
+ a.tick=b=>{b.lift=Math.abs(Math.sin(b.t/FUN_CHEER_HOP_MS*Math.PI))*hop;if(b.t>=FUN_CHEER_MS)funRelease(b)};
+}
+
+/* ----- giữ lớp #fun khớp với #office sau mỗi lần vẽ ----- */
+// Bố cục đổi (thêm, bớt dãy bàn) thì góc nghỉ dời: người đang ở đó, đường đi tới đó dời theo
+function funShiftLounge(old,nw){
+ const fix=p=>{if(Math.abs(p.y-old)<1)p.y=nw;else if(p.y>FUN_TOP_Y+1&&p.y>nw)p.y=nw};
+ FUN.actors.forEach(a=>{if(a.kind==='trip'){fix(a);a.path.forEach(fix)}});
+}
+function funAfterBuild(laneB){
+ const ly=laneB-FUN_LOUNGE_DY;
+ if(FUN.loungeY&&ly!==FUN.loungeY)funShiftLounge(FUN.loungeY,ly);
+ FUN.loungeY=ly;
+ FUN.actors.forEach(a=>{const s=FUN.spots.get(a.home);
+  if(!s){funRelease(a);return}
+  // vươn vai, reo mừng ở chỗ đã dời hay người đó bắt đầu làm việc: thôi luôn
+  if(a.kind!=='trip'){if(s.x!==a.hx||s.y!==a.hy||(a.kind==='stretch'&&s.pose!=='idle'))funRelease(a);return}
+  // có việc (chạy, chờ): về ngay, không đi bộ (như funRecall), kẻo bong bóng trạng thái ở cây nước (trong hình đang ẩn)
+  // bị giấu suốt quãng đường về
+  if(s.kind!=='idle'){funRelease(a);return}
+  if(a.homing){const p=a.path[a.path.length-1];if(p){p.x=s.x;p.y=s.y}return}
+  // Chỗ ở cây nước dời (người khác tới, đi): chỉ người ngắm cửa sổ tại chỗ cũ phải dời theo,
+  // người đang ở chỗ khác cứ chơi tiếp, lúc về funGoHome đọc chỗ mới
+  if(s.x!==a.hx&&a.seat&&a.seat.def.here)funGoHome(a);
+  a.hx=s.x;
+ });
+ FUN.addons.forEach(o=>{if(o.build)o.build()});
+}
+function funClear(){
+ FUN.addons.forEach(o=>{if(o.clear)o.clear()});
+ [...FUN.actors].forEach(funRelease);FUN.timers=[];FUN.says=[];
+ $('#funActors').replaceChildren();$('#funSays').replaceChildren();
+}
+
+/* ----- vòng lặp chung ----- */
+let funLast=0;
+function funLoop(t){requestAnimationFrame(funLoop);
+ const dt=funLast?Math.min(FUN_DT_MAX_MS,t-funLast):0;funLast=t;
+ if(!FUN.on||!S||document.hidden)return;
+ FUN.clock+=dt;
+ // tách việc tới hạn ra trước khi chạy: việc vừa chạy có thể hẹn thêm việc mới
+ const due=FUN.timers.filter(x=>x.at<=FUN.clock);FUN.timers=FUN.timers.filter(x=>x.at>FUN.clock);due.forEach(x=>x.fn());
+ FUN.jobs.forEach(j=>{if(FUN.clock>=j.next){j.next=FUN.clock+j.ms;j.fn()}});
+ funRecall();
+ FUN.actors.forEach(a=>funStep(a,dt));
+ FUN.addons.forEach(o=>{if(o.frame)o.frame(dt)});
+}
+funEvery(FUN_TRIP_EVERY_MS,funTrip);
+funEvery(FUN_CHAT_EVERY_MS,funChat);
+funEvery(FUN_STRETCH_EVERY_MS,funStretch);
+requestAnimationFrame(funLoop);
+
+/* ----- nút "Hoạt hình vui": nhớ lựa chọn trong trình duyệt này ----- */
+// Trình duyệt chặn localStorage (chế độ riêng tư, chặn dữ liệu trang): bỏ qua, mặc định bật; chỉ là tuỳ chọn hiển thị
+function funPrefGet(){try{return localStorage.getItem(FUN_PREF_KEY)!=='off'}catch(e){return true}}
+function funPrefSet(on){try{localStorage.setItem(FUN_PREF_KEY,on?'on':'off')}catch(e){}}
+function funSetOn(on){
+ FUN.on=on;$('#funBtn').setAttribute('aria-pressed',String(on));$('#funState').textContent=on?': bật':': tắt';
+ if(!on)funClear();
+ // roi nhỏ tĩnh ở #office (thay cho quản đốc khi tắt) đổi theo nút ngay, không đợi lần làm mới 3 giây
+ if(S)build();
+}
+$('#funBtn').addEventListener('click',()=>{funSetOn(!FUN.on);funPrefSet(FUN.on)});
+$('#funNote').hidden=MOTION_OK;
+funSetOn(funPrefGet());
+
+/* ---------- Quản đốc cầm roi (hoạt hình vui): có việc mà chưa ai làm ----------
+ Người cần nhắc: ở dãy bàn, có việc chờ (bong bóng số: chờ Master gọi, chờ watch.sh đánh thức, cần mở phiên tay) mà không
+ chạy; không tính người đang giơ tay hỏi Master hay ID chưa khai báo. Coder hỏi Master thì câu hỏi là việc chờ của Master,
+ nên quản đốc tới nhắc Master (thổi còi, không quất roi sếp).
+ Quản đốc vào từ cửa, đi trên sàn trống (dải sàn dưới tường, lối dọc trái, thảm đỏ bên phải, kênh giữa hai hàng khối;
+ không đi dọc dãy bàn) tới cạnh bàn từng người một,
+ ai lâu chưa bị nhắc nhất trước; quát một câu, quất roi vào không khí ("TÁCH!", không trúng ai), người đó giật mình "Ối!"
+ rồi đáp; xong thì sang người kế (tối đa FM_ROUND_MAX người một lượt) hoặc ra cửa, nghỉ FM_PAUSE_MS rồi mới vào lại.
+ Lần làm mới 3 giây: người đang được tới không còn chờ thì quản đốc biến mất ngay; chỗ ngồi dời thì đi tới chỗ mới.
+ Chỉ khi funMotion(): tắt nút hay máy giảm chuyển động thì không có quản đốc, station() vẽ cái roi nhỏ cạnh bong bóng số.
+ Không mượn nhân vật nào trừ lúc giật mình (funBorrow 'jolt', dưới một giây); lớp #fun không nhận chuột nên không chặn cú bấm.
+ Cho phần sau: FM.a (quản đốc đang trong phòng, null nếu không), fmIsTarget(spot), FM.last (ID → FUN.clock lần bị nhắc) */
+const FM_SPEED=.11; // nhanh hơn người đi chơi (FUN_SPEED): quản đốc đi tuần, lối vòng qua hai bên phòng khá dài
+const FM_CHECK_MS=2000,FM_FIRST_MS=6000,FM_PAUSE_MS=25000,FM_GONE_PAUSE_MS=8000,FM_REVISIT_MS=90000,FM_ROUND_MAX=3;
+const FM_FADE_MS=300,FM_ENTER_MS=500,FM_SHOUT_MS=1100,FM_RAISE_MS=380,FM_BURST_MS=480,FM_OUCH_MS=1200,FM_LINGER_MS=2000;
+const FM_POP_MS=160,FM_POOF_MS=450,FM_POOF_DY=20;
+const FM_JOLT_MS=650,FM_JOLT_RISE=6,FM_SHAKE=1.5,FM_SHAKE_MS=70;
+// Chỗ đứng cạnh người ngồi: lệch ngang FM_SIDE_DX, đỉnh đầu thấp hơn y của chỗ FM_DESK_DY (ngang đầu người ngồi, chân còn
+// trên biển tên); bong bóng của quản đốc ngay trên mũ
+const FM_SIDE_DX=30,FM_DESK_DY=10,FM_TALK_DY=21;
+// Đầu roi lúc quất (so với đỉnh đầu, mặt quay phải): ngay trên đầu người ngồi, cách một khoảng, không chạm ai.
+// Còi: tiếng còi phía trước, cao hơn mũ
+const FM_TIP_DX=30,FM_TIP_DY=-16,FM_WHISTLE_DX=14,FM_WHISTLE_DY=-18;
+const FM_BURST_RX=17,FM_BURST_RY=11,FM_BURST_SPIKES=12,FM_BURST_INNER=.62,FM_BURST_PAD=7,FM_BURST_FS=7.5;
+// Đường đi: giữa cửa (door() rộng 50), dải sàn dưới tường (đỉnh đầu ngay dưới hàng biển tên thứ ba ở cây nước, đáy 182;
+// chân ở 221, trên tiêu đề khối đầu TOP+6), lối dọc trái (như người đi chơi) và thảm đỏ bên phải
+const FM_DOOR_CX=DOOR_X+25,FM_FLOOR_Y=183,FM_AISLE_L=FUN_AISLE_X,FM_AISLE_R=OWNER_X;
+// Kênh: dải sàn trống giữa hai hàng khối, đi ngang ở đây chứ không dọc theo dãy bàn (đè lên người ngồi, ghế, bàn). Đỉnh đầu
+// cách chỗ ở hàng bàn cuối của khối FM_CHANNEL_DY (đáy biển tên ở +78), chân ngay trên tiêu đề khối kế (+118). Kênh trên một
+// khối là kênh dưới của hàng khối phía trên: hai hàng bàn kề nhau ở hai khối cách nhau ROW_H+6+GAP+HEAD (h của khối trong build)
+const FM_CHANNEL_DY=80,FM_CHANNEL_UP_DY=ROW_H+6+GAP+HEAD-FM_CHANNEL_DY;
+const FM_SHOUT=['Việc chờ kìa!','Ngồi chơi à?','Làm đi nào!'],FM_SHOUT_BOSS=['Sếp ơi! 🙏'];
+// Câu đáp theo cách agent được đánh thức: subagent phải đợi Master gọi, auto/window đợi watch.sh
+const FM_REPLY={subagent:['Dạ em làm ngay!','Chờ Master gọi ạ 😅'],auto:['Dạ em làm ngay!','Chờ watch.sh gọi ạ 😅'],
+ window:['Dạ em làm ngay!','Chờ watch.sh gọi ạ 😅'],manual:['Dạ em làm ngay!','Dạ, làm liền!']};
+const FM_REPLY_BOSS=['Ừ, xem ngay!','Rồi, trả lời đây!'];
+// ch: kênh của chỗ đứng đang tới hay vừa tới (lùi ra kênh đó trước khi đi tiếp)
+const FM={a:null,door:null,phase:'off',phaseT:0,target:null,ch:null,visits:0,nextAt:FM_FIRST_MS,last:new Map(),
+ shout:null,burst:null,jolt:null,after:null,replied:false,doorOpen:false};
+
+// Quản đốc: mũ kê-pi, ria mép, lông mày nghiêm, áo khoác sẫm, còi đeo cổ, tay phải cầm roi ngắn. Gốc toạ độ như standFront
+// (giữa người, y: đỉnh đầu, chân ở y+38), mặt quay sang phải; quay trái thì lật cả hình.
+// pose: stand (roi cuộn thõng), raise (giơ roi lấy đà), crack (quất ra trước, đầu roi ở FM_TIP), whistle (thổi còi)
+function foremanArt(pose){
+ const skin='#e8b585',coat='#3a4256',lash='#4a2e1c',grip='#8a5a2e';
+ const leg=(x,cls)=>'<g class="'+cls+'">'+RR(x,24,5.5,12,2,'#2b2b33',K(.9))+E(x+3.4,36.4,4.2,1.9,'#1d1612')+'</g>';
+ const coil=(x,y)=>LN('M'+x+' '+y+' c4 1.6 4.4 7 .6 7.6 c-3.6 .6 -4 -4 -.6 -4.8 c2.6 -.6 3.8 1.8 3.4 4.6',lash,1.1);
+ let s=leg(-6,'legL')+leg(.5,'legR')+RR(-12.5,14,5,12,2.5,coat,K(.9))+C(-10,26,2.2,skin,K(.7));
+ s+=RR(-9.5,12,19,15,6,coat,K(1))+RR(-9.5,12,19,15,6,'url(#shd)')+P('M-3.6 12.4 l3.6 4 l3.6 -4z','#e9e3d8',K(.5))
+  +R(-9.2,23.2,18.4,2.4,'#1d1612')+RR(-1.7,22.8,3.4,3.2,.6,'#f2c14e',K(.4));
+ if(pose!=='whistle')s+=LN('M-3.4 13 q2.6 6.4 5.4 6.4','#d64545',.8)+RR(1.8,18.2,4.6,2.6,1,'#dfe3ea',K(.5))+C(6.4,19.5,1.3,'#dfe3ea',K(.5));
+ s+=RR(-2.5,10,5,4,1.5,skin)+E(-6.8,7.6,1.6,2.2,skin,K(.7))+C(0,6.5,7.4,skin,K(1))
+  +E(-.6,7.8,1,1.3,'#2b2b2b')+E(3.8,7.8,1,1.3,'#2b2b2b')+LN('M-2.8 4.9 l3.2 1.4 M6.2 4.9 l-3.2 1.4',OL,1.1)
+  +E(2.4,9.3,1.4,1.1,'#d99a6a')+P('M1.6 10.1 q-2.4 -1 -4.6 1.4 q2.8 .7 4.6 -.4 q1.8 1.1 4.6 .4 q-2.2 -2.4 -4.6 -1.4z','#4a2e1c',K(.4));
+ // mũ: chóp, vành sẫm, huy hiệu vàng, lưỡi trai chĩa về phía trước. Chóp thấp (đỉnh y-1, vừa trùm đầu): cả người cao
+ // chưa tới 40, lọt dải sàn dưới tường (biển tên cây nước đáy 182, tiêu đề khối đầu 222) và kênh giữa hai hàng khối
+ s+=P('M-7.8 4.8 Q-8.6 -1 0 -1 Q8.6 -1 7.8 4.8Z','#2a3040',K(.9))+R(-7.6,2.6,15.2,2.2,'#1a1d26')+C(.6,.6,1.5,'#f2c14e',K(.4))
+  +P('M6.6 3.8 q5.4 -.4 8.4 1.6 q-4 1.4 -8.4 .6z','#1a1d26',K(.7));
+ // tay phải và roi: vẽ sau đầu để tay giơ cao, tay đưa lên miệng vẫn thấy
+ if(pose==='raise')s+=RR(7.5,3,5,12,2.5,coat,K(.9))+C(10,3,2.3,skin,K(.7))+LN('M10 2.6 l-2 -6',grip,2.4)+LN('M8 -3.4 q-6 -8 -14 -4 q-6 3 -4 10',lash,1.1);
+ else if(pose==='crack')s+='<g'+ROT(-115,10,15)+'>'+RR(7.5,14,5,12,2.5,coat,K(.9))+'</g>'+C(20,10.4,2.3,skin,K(.7))+LN('M20 10.4 l5.4 -2.5',grip,2.4)
+  +LN('M25.4 7.9 C33 5 25 -4 31 -8 S'+(FM_TIP_DX-1)+' '+(FM_TIP_DY+2)+' '+FM_TIP_DX+' '+FM_TIP_DY,lash,1.1);
+ else if(pose==='whistle')s+=coil(9,24)+'<g'+ROT(125,10,15)+'>'+RR(7.5,14,5,9,2.5,coat,K(.9))+'</g>'+C(3.4,10.4,2.3,skin,K(.7))
+  +RR(4.4,9.2,5,2.6,1,'#dfe3ea',K(.5))+C(9.6,10.5,1.4,'#dfe3ea',K(.5))+LN('M12.4 6.8 q1.8 2 0 4 M14.6 5.2 q3 3.4 0 6.8','#ffffff',.9);
+ else s+=RR(7.5,14,5,12,2.5,coat,K(.9))+C(10,26,2.3,skin,K(.7))+LN('M10.6 24.6 l5.4 4.4',grip,2.4)+coil(16,29);
+ return s;
+}
+const fmIsTarget=s=>!!s&&s.zone==='desk'&&s.pose==='wait'&&s.kind==='wait'&&!s.run&&/^\d+$/.test(s.txt||'');
+const fmAisleNear=x=>x<(FM_AISLE_L+FM_AISLE_R)/2?FM_AISLE_L:FM_AISLE_R;
+const fmSetPhase=p=>{FM.phase=p;FM.phaseT=0};
+// Người kế tiếp: ai lâu chưa bị nhắc nhất (chưa lần nào: trước hết, theo thứ tự trên cảnh); một agent ngồi nhiều dãy chỉ
+// tính một chỗ; vừa bị nhắc trong FM_REVISIT_MS thì thôi
+function fmPick(){
+ const seen=new Set(),lastOf=s=>FM.last.has(s.id)?FM.last.get(s.id):-Infinity;
+ return [...FUN.spots.values()].filter(s=>{if(!fmIsTarget(s)||seen.has(s.id))return false;seen.add(s.id);return FUN.clock-lastOf(s)>=FM_REVISIT_MS})
+  .sort((p,q)=>lastOf(p)-lastOf(q))[0]||null}
+// Kênh để vào chỗ s: hàng bàn cuối của khối vào từ kênh dưới khối (chỉ lướt qua biển tên của chính người đó); hàng trên của
+// khối nhiều hàng vào từ kênh trên khối, kẻo leo qua người ngồi ở hàng dưới. Kênh trên hàng khối đầu là dải sàn dưới tường.
+// Khối phiên chat (dir rỗng, nhiều khối chung một dir) chỉ có một hàng
+function fmChannel(s){
+ const ys=s.dir?[...FUN.spots.values()].filter(o=>o.zone==='desk'&&o.dir===s.dir).map(o=>o.y):[s.y];
+ if(s.y>=Math.max(...ys)-1)return s.y+FM_CHANNEL_DY;
+ const up=Math.min(...ys)-FM_CHANNEL_UP_DY;
+ return up<=FM_FLOOR_Y+1?FM_FLOOR_Y:up}
+// Chỗ đứng cạnh người ngồi: đang ở cùng hàng thì đứng phía mình đi tới; không thì phía có ít bàn hơn. ch: kênh để vào
+function fmStand(s,from){
+ const y=s.y+FM_DESK_DY;let side;
+ if(from&&Math.abs(from.y-y)<1)side=from.x<s.x?-1:1;
+ else{const row=[...FUN.spots.values()].filter(o=>o.zone==='desk'&&o.key!==s.key&&Math.abs(o.y-s.y)<1),l=row.filter(o=>o.x<s.x).length,r=row.length-l;
+  side=l!==r?(l<r?-1:1):fmAisleNear(s.x)===FM_AISLE_L?-1:1}
+ return{x:s.x+side*FM_SIDE_DX,y,side,ch:fmChannel(s)}}
+const fmOnAisle=x=>Math.abs(x-FM_AISLE_L)<1||Math.abs(x-FM_AISLE_R)<1;
+// Kênh đang đi hay vừa rời, để đổi đường giữa chừng (chỗ ngồi dời) không băng qua bàn: đang đi ngang thì chính hàng đó;
+// đang lùi ra kênh thì kênh sắp tới; đứng cạnh bàn hay đang vào chỗ đứng thì kênh của chỗ đó
+function fmFromChannel(a){
+ const p=a.path[0];
+ if(p&&Math.abs(p.y-a.y)<1)return a.y;
+ if(p&&a.path.length>1)return p.y;
+ return FM.ch!=null?FM.ch:a.y}
+// Chỉ đi trên sàn trống: lùi ra kênh của hàng đang đứng, đổi hàng ở lối dọc (bên nào gần đường đi hơn), theo kênh của chỗ
+// tới, rồi đi thẳng lên (xuống) chỗ đứng. Cùng kênh thì không ra lối dọc. to.door: về cửa (theo dải sàn dưới tường)
+function fmRoute(from,to){
+ const pts=[],go=(x,y)=>pts.push({x,y});
+ if(to.door&&from.y<FM_FLOOR_Y-1)return[{x:FM_DOOR_CX,y:FUN_TOP_Y}];
+ const tx=to.door?FM_DOOR_CX:to.x,ty=to.door?FM_FLOOR_Y:to.ch,onAisle=fmOnAisle(from.x);
+ const ax=onAisle?from.x:fmAisleNear((from.x+tx)/2);
+ let y=from.y;
+ if(from.y<FM_FLOOR_Y-1){y=FM_FLOOR_Y;go(from.x,y)}
+ else if(!onAisle){y=fmFromChannel(from);go(from.x,y)}
+ if(Math.abs(y-ty)>=1){go(ax,y);go(ax,ty)}
+ go(tx,ty);go(tx,to.door?FUN_TOP_Y:to.y);
+ return pts}
+// Tiếng roi (hay còi): ngôi sao vàng có chữ, vài vạch toả ra phía trên, bật lên rất nhanh. Tính như một bong bóng
+// (FUN.says) để bong bóng khác né; bong bóng đang ở đúng chỗ đó thì tắt luôn (tiếng roi cắt ngang câu chuyện)
+function fmBurst(x,y,text){
+ const pad=FM_BURST_PAD,box={x:x-FM_BURST_RX-pad,y:y-FM_BURST_RY-pad,w:2*(FM_BURST_RX+pad),h:2*(FM_BURST_RY+pad)};
+ FUN.says.filter(b=>b.x<box.x+box.w&&box.x<b.x+b.w&&b.y<box.y+box.h&&box.y<b.y+b.h).forEach(funUnsay);
+ let pts='';
+ for(let i=0;i<2*FM_BURST_SPIKES;i++){const t=i*Math.PI/FM_BURST_SPIKES-Math.PI/2,k=i%2?FM_BURST_INNER:i%4?1:1.12;
+  pts+=(x+Math.cos(t)*FM_BURST_RX*k).toFixed(1)+','+(y+Math.sin(t)*FM_BURST_RY*k).toFixed(1)+' '}
+ const rays=[-160,-120,-90,-60,-20,20,160].map(d=>{const t=d*Math.PI/180,c=Math.cos(t),n=Math.sin(t);
+  return 'M'+(x+c*(FM_BURST_RX+3)).toFixed(1)+' '+(y+n*(FM_BURST_RY+3)).toFixed(1)+' L'+(x+c*(FM_BURST_RX+8)).toFixed(1)+' '+(y+n*(FM_BURST_RY+8)).toFixed(1)}).join(' ');
+ const g=document.createElementNS(SVGNS,'g');
+ g.innerHTML=LN(rays,'#d9480f',1.2)+'<polygon points="'+pts+'" fill="#ffe066" stroke="#d9480f" stroke-width="1.2" stroke-linejoin="round"/>'
+  +T(x,y+FM_BURST_FS*.35,FM_BURST_FS,'#b23030',text);
+ g.style.transformOrigin=x+'px '+y+'px';
+ $('#funSays').appendChild(g);box.g=g;FUN.says.push(box);
+ g.animate([{transform:'scale(.4)'},{transform:'scale(1.15)',offset:.6},{transform:'scale(1)'}],{duration:FM_POP_MS,easing:'ease-out'});
+ return box}
+// Biến mất giữa chừng (người được tới không còn chờ): một làn khói nhỏ tan đi
+function fmPoof(x,y){
+ const g=document.createElementNS(SVGNS,'g');
+ g.innerHTML=C(x-6,y+2,6,'#e9e3d8',K(.8))+C(x+6,y+1,7,'#f4efe6',K(.8))+C(x,y-5,7,'#fbfbf7',K(.8))+C(x+1,y+5,5,'#fbfbf7');
+ g.style.transformOrigin=x+'px '+y+'px';
+ $('#funSays').appendChild(g);
+ g.animate([{opacity:1,transform:'scale(.6)'},{opacity:0,transform:'scale(1.4)'}],{duration:FM_POOF_MS,fill:'forwards'});
+ funLater(FM_POOF_MS,()=>g.remove())}
+// Người bị nhắc giật mình: nhổm lên, giơ hai tay (dáng vươn vai), rung nhẹ rồi ngồi lại
+const fmJoltTick=b=>{const k=Math.min(1,b.t/FM_JOLT_MS);b.lift=Math.sin(k*Math.PI)*FM_JOLT_RISE;
+ b.x=b.hx+(1-k)*FM_SHAKE*Math.sin(b.t/FM_SHAKE_MS*2*Math.PI);if(b.t>=FM_JOLT_MS)funRelease(b)};
+// Bong bóng của người bị nhắc (ở bàn, như tán gẫu), nhớ trong FM.after: lần làm mới sau người đó hết chờ thì tắt luôn
+function fmSayAt(key,text,ms){
+ const s=FUN.spots.get(key);if(!fmIsTarget(s))return;
+ const b=funSay(s.x,s.y-FUN_DESK_TALK_DY,text,ms);if(b&&FM.after&&FM.after.key===key)FM.after.boxes.push(b)}
+
+/* ----- vòng đời: vào cửa, đi tới, quát, quất roi, sang người kế hay ra cửa ----- */
+function fmEnter(){
+ const acts=$('#funActors'),dg=document.createElementNS(SVGNS,'g'),g=document.createElementNS(SVGNS,'g');
+ // cửa mở lúc quản đốc ra vào (cửa ở #office chỉ mở khi có việc chờ bạn); ban đêm phủ màu đêm như #office (khung door())
+ dg.innerHTML=door(DOOR_X,true)+(NIGHT?R(DOOR_X-4,20,58,92,'rgba(20,30,70,.18)'):'');
+ acts.prepend(dg);acts.appendChild(g);
+ FM.a={x:FM_DOOR_CX,y:FUN_TOP_Y,path:[],arrive:null,tick:null,t:0,speed:FM_SPEED,dir:1,g,art:''};
+ FM.door=dg;FM.visits=0;FM.target=null;FM.ch=null;fmSetPhase('enter');
+}
+function fmDropEffects(){
+ funUnsay(FM.shout);funUnsay(FM.burst);FM.shout=FM.burst=null;
+ if(FM.jolt){funRelease(FM.jolt);FM.jolt=null}}
+function fmRemove(pause){
+ fmDropEffects();
+ if(FM.a){FM.a.g.remove();FM.door.remove()}
+ FM.a=FM.door=FM.target=null;FM.phase='off';FM.nextAt=FUN.clock+pause}
+function fmVanish(){fmPoof(FM.a.x,FM.a.y+FM_POOF_DY);fmRemove(FM_GONE_PAUSE_MS)}
+function fmGo(s){
+ const a=FM.a,st=fmStand(s,a);fmDropEffects();
+ FM.target={key:s.key,id:s.id,role:s.role,sx:s.x,sy:s.y,side:st.side};FM.replied=false;
+ // đường đi tính từ kênh cũ (FM.ch) rồi mới đổi sang kênh của chỗ mới
+ a.path=fmRoute(a,st);FM.ch=st.ch;a.arrive=fmArrive;fmSetPhase('walk')}
+function fmArrive(){
+ const a=FM.a,tg=FM.target;a.dir=-tg.side;fmSetPhase('shout');
+ FM.shout=funSay(a.x,a.y-FM_TALK_DY,funPick(tg.role==='master'?FM_SHOUT_BOSS:FM_SHOUT),FM_SHOUT_MS)}
+function fmCrack(){
+ const a=FM.a,tg=FM.target,boss=tg.role==='master';
+ FM.last.set(tg.id,FUN.clock);
+ FM.burst=boss?fmBurst(a.x+a.dir*FM_WHISTLE_DX,a.y+FM_WHISTLE_DY,'TUÝT!'):fmBurst(a.x+a.dir*FM_TIP_DX,a.y+FM_TIP_DY,'TÁCH!');
+ const s=FUN.spots.get(tg.key);
+ if(fmIsTarget(s)&&!FUN.hide.has(s.key)){const j=funBorrow(s,'jolt');funSeat(j,s);j.tick=fmJoltTick;FM.jolt=j}}
+function fmReply(){
+ const tg=FM.target,ag=S.agents.find(x=>x.id===tg.id);
+ // mode là chữ thứ ba trong agents.txt, ai gõ gì cũng được: chỉ lấy khoá của chính FM_REPLY ("constructor", "__proto__"
+ // sẽ trả về hàm, nguyên mẫu của Object chứ không phải danh sách câu)
+ const rep=ag&&Object.hasOwn(FM_REPLY,ag.mode)?FM_REPLY[ag.mode]:FM_REPLY.manual;
+ fmSayAt(tg.key,funPick(tg.role==='master'?FM_REPLY_BOSS:rep),FUN_SAY_MS)}
+function fmNext(){FM.visits++;const s=FM.visits<FM_ROUND_MAX?fmPick():null;if(s)fmGo(s);else fmLeave()}
+function fmLeave(){
+ const a=FM.a;fmDropEffects();FM.target=null;
+ a.path=fmRoute(a,{door:true});a.arrive=()=>fmSetPhase('out');fmSetPhase('leave')}
+function fmAdvance(){
+ const t=FM.phaseT;
+ switch(FM.phase){
+  case 'enter':if(t>=FM_ENTER_MS){const s=fmPick();if(s)fmGo(s);else fmLeave()}break;
+  case 'shout':if(t>=FM_SHOUT_MS){funUnsay(FM.shout);FM.shout=null;fmSetPhase('raise')}break;
+  case 'raise':if(t>=FM_RAISE_MS){fmCrack();fmSetPhase('crack')}break;
+  case 'crack':if(t>=FM_BURST_MS){funUnsay(FM.burst);FM.burst=null;FM.after={key:FM.target.key,boxes:[]};fmSayAt(FM.target.key,'Ối!',FM_OUCH_MS);fmSetPhase('linger')}break;
+  case 'linger':if(!FM.replied&&t>=FM_OUCH_MS+FUN_REPLY_GAP_MS){FM.replied=true;fmReply()}if(t>=FM_LINGER_MS)fmNext();break;
+  case 'out':if(t>=FM_FADE_MS)fmRemove(FM_PAUSE_MS);break;
+ }}
+// Chỉ vẽ lại hình khi đổi dáng; mỗi khung đổi transform, độ mờ (hiện dần ở cửa, mờ dần lúc ra) và cửa mở
+function fmDraw(){
+ const a=FM.a,walking=a.path.length>0,boss=FM.target&&FM.target.role==='master';
+ const pose=walking?'walk':FM.phase==='raise'||FM.phase==='crack'?(boss?'whistle':FM.phase):'stand';
+ if(pose!==a.art){a.art=pose;a.g.setAttribute('class',walking?'walker':'');a.g.innerHTML='<g>'+foremanArt(pose==='walk'?'stand':pose)+'</g>'}
+ a.g.firstChild.setAttribute('transform','translate('+a.x.toFixed(1)+','+a.y.toFixed(1)+') scale('+a.dir+',1)');
+ const op=FM.phase==='out'?1-FM.phaseT/FM_FADE_MS:a.t/FM_FADE_MS;
+ a.g.setAttribute('opacity',Math.max(0,Math.min(1,op)).toFixed(2));
+ FM.door.setAttribute('visibility',!FM.doorOpen&&a.y<FM_FLOOR_Y-1?'visible':'hidden')}
+function fmFrame(dt){
+ const a=FM.a;if(!a)return;
+ if(a.path.length){const dx=a.path[0].x-a.x;if(Math.abs(dx)>.5)a.dir=Math.sign(dx)}
+ funStep(a,dt);
+ FM.phaseT+=dt;fmAdvance();
+ if(FM.a)fmDraw()}
+// Sau mỗi lần vẽ #office: người đang được tới hết chờ (bắt đầu chạy, giơ tay hỏi, hết việc, rời dãy) thì biến mất;
+// chỗ ngồi dời (thêm, bớt dãy bàn) lúc đang đi tới hay sắp quất thì đi tới chỗ mới
+function fmBuild(){
+ FM.doorOpen=ownerWaits().total>0;
+ if(FM.after&&!fmIsTarget(FUN.spots.get(FM.after.key))){FM.after.boxes.forEach(funUnsay);FM.after=null}
+ if(!FM.a||!FM.target)return;
+ const s=FUN.spots.get(FM.target.key);
+ if(!fmIsTarget(s)){fmVanish();return}
+ const moved=s.x!==FM.target.sx||s.y!==FM.target.sy;
+ if(moved&&(FM.phase==='walk'||FM.phase==='shout'||FM.phase==='raise'))fmGo(s)}
+function fmClear(){if(FM.a)fmRemove(FM_FIRST_MS);FM.after=null}
+function fmPatrol(){if(funMotion()&&!FM.a&&FUN.clock>=FM.nextAt&&fmPick())fmEnter()}
+funEvery(FM_CHECK_MS,fmPatrol);
+funAddon({frame:fmFrame,build:fmBuild,clear:fmClear});
+
+/* ---------- Vuốt ve chó mèo chuột, ném bóng cho chó, chó mèo với người, máy bay giấy, máy cà phê bốc khói ----------
+ Chỉ để vui, chạy hoàn toàn trong trình duyệt, không đọc ghi gì thêm. Chó mèo chuột vẫn ở lớp #pets và đi trong vòng
+ critLoop (nhịp PET_TICK_MS, chạy cả khi tắt nút: chúng có từ trước hoạt hình vui); phần này thêm vào đó:
+  - Bấm con vật (poke): nút "Hoạt hình vui" bật thì vuốt ve: bàn tay của bạn vuốt qua lại, tim bay lên, con vật đứng yên;
+    bấm liền tay (dưới PET_COMBO_MS) thì vui thêm một bậc, thêm tim, chó lăn ra ngửa bụng. Tắt nút thì chỉ kêu như cũ.
+    Giảm chuyển động: tay, tim đứng yên, chó không đổi dáng; mèo vẫn nhắm mắt, chuột vẫn đỏ má (chỉ là hình tĩnh).
+  - Bấm sàn trống ở #office (không phải nhân vật, bàn BẠN, tiêu đề khối, tường; không phải kéo chuột hay bôi đen chữ): bạn
+    ném bóng từ bàn BẠN tới đó, bóng nảy rồi lăn tới điểm gần nhất trên lối chó mèo, chó chạy tới ngậm về thảm đỏ dưới bàn
+    bạn, nhả ra rồi ngồi vẫy đuôi. Giảm chuyển động: bóng hiện ở chỗ bấm, chó sủa "Gâu! 🎾" tại chỗ, không chạy.
+  - Mỗi PET_SOCIAL_EVERY_MS (chỉ khi funMotion()): chó ghé một người rảnh ở cây nước, được xoa đầu (tim, một câu); hoặc mèo
+    trèo lên bàn người đang chờ (đi dọc mép bàn từ lối dọc gần hơn, không băng qua biển tên) hay nhảy lên sofa, ghế lười.
+    Lúc ra khỏi lối của chúng, con vật mang class nohit (không nhận chuột): bấm vào đó vẫn mở chi tiết nhân vật bên dưới.
+    Quản đốc quất roi cạnh bàn có mèo thì mèo giật mình bỏ chạy.
+  - Máy bay giấy giữa hai người không bận cùng dãy bàn (lớp #funFly); máy cà phê bốc khói khi có người đứng pha (#funDeco).
+ Tắt nút: bỏ ngay tay, tim, bóng, máy bay, khói; chó mèo đang ở cây nước, trên bàn thì về lối của chúng theo đường cũ.
+ Cho phần sau:
+  petLayer('under'|'over')      nhóm trong #pets dưới / trên các con vật, không nhận chuột (bóng nằm ở 'under')
+  petStart(n,a)                 vuốt ve con n ('dog'|'cat'|'mouse'), a = CRIT[n]
+  petHandOn(a,skin,sleeve,flip), petHandOff(a), petHearts(a,n)   bàn tay úp trên con a (sleeve rỗng: không tay áo; flip
+                                null: từ phía đuôi, true/false: từ bên trái/phải), n trái tim hai bên tay
+  petKeepsPlace(a), petRelayout()  setGraph() dùng khi bố cục đổi: con đang ở ngoài lối giữ chỗ, chuyến chơi đi tiếp
+  moveFree(a,k)                 con vật đi theo a.free [{x,y,hop?}] ngoài lối (hop: nhảy vòng cung); true khi tới nơi
+  throwBall(x,y)                ném bóng tới (x,y) toạ độ cảnh; FETCH.st: idle|fly|roll|wait|carry|rest|hint
+  dogVisitStart(), catPerchStart(), planeLaunch()   ép ngay một lần chó ghé cây nước, mèo trèo bàn/sofa, máy bay giấy
+                                (true nếu làm được: có người hợp, con vật đang rảnh)
+  CRIT.<con>: pet (nhịp còn lại), joy (bậc vui), carry, nohit, free; CRIT.dog.visit, CRIT.cat.perch: chuyến đang đi */
+const PET_TICK_MS=50; // một nhịp của vòng chó mèo: critLoop, think() đếm thời gian theo nhịp này
+// Vuốt ve kéo dài PET_TICKS nhịp; bấm lại trong PET_COMBO_MS thì vui thêm một bậc (tối đa PET_JOY_MAX tim), tới PET_ROLL_JOY
+// thì chó lăn ngửa bụng; chó được vuốt vẫy đuôi đổi nhịp mỗi PET_WAG_MS
+const PET_TICKS=44,PET_COMBO_MS=4000,PET_JOY_MAX=5,PET_ROLL_JOY=3,PET_WAG_MS=90;
+const PET_CHASE_HOLD=20; // mèo đang rượt dừng cách chuột đang được vuốt ngần này, không đè lên nó
+const PET_STROKE_MS=320,PET_STROKE_DX=2.5; // tay vuốt qua lại: thời gian một chiều, biên độ
+// Tim bay lên PET_HEART_RISE trong PET_HEART_MS, tim sau ra trễ PET_HEART_GAP_MS; xuất phát hai bên tay (cách PET_HEART_DX,
+// lệch thêm tới PET_HEART_JITTER; con vật đang nói thì ra ngoài mép bong bóng), cao hơn chỗ tay chạm PET_HEART_DY. Mỗi con tối đa
+// PET_HEART_ALIVE tim cùng lúc (bấm liền tay không thành một đống). Giảm chuyển động: xếp hàng hai bên, đứng yên tới hết lần vuốt.
+// PET_HEART_HALF_W: nửa bề ngang trái tim (HEART_D rộng 8.4) kể cả viền, chừa một chút
+const PET_HEART_MS=1200,PET_HEART_GAP_MS=140,PET_HEART_RISE=18,PET_HEART_SWAY=4,PET_HEART_DX=13,PET_HEART_JITTER=4,PET_HEART_DY=4,PET_HEART_STEP=7,PET_HEART_ALIVE=6,PET_HEART_SPARE_MS=300;
+const PET_HEART_HALF_W=5;
+const HEART_D='M0 0 C-1 -1.4 -4.2 -2.4 -4.2 -4.8 C-4.2 -6.8 -1.4 -7.4 0 -5.2 C1.4 -7.4 4.2 -6.8 4.2 -4.8 C4.2 -2.4 1 -1.4 0 0Z';
+const PET_SKIN='#f5cfa6',PET_SLEEVE='#2f6fe0'; // tay của bạn: màu da, màu áo của người đứng ở bàn "BẠN"
+// Bàn tay đặt nằm trên lưng (vuốt dọc lưng): cao PET_HAND_H so với chỗ chạm; bong bóng của con vật nằm trên tay (cao
+// PET_SAY_H kể cả đuôi), để tay không che chữ
+const PET_HAND_H=6,PET_SAY_H=14;
+// Chỗ tay chạm so với chân con vật (mặt quay phải): lưng phía đuôi (ngón tay duỗi về phía đầu, không che mặt), bụng khi chó
+// lăn ngửa; head: đầu chó (người ở cây nước xoa đầu). Tay to nhỏ theo con vật (PET_HAND_SCALE)
+const PET_TOUCH={dog:{sit:[-4,-13],walk:[-3,-13.5],sleep:[-3,-9],roll:[-2,-10],head:[4,-21]},cat:{sit:[-3.5,-10],walk:[-2,-9.5],sleep:[-2.5,-6.5]},mouse:{walk:[-1.5,-4.5]}};
+const PET_HAND_SCALE={dog:.85,cat:.7,mouse:.5};
+const PET_LINES={dog:['Gâu!','Gâu gâu! 💕','🥰'],cat:['Rừ rừ…','Rừ rừ… 💕','Rừ rừ… 😻'],mouse:['Chít chít!','Chít chít! 💕','Chít chít! 😊']};
+const PET_PLAIN={dog:'Gâu!',cat:'Meo!',mouse:'Chít!'}; // tắt hoạt hình vui: chỉ kêu như trước
+// DOG_SPD: tốc độ đi dạo của chó (như lúc tạo CRIT.dog), trả lại sau khi chạy nhặt bóng. Đi có việc (tới cây nước, tới chỗ
+// trèo) thì rảo bước: văn phòng nhiều dãy bàn rất dài, đi chậm thì người được ghé đã đi chỗ khác
+const DOG_SPD=1.5,DOG_TROT_SPD=3.2,CAT_TROT_SPD=3;
+// Ném bóng: bay từ tay bạn (đứng ở bàn BẠN) theo vòng cung, lâu và cao theo quãng xa (có chặn trên dưới); chạm sàn nảy
+// FETCH_HOPS lần rồi lăn tới điểm gần nhất trên lối chó mèo (bóng xoay FETCH_SPIN_DEG độ mỗi đơn vị lăn)
+const FETCH_FROM_X=OWNER_X-10,FETCH_FROM_Y=84,FETCH_GROUND_Y=FLOOR_Y+4;
+const FETCH_FLY_MS_PER=1.1,FETCH_FLY_MIN_MS=350,FETCH_FLY_MAX_MS=900,FETCH_ARC_K=.3,FETCH_ARC_MIN=18,FETCH_ARC_MAX=70;
+const FETCH_HOPS=2,FETCH_HOP_MS=180,FETCH_HOP_H=5,FETCH_ROLL_SPEED=.12,FETCH_SPIN_DEG=22;
+// Bóng nằm dưới bàn bạn FETCH_REST_MS rồi mờ dần FETCH_FADE_MS; giảm chuyển động: bóng hiện FETCH_HINT_MS ở chỗ bấm.
+// Chuột lệch quá FETCH_DRAG_PX giữa lúc nhấn và lúc thả là kéo (vuốt ngang, bôi đen), không phải bấm
+const FETCH_REST_MS=4000,FETCH_FADE_MS=400,FETCH_HINT_MS=2500,FETCH_DRAG_PX=6;
+const FETCH_DOG_SPD=5,FETCH_DROP_DX=11,FETCH_BARK_TICKS=14,DOG_PRESENT_TICKS=50,DOG_AFTER_PLAY=30;
+const FETCH={st:'idle',g:null,x:0,y:0,h:0,t:0,fx:0,fy:0,tx:0,ty:0,shx:0,shy:0,dur:0,arc:0,node:'',nx:0,ny:0,spin:0,down:null};
+// Chó mèo với người: thử mỗi PET_SOCIAL_EVERY_MS với xác suất PET_SOCIAL_CHANCE; có cả bàn người chờ lẫn ghế trống thì mèo
+// chọn bàn với xác suất CAT_DESK_CHANCE
+const PET_SOCIAL_EVERY_MS=8000,PET_SOCIAL_CHANCE=.45,CAT_DESK_CHANCE=.6;
+// Chó ghé cây nước: rời lối sát tường ở BASE_X0, đi trên sàn ngay trên hàng biển tên đầu (chân ở VISIT_Y), ngồi bên phải
+// người đó VISIT_DX, quay mặt vào người
+const VISIT_Y=FLOOR_Y+1,VISIT_DX=13,VISIT_SIT_TICKS=56,VISIT_HEARTS=2;
+const VISIT_LINES=['Ngoan quá! 🐶','Cún ơi 🐶','Ai ngoan đây?'];
+// Mèo trèo bàn: ngồi trên mặt bàn bên trái màn hình (CAT_DESK_DX bên trái tâm bàn, chân thấp hơn y của chỗ CAT_DESK_DY);
+// CAT_HALF_W, CAT_H: khung mèo ngồi, để biết tiếng roi có trúng chỗ mèo không
+const CAT_DESK_DX=28,CAT_DESK_DY=7,CAT_DESK_SPD=2.2,CAT_FLEE_SPD=3.2,CAT_HALF_W=10,CAT_H=24;
+// Sofa, ghế lười ở góc nghỉ: chân mèo cao hơn lối dưới cùng ngần này (mặt đệm sofa, đỉnh ghế lười); nhảy lên theo vòng cung
+const CAT_SOFA_DY=19,CAT_BEANBAG_DY=18,CAT_HOP_SPD=2.4,CAT_HOP_LIFT=8;
+const CAT_PERCH_TICKS=160,CAT_PERCH_VAR=120,CAT_NAP_CHANCE=.5,CAT_NAP_AFTER=60,CAT_TALK_TICKS=32,CAT_MEOW_TICKS=24,CAT_AFTER_PERCH=40;
+const PERCH_TALK_DX=24; // người có mèo trên bàn nói lệch sang phải: bong bóng không đè lên mèo
+const PERCH_LINES=['Ơ, mèo! 😅','Mèo ơi 🐱','Xuống đi! 😅'];
+// Máy bay giấy: thử mỗi PLANE_EVERY_MS; hai người cách nhau ít nhất PLANE_MIN_DX (bong bóng của hai người không chồng nhau);
+// bay vòng cung, điểm điều khiển cao hơn đầu PLANE_ARC, lâu theo quãng xa; xuất phát, hạ cánh ngang đầu người ngồi
+const PLANE_EVERY_MS=11000,PLANE_CHANCE=.4,PLANE_MIN_DX=60,PLANE_MS_PER=4,PLANE_MIN_MS=900,PLANE_MAX_MS=2000,PLANE_ARC=70,PLANE_HEAD_DY=12;
+const PLANE_LINES=['Bắt được! ✈️','Gì đây? 📄','Ha ha 😄'];
+// Khói bốc lên từ cốc dưới vòi máy cà phê (pantry() vẽ ở x 102): chỉ khi có người đang đứng pha
+const COFFEE_STEAM_X=115,COFFEE_STEAM_Y=64;
+const PLAY={planes:[],steam:null};
+
+function petInit(n,a){Object.assign(a,{n,free:[],pet:0,joy:0,petAt:-Infinity,roll:false,carry:false,nohit:false,hopLift:0,hand:null,handFlip:null,touch:'',hearts:0,visit:null,perch:null})}
+// Nhóm trong #pets: 'under' dưới mọi con vật (bóng trên sàn), 'over' trên cùng (tay, tim). Không có class crit nên không
+// nhận chuột (cả lớp #pets là pointer-events:none, chỉ con vật nhận)
+function petLayer(which){
+ const svg=$('#pets'),id=which==='under'?'petUnder':'petOver';
+ let g=svg.querySelector('#'+id);
+ if(!g){g=document.createElementNS(SVGNS,'g');g.id=id}
+ if(which==='under'){if(svg.firstChild!==g)svg.insertBefore(g,svg.firstChild)}
+ else if(svg.lastChild!==g)svg.appendChild(g);
+ return g}
+
+/* ----- vuốt ve ----- */
+function petStart(n,a){
+ const now=performance.now();
+ a.joy=now-a.petAt<PET_COMBO_MS?Math.min(PET_JOY_MAX,a.joy+1):1;a.petAt=now;a.pet=PET_TICKS;
+ // giảm chuyển động: không đổi dáng (chó không lăn), chỉ hình tĩnh
+ if(n==='dog'&&MOTION_OK&&a.joy>=PET_ROLL_JOY)a.roll=true;
+ const lines=PET_LINES[n];say(a,lines[Math.min(a.joy,lines.length)-1],PET_TICKS);
+ if(!a.hand)petHandOn(a,PET_SKIN,PET_SLEEVE,null);
+ petHearts(a,a.joy)}
+const petTouch=a=>{const t=PET_TOUCH[a.n];return t[a.touch||a.pose]||t.walk};
+function petPoint(a){const o=petTouch(a);return{x:a.x+a.dir*o[0],y:a.y+critLift(a)+o[1]}}
+// Đỉnh bong bóng (so với chân) khi có tay: ngay trên tay; không có tay thì không đổi (drawCrit lấy chỗ cao hơn)
+const petSayTop=a=>a.hand?petTouch(a)[1]-PET_HAND_H-PET_SAY_H:0;
+// Bàn tay úp trên lưng con vật, nhìn từ trên xuống: (0,0) giữa mép dưới lòng bàn tay, bốn ngón duỗi sang trái, cổ tay áo
+// bên phải (sleeve rỗng: không vẽ tay áo). Cao 7.4 trước khi thu nhỏ (≤ PET_HAND_H), vuốt qua lại theo chiều ngang (dọc lưng)
+function petHandArt(skin,sleeve){
+ return [[5,-7],[7,-5.4],[6.6,-3.8],[5,-2.2]].map(([l,y])=>RR(-1-l,y,l+1,1.75,.85,skin,K(.45))).join('')
+  +E(2,-6.9,2.8,1.3,skin,K(.5))+RR(-3,-7,10,7,3,skin,K(.8))+(sleeve?RR(6,-7.4,5,7.4,2,sleeve,K(.7)):'')}
+// flip: true tay chìa ra từ bên trái (người đứng bên trái con vật), false từ bên phải; null: từ phía đuôi, ngón tay
+// duỗi về phía đầu, đổi theo hướng con vật quay mặt
+function petHandOn(a,skin,sleeve,flip){
+ petHandOff(a);
+ const g=document.createElementNS(SVGNS,'g'),stroke=document.createElementNS(SVGNS,'g'),art=document.createElementNS(SVGNS,'g');
+ art.innerHTML=petHandArt(skin,sleeve);
+ stroke.appendChild(art);g.appendChild(stroke);petLayer('over').appendChild(g);
+ if(MOTION_OK)stroke.animate([{transform:'translateX(-'+PET_STROKE_DX+'px)'},{transform:'translateX('+PET_STROKE_DX+'px)'}],
+  {duration:PET_STROKE_MS,direction:'alternate',iterations:Infinity,easing:'ease-in-out'});
+ a.hand=g;a.handFlip=flip;petHandPlace(a)}
+function petHandOff(a){if(a.hand){a.hand.remove();a.hand=null}}
+function petHandPlace(a){
+ const p=petPoint(a),s=PET_HAND_SCALE[a.n],f=a.handFlip==null?(a.dir>0?-1:1):a.handFlip?-1:1;
+ a.hand.setAttribute('transform','translate('+p.x.toFixed(1)+','+p.y.toFixed(1)+')');
+ a.hand.firstChild.firstChild.setAttribute('transform','scale('+(f*s)+','+s+')')}
+// Chỗ xuất phát của tim h (bên h.side của tay h.p, con vật ở h.cx): không gần tay hơn PET_HEART_DX, và ngoài mép bong bóng
+// (h.clear: nửa bề rộng bong bóng và nửa trái tim, 0 khi con vật không nói). Bong bóng nằm ngay trên tay, ở lớp dưới tim:
+// tim bay lên cạnh bong bóng chứ không đè chữ
+function petHeartPlace(h){
+ const xOf=()=>h.cx+h.side*(Math.max(h.side*(h.p.x-h.cx)+PET_HEART_DX,h.clear)+h.out);
+ let x=xOf();
+ // sát mép cảnh (chó mèo hay đi lối dọc trái, XL): sang bên kia tay, kẻo tim ra ngoài khung
+ if(x<PET_HEART_HALF_W||x>W-PET_HEART_HALF_W){h.side=-h.side;x=xOf()}
+ h.g.firstChild.setAttribute('transform','translate('+x.toFixed(1)+','+(h.p.y-PET_HEART_DY).toFixed(1)+')')}
+// Tim lần lượt bên trái, bên phải tay; tim thứ i ở hàng thứ i/2 ra ngoài (giảm chuyển động) hay lệch ngẫu nhiên (bay lên)
+function petHearts(a,n){
+ const p=petPoint(a),over=petLayer('over');
+ const clear=a.sayT>0&&a.say?critSayW(a.say)/2+PET_HEART_HALF_W:0;
+ // bấm liền tay, câu mới dài hơn: tim còn bay từ lần trước dời ra ngoài mép bong bóng mới (chỉ ra ngoài, không vào trong)
+ over.querySelectorAll('[data-pet="'+a.n+'"]').forEach(g=>{if(g._h&&clear>g._h.clear){g._h.clear=clear;petHeartPlace(g._h)}});
+ n=Math.min(n,PET_HEART_ALIVE-a.hearts);
+ for(let i=0;i<n;i++){
+  const side=i%2?1:-1,out=MOTION_OK?Math.random()*PET_HEART_JITTER:Math.floor(i/2)*PET_HEART_STEP;
+  const g=document.createElementNS(SVGNS,'g');
+  g.setAttribute('data-pet',a.n);g.innerHTML='<g>'+P(HEART_D,'#e8457a',K(.5))+'</g>';
+  g._h={g,p,cx:a.x,side,out,clear};petHeartPlace(g._h);
+  over.appendChild(g);a.hearts++;
+  let life=PET_TICKS*PET_TICK_MS;
+  if(MOTION_OK){life=PET_HEART_MS+i*PET_HEART_GAP_MS;
+   g.animate([{transform:'translate(0,0)',opacity:0},{transform:'translate(0,-4px)',opacity:1,offset:.2},{transform:'translate('+g._h.side*PET_HEART_SWAY+'px,-'+PET_HEART_RISE+'px)',opacity:0}],
+    {duration:PET_HEART_MS,delay:i*PET_HEART_GAP_MS,easing:'ease-out',fill:'both'})}
+  setTimeout(()=>{g.remove();a.hearts=Math.max(0,a.hearts-1)},life+PET_HEART_SPARE_MS)}}
+// Mỗi khung của vòng chó mèo (cả khi giảm chuyển động): hết giờ vuốt ve, tay đi theo con vật, nohit, bóng
+function petFrame(k){
+ Object.values(CRIT).forEach(a=>{
+  if(a.pet>0&&(a.pet-=k)<=0){a.pet=0;a.roll=false;petHandOff(a)}
+  if(a.hand)petHandPlace(a);
+  // ra khỏi lối của chúng (ghé cây nước, trèo bàn), con vật đè lên nhân vật: không được giữ cú bấm của nhân vật
+  a.nohit=!!(a.visit&&a.visit.phase!=='path'||a.perch&&a.perch.desk&&a.perch.phase!=='path')});
+ fetchFrame(k*PET_TICK_MS)}
+// Đi ngoài lưới lối chó mèo theo a.free [{x,y,hop?}] (k: số nhịp). hop: nhảy theo vòng cung (lên sofa, ghế lười)
+function moveFree(a,k){
+ const sx=a.x,sy=a.y;let left=a.spd*k;
+ while(left>1e-6&&a.free.length){const p=a.free[0],dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy);
+  if(Math.abs(dx)>.01)a.dir=Math.sign(dx);
+  if(p.hop&&!p.len)p.len=d||1;
+  if(d<=left){a.x=p.x;a.y=p.y;left-=d;a.free.shift()}else{a.x+=dx/d*left;a.y+=dy/d*left;left=0}
+  a.hopLift=p.hop&&a.free[0]===p?Math.sin((1-Math.hypot(p.x-a.x,p.y-a.y)/p.len)*Math.PI)*CAT_HOP_LIFT:0}
+ if(!a.free.length)a.hopLift=0;
+ a.odo+=Math.abs(a.x-sx)+Math.abs(a.y-sy);
+ return !a.free.length}
+
+/* ----- ném bóng cho chó ----- */
+const ballArt=()=>C(0,-2.6,2.6,'#cfe04a',K(.6))+LN('M-1.7 -4.6 q1.6 2 0 4 M1.7 -4.6 q-1.6 2 0 4','#f7fbe0',.6);
+function fetchG(){
+ if(FETCH.g&&FETCH.g.isConnected)return FETCH.g;
+ const g=document.createElementNS(SVGNS,'g');g.innerHTML=E(0,0,2.6,.9,'rgba(0,0,0,.28)')+'<g>'+ballArt()+'</g>';
+ petLayer('under').appendChild(g);FETCH.g=g;return g}
+function fetchAim(x,y){FETCH.node=nodeAt(x,y);const n=G.get(FETCH.node);FETCH.nx=n.x;FETCH.ny=n.y}
+// Ném bóng tới (x,y) toạ độ cảnh. Ném lúc chó đang tha quả cũ thì nó nhả ra, chạy theo quả mới
+function throwBall(x,y){
+ const d=CRIT.dog;if(!d||!G)return;
+ if(!MOTION_OK){Object.assign(FETCH,{st:'hint',t:0,x,y,h:0,spin:0});say(d,'Gâu! 🎾',FETCH_HINT_MS/PET_TICK_MS);fetchDraw();drawCrit();return}
+ if(d.carry||d.mode==='fetch'||d.mode==='bring'||d.mode==='present'){d.carry=false;d.mode='roam';d.path=[];d.wait=DOG_AFTER_PLAY}
+ const dd=Math.hypot(x-FETCH_FROM_X,y-FETCH_FROM_Y);
+ Object.assign(FETCH,{st:'fly',t:0,fx:FETCH_FROM_X,fy:FETCH_FROM_Y,tx:x,ty:y,x:FETCH_FROM_X,y:FETCH_FROM_Y,h:0,spin:0,
+  dur:Math.max(FETCH_FLY_MIN_MS,Math.min(FETCH_FLY_MAX_MS,dd*FETCH_FLY_MS_PER)),arc:Math.max(FETCH_ARC_MIN,Math.min(FETCH_ARC_MAX,dd*FETCH_ARC_K))});
+ fetchAim(x,y);fetchFrame(0)}
+function fetchFrame(dt){
+ const f=FETCH;if(f.st==='idle'||f.st==='carry'||f.st==='wait')return;
+ f.t+=dt;
+ if(f.st==='fly'){const u=Math.min(1,f.t/f.dur);
+  f.x=f.fx+(f.tx-f.fx)*u;f.y=f.fy+(f.ty-f.fy)*u;f.h=f.arc*4*u*(1-u);f.shx=f.x;f.shy=FETCH_GROUND_Y+(f.ty-FETCH_GROUND_Y)*u;
+  if(u>=1){f.st='roll';f.t=0;f.h=0;dogFetchGo()}}
+ else if(f.st==='roll'){const dx=f.nx-f.x,dy=f.ny-f.y,dd=Math.hypot(dx,dy),step=FETCH_ROLL_SPEED*dt,hops=FETCH_HOPS*FETCH_HOP_MS;
+  if(dd<=step){f.x=f.nx;f.y=f.ny}else{f.x+=dx/dd*step;f.y+=dy/dd*step}
+  f.spin+=Math.min(dd,step)*FETCH_SPIN_DEG*(dx<0?-1:1);
+  f.h=f.t<hops?FETCH_HOP_H*Math.abs(Math.sin(Math.PI*f.t/FETCH_HOP_MS))*(1-f.t/hops):0;
+  if(f.t>=hops&&dd<=step)f.st='wait'}
+ else if(f.st==='rest'&&f.t>=FETCH_REST_MS+FETCH_FADE_MS||f.st==='hint'&&f.t>=FETCH_HINT_MS){fetchReset();return}
+ fetchDraw()}
+// Bóng: bóng đổ trên sàn (lúc bay thì ở dưới đường bay), quả bóng nhấc lên h; lúc chó ngậm thì ẩn (dogArt vẽ trong miệng)
+function fetchDraw(){
+ const f=FETCH,show=f.st!=='idle'&&f.st!=='carry';
+ if(!show&&!f.g)return;
+ const g=fetchG();g.setAttribute('visibility',show?'visible':'hidden');if(!show)return;
+ const sx=f.st==='fly'?f.shx:f.x,sy=f.st==='fly'?f.shy:f.y;
+ g.firstChild.setAttribute('transform','translate('+sx.toFixed(1)+','+sy.toFixed(1)+')');
+ g.lastChild.setAttribute('transform','translate('+f.x.toFixed(1)+','+(f.y-f.h).toFixed(1)+') rotate('+f.spin.toFixed(0)+' 0 -2.6)');
+ g.setAttribute('opacity',f.st==='rest'?Math.max(0,Math.min(1,1-(f.t-FETCH_REST_MS)/FETCH_FADE_MS)).toFixed(2):'1')}
+// Thôi chơi bóng: bóng biến mất, chó đang chạy, tha hay ngồi khoe thì đi dạo tiếp
+function fetchReset(){
+ FETCH.st='idle';fetchDraw();
+ const d=CRIT.dog;if(!d)return;
+ d.carry=false;
+ if(d.mode==='fetch'||d.mode==='bring'||d.mode==='present'){d.mode='roam';d.path=[];d.wait=DOG_AFTER_PLAY}}
+// Bóng chạm sàn: chó (cả đang ngủ) chạy tới điểm bóng sẽ lăn tới. Đang ngồi cạnh người ở cây nước thì ra lối trước,
+// dogVisitEnd cho chạy tiếp
+function dogFetchGo(){
+ const d=CRIT.dog;
+ if(d.visit&&d.visit.phase!=='path'){if(d.visit.phase!=='out')dogVisitOut(d);return}
+ d.visit=null;d.mode='fetch';goTo(d,FETCH.node);
+ if(d.pet<=0)say(d,'Gâu!',FETCH_BARK_TICKS)}
+// Các trò của chó; true nếu chó đang chơi (think() bỏ qua đi dạo, ngủ)
+function dogPlay(d,k){
+ if(d.mode==='fetch'){
+  if(d.path.length&&!move(d,k))return true;
+  // tới nơi: bóng nằm yên thì ngậm lấy mang về bàn bạn; bóng còn lăn thì ngồi chờ; bóng đã mất thì thôi
+  if(FETCH.st==='wait'){FETCH.st='carry';fetchDraw();d.carry=true;d.mode='bring';goTo(d,SPOT)}
+  else if(FETCH.st!=='roll'){d.mode='roam';d.wait=DOG_AFTER_PLAY}
+  return true}
+ if(d.mode==='bring'){if(!d.path.length||move(d,k))fetchDrop(d);return true}
+ if(d.mode==='present'){if((d.wait-=k)<=0){d.mode='roam';d.wait=DOG_AFTER_PLAY}return true}
+ if(d.mode==='visit'){dogVisit(d,k);return true}
+ return false}
+// Về tới thảm đỏ dưới bàn bạn: nhả bóng trước mặt, ngồi vẫy đuôi đòi ném tiếp
+function fetchDrop(d){
+ Object.assign(FETCH,{st:'rest',t:0,x:d.x+d.dir*FETCH_DROP_DX,y:d.y,h:0});fetchDraw();
+ d.carry=false;d.mode='present';d.wait=DOG_PRESENT_TICKS;say(d,'Gâu! 🎾',DOG_PRESENT_TICKS)}
+// Bấm sàn trống ở #office: ném bóng. Nhân vật, bàn BẠN, tiêu đề khối, tường không tính; kéo chuột (vuốt ngang, bôi đen chữ),
+// bấm đúp, có phím bổ trợ cũng không: các cú bấm đó giữ nguyên tác dụng cũ
+function officeFloorClick(e){
+ const down=FETCH.down;FETCH.down=null;
+ if(!FUN.on||e.button!==0||e.detail>1||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>FETCH_DRAG_PX)return;
+ if(!(e.target instanceof Element)||e.target.closest('.ag,#owner,.bh'))return;
+ const sel=getSelection();if(sel&&!sel.isCollapsed)return;
+ const m=$('#office').getScreenCTM();if(!m)return;
+ const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(m.inverse());
+ if(p.y<FLOOR_Y||p.x<0||p.x>W)return;
+ throwBall(p.x,p.y)}
+$('#office').addEventListener('pointerdown',e=>{FETCH.down={x:e.clientX,y:e.clientY}});
+$('#office').addEventListener('click',officeFloorClick);
+
+/* ----- chó ghé người rảnh ở cây nước, mèo trèo lên bàn người đang chờ hay lên sofa ----- */
+function petSocial(){
+ if(!funMotion()||!G||!CRIT.dog||Math.random()>PET_SOCIAL_CHANCE)return;
+ if(Math.random()<.5){if(!dogVisitStart())catPerchStart()}
+ else if(!catPerchStart())dogVisitStart()}
+const visitOk=s=>!!s&&s.zone==='cooler'&&s.kind==='idle'&&!FUN.hide.has(s.key)&&arriving(s.id)==null;
+// Người rảnh ở cây nước để chó ghé; ưu tiên người không có ai đứng ngay bên phải (chó ngồi ở đó, đỡ đè lên người bên cạnh)
+function dogVisitPick(){
+ const spots=[...FUN.spots.values()],all=spots.filter(visitOk);
+ const roomy=all.filter(s=>!spots.some(o=>o.zone==='cooler'&&Math.abs(o.x-s.x-COOLER_STEP)<1));
+ return funPick(roomy.length?roomy:all)||null}
+function dogVisitStart(){
+ const d=CRIT.dog;
+ if(!d||d.mode!=='roam'||d.pet>0||FETCH.st!=='idle')return false;
+ const s=dogVisitPick();if(!s)return false;
+ d.mode='visit';d.visit={key:s.key,sx:s.x,phase:'path',t:0};d.free=[];goTo(d,BASE_X0+','+BASE_Y);
+ return true}
+// path: rảo bước theo lối tới đầu lối sát tường; in: ra sàn trên hàng biển tên tới cạnh người; sit: được xoa đầu; out: về lối.
+// Lúc đang tới mà người đó đi chơi, có việc thì đổi sang người rảnh khác (hết người thì thôi); người dịch chỗ thì đi theo
+function dogVisit(d,k){
+ const v=d.visit;let s=FUN.spots.get(v.key);
+ d.spd=v.phase==='path'?DOG_TROT_SPD:DOG_SPD;
+ if(v.phase==='path'||v.phase==='in'){
+  if(!visitOk(s)){s=dogVisitPick();if(s)v.key=s.key}
+  if(!s){if(v.phase==='path')dogVisitEnd(d);else dogVisitOut(d);return}
+  v.sx=s.x;if(v.phase==='in')d.free[d.free.length-1].x=s.x+VISIT_DX}
+ if(v.phase==='path'){if(move(d,k)){v.phase='in';d.free=[{x:BASE_X0,y:VISIT_Y},{x:v.sx+VISIT_DX,y:VISIT_Y}]}return}
+ if(v.phase==='in'){if(moveFree(d,k)){v.phase='sit';v.t=VISIT_SIT_TICKS;d.dir=-1;dogPat(d,s)}return}
+ if(v.phase==='sit'){if(!visitOk(s)||s.x!==v.sx||(v.t-=k)<=0)dogVisitOut(d);return}
+ if(moveFree(d,k))dogVisitEnd(d)}
+// Người ở cây nước xoa đầu chó: tay người đó (không tay áo: tay cầm cốc của người đứng thõng ngay cạnh), tim, một câu
+function dogPat(d,s){
+ d.pose='sit';d.touch='head';petHandOn(d,look(s.id).skin,'',true);petHearts(d,VISIT_HEARTS);
+ funSay(s.x,s.y-FUN_TOP_TALK_DY,funPick(VISIT_LINES),FUN_SAY_MS)}
+function dogVisitOut(d){petHandOff(d);d.touch='';d.visit.phase='out';d.free=[{x:BASE_X0,y:VISIT_Y},{x:BASE_X0,y:BASE_Y}]}
+// Về tới lối: đi dạo tiếp, hay chạy nhặt quả bóng bạn vừa ném lúc nó còn ở cây nước
+function dogVisitEnd(d){
+ d.visit=null;d.free=[];d.mode='roam';d.wait=DOG_AFTER_PLAY;
+ if(FETCH.st==='roll'||FETCH.st==='wait'){d.mode='fetch';goTo(d,FETCH.node)}}
+const perchSeats=()=>FUN_POI.sofa.seats.map(x=>({name:'sofa',x,dy:CAT_SOFA_DY})).concat(FUN_POI.beanbag.seats.map(x=>({name:'beanbag',x,dy:CAT_BEANBAG_DY})));
+// Mèo chọn bàn người đang chờ (không phải Master: bàn Master rộng, hai màn hình) hay chỗ trống trên sofa, ghế lười
+// (chỗ người đi chơi đang ngồi thì thôi; người tới ngồi sau thì mèo nằm trong lòng)
+// Đường lên mặt bàn của người ở chỗ s: mặt bàn bên trái màn hình; vào từ lối dọc gần hơn (XL bên trái, XR trên thảm đỏ),
+// đi dọc mép bàn (không băng qua biển tên); ra theo đường cũ
+function catDeskPlan(s){
+ const px=s.x-CAT_DESK_DX,py=s.y+CAT_DESK_DY,side=px-XL<=XR-px?XL:XR,entry=nodeAt(side,py),e=G.get(entry);
+ return{desk:true,key:s.key,sx:s.x,sy:s.y,entry,inPath:[{x:side,y:py},{x:px,y:py}],outPath:[{x:side,y:py},{x:e.x,y:e.y}]}}
+// Đường lên sofa, ghế lười st ({name,x,dy}): theo lối dưới cùng tới ngay dưới ghế rồi nhảy lên; xuống thì nhảy ngược lại
+function catSeatPlan(st){
+ const laneB=FUN.loungeY+FUN_LOUNGE_DY,entry=nodeAt(st.x,laneB),e=G.get(entry);
+ return{desk:false,seat:st,entry,inPath:[{x:st.x,y:laneB-st.dy,hop:true}],outPath:[{x:e.x,y:e.y,hop:true}]}}
+// Chỉ cần còn chờ: người được quản đốc nhắc (mượn hình một chút) hay vươn vai vẫn ngồi đó
+const perchDeskOk=s=>!!s&&s.zone==='desk'&&s.pose==='wait';
+function catPerchStart(){
+ const c=CRIT.cat;
+ if(!c||c.mode!=='roam'||c.pet>0)return false;
+ const desks=[...FUN.spots.values()].filter(s=>perchDeskOk(s)&&s.role!=='master'&&!FUN.hide.has(s.key));
+ const taken=p=>[...FUN.actors].some(a=>a.seat&&a.seat.name===p.name&&a.seat.x===p.x);
+ const seats=FUN.loungeY?perchSeats().filter(p=>!taken(p)):[];
+ let p=null;
+ if(desks.length&&(!seats.length||Math.random()<CAT_DESK_CHANCE))p=catDeskPlan(funPick(desks));
+ else if(seats.length)p=catSeatPlan(funPick(seats));
+ if(!p)return false;
+ Object.assign(p,{phase:'path',t:0,stay:0,nap:false,talked:false,fast:false});
+ c.mode='perch';c.perch=p;c.free=[];goTo(c,p.entry);
+ return true}
+// path: rảo bước theo lối tới lối dọc / dưới ghế; in: đi dọc mép bàn hay nhảy lên; sit: ngồi (có khi cuộn tròn ngủ); out: về
+// lối. Người trên bàn hết chờ thì mèo thôi; chỗ ngồi dời (thêm, bớt người cùng dãy) lúc đang tới thì đi tới chỗ mới
+function catPerch(c,k){
+ const p=c.perch,s=p.desk?FUN.spots.get(p.key):null,ok=!p.desk||perchDeskOk(s);
+ const moved=p.desk&&ok&&(s.x!==p.sx||s.y!==p.sy);
+ c.spd=p.fast?CAT_FLEE_SPD:p.phase==='path'?CAT_TROT_SPD:p.desk?CAT_DESK_SPD:CAT_HOP_SPD;
+ if(p.phase==='path'){
+  if(!ok){catPerchEnd(c);return}
+  if(moved){const q=catDeskPlan(s);Object.assign(p,q);goTo(c,p.entry)}
+  if(move(c,k)){p.phase='in';c.free=p.inPath.map(q=>({...q}))}
+  return}
+ if(p.phase==='in'){
+  // dời trong cùng hàng: chỉ đổi điểm đến; dời sang hàng khác thì quay ra
+  if(!ok||moved&&s.y!==p.sy){catPerchOut(c,false);return}
+  if(moved){p.sx=s.x;c.free[c.free.length-1].x=s.x-CAT_DESK_DX}
+  if(moveFree(c,k)){p.phase='sit';p.t=0;p.stay=CAT_PERCH_TICKS+Math.random()*CAT_PERCH_VAR;p.nap=Math.random()<CAT_NAP_CHANCE;
+   c.dir=p.desk?1:Math.random()<.5?-1:1;say(c,'Meo~',CAT_MEOW_TICKS)}
+  return}
+ if(p.phase==='sit'){
+  p.t+=k;
+  if(!ok||moved||p.t>=p.stay){catPerchOut(c,false);return}
+  if(p.desk&&catStartled(c)){catPerchOut(c,true);return}
+  if(p.desk&&!p.talked&&p.t>=CAT_TALK_TICKS){p.talked=true;funSay(s.x+PERCH_TALK_DX,s.y-FUN_DESK_TALK_DY,funPick(PERCH_LINES),FUN_SAY_MS)}
+  return}
+ if(moveFree(c,k))catPerchEnd(c)}
+function catPerchOut(c,fast){const p=c.perch;p.phase='out';p.fast=fast;c.free=p.outPath.map(q=>({...q}))}
+function catPerchEnd(c){c.perch=null;c.free=[];c.mode='roam';c.wait=CAT_AFTER_PERCH}
+// Quản đốc quất roi ("TÁCH!" của FM.burst) trúng chỗ mèo ngồi: mèo giật mình nhảy lên rồi chạy khỏi bàn
+function catStartled(c){
+ const b=FM.burst;if(!b)return false;
+ const hit=b.x<c.x+CAT_HALF_W&&c.x-CAT_HALF_W<b.x+b.w&&b.y<c.y&&c.y-CAT_H<b.y+b.h;
+ if(hit){c.jump=12;say(c,'!',12)}
+ return hit}
+// Giữ chỗ lúc bố cục đổi: chó ở ngoài lối gần cây nước (dải trên cùng không bao giờ dời), mèo đang ngồi trên bàn, sofa
+const petKeepsPlace=a=>!!(a.visit&&a.visit.phase!=='path'||a.perch&&a.perch.phase==='sit');
+// Kế hoạch mới cho chỗ mèo trèo sau khi bố cục đổi (bàn, góc nghỉ dời); null nếu người trên bàn đã hết chờ
+function catPerchReplan(p){
+ if(!p.desk)return Object.assign(p,catSeatPlan(p.seat));
+ const s=FUN.spots.get(p.key);return perchDeskOk(s)?Object.assign(p,catDeskPlan(s)):null}
+// setGraph() khi bố cục đổi: các con khác đã về điểm gần nhất trên lối mới và chuyển sang đi dạo. Chó đang trên đường tới
+// cây nước thì tìm đường lại; mèo đang ngồi thì ngồi theo bàn, ghế tới chỗ mới (bàn hết chờ thì xuống lối), đang trên đường
+// tới thì đi lại từ chỗ mới, đang về thì thôi. Bóng đang lăn, nằm chờ thì lăn tới điểm gần nhất của lối mới; chó đang tha
+// bóng thì mang tiếp về bàn bạn
+function petRelayout(){
+ const d=CRIT.dog,c=CRIT.cat;
+ if(d.visit&&d.visit.phase==='path'){d.mode='visit';goTo(d,BASE_X0+','+BASE_Y)}
+ const p=c.perch;
+ if(p){
+  const q=p.phase==='out'?null:catPerchReplan(p);
+  c.free=[];c.hopLift=0;
+  if(!q){c.perch=null;if(p.phase==='sit'){const n=G.get(nodeAt(c.x,c.y));c.x=n.x;c.y=n.y;c.path=[];c.mode='roam';c.wait=10}}
+  else if(q.phase==='sit'){const at=q.inPath[q.inPath.length-1];c.x=at.x;c.y=at.y}
+  else{q.phase='path';c.mode='perch';goTo(c,q.entry)}}
+ if(FETCH.st==='fly')fetchAim(FETCH.tx,FETCH.ty);
+ // chó còn ở cây nước: dogVisitEnd cho chạy nhặt khi về tới lối
+ else if(FETCH.st==='roll'||FETCH.st==='wait'){fetchAim(FETCH.x,FETCH.y);FETCH.st='roll';if(!d.visit){d.mode='fetch';goTo(d,FETCH.node)}}
+ else if(FETCH.st==='carry'){d.mode='bring';goTo(d,SPOT)}}
+
+/* ----- máy bay giấy, máy cà phê bốc khói (lớp #fun) ----- */
+const planeArt=()=>P('M7 0 L-6 -4.6 L-2.4 0 Z','#ffffff',K(.6))+P('M7 0 L-2.4 0 L-5 3.4 Z','#d5dbe6',K(.6));
+function playPlane(){if(funMotion()&&!PLAY.planes.length&&Math.random()<PLANE_CHANCE)planeLaunch()}
+// Hai người cùng dãy bàn, không đang chạy việc (đang gõ thì không rảnh phóng máy bay), không đi vắng
+function planeLaunch(){
+ const ok=s=>s.zone==='desk'&&s.pose!=='ghost'&&s.kind!=='run'&&!FUN.hide.has(s.key)&&arriving(s.id)==null;
+ const desk=[...FUN.spots.values()].filter(ok),pairs=[];
+ desk.forEach(a=>desk.forEach(b=>{if(a.id!==b.id&&a.dir===b.dir&&Math.abs(a.x-b.x)>=PLANE_MIN_DX)pairs.push([a,b])}));
+ const pr=funPick(pairs);if(!pr)return false;
+ const [a,b]=pr,ay=a.y+PLANE_HEAD_DY,by=b.y+PLANE_HEAD_DY;
+ const g=document.createElementNS(SVGNS,'g');g.innerHTML=planeArt();$('#funFly').appendChild(g);
+ const p={g,ax:a.x,ay,bx:b.x,by,cx:(a.x+b.x)/2,cy:Math.min(ay,by)-PLANE_ARC,t:0,to:b.key,
+  dur:Math.max(PLANE_MIN_MS,Math.min(PLANE_MAX_MS,Math.hypot(b.x-a.x,by-ay)*PLANE_MS_PER))};
+ PLAY.planes.push(p);planeMove(p,0);
+ funSay(a.x,a.y-FUN_DESK_TALK_DY,'Ê! ✈️',FUN_SAY_MS);
+ return true}
+function planeMove(p,dt){
+ p.t+=dt;const u=Math.min(1,p.t/p.dur),v=1-u;
+ const x=v*v*p.ax+2*v*u*p.cx+u*u*p.bx,y=v*v*p.ay+2*v*u*p.cy+u*u*p.by,tx=2*v*(p.cx-p.ax)+2*u*(p.bx-p.cx),ty=2*v*(p.cy-p.ay)+2*u*(p.by-p.cy);
+ // bay sang trái thì lật dọc để cánh trắng vẫn ở trên
+ p.g.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+(Math.atan2(ty,tx)*180/Math.PI).toFixed(0)+')'+(tx<0?' scale(1,-1)':''));
+ if(u<1)return;
+ p.g.remove();PLAY.planes=PLAY.planes.filter(q=>q!==p);
+ const w=funSpotTalk(p.to,FUN_DESK_TALK_DY)();if(w)funSay(w.x,w.y,funPick(PLANE_LINES),FUN_SAY_MS)}
+function steamFrame(){
+ const busy=[...FUN.actors].some(a=>a.kind==='trip'&&a.staying&&a.seat&&a.seat.name==='coffee');
+ if(busy===!!PLAY.steam)return;
+ if(!busy){PLAY.steam.remove();PLAY.steam=null;return}
+ // dùng lại hoạt hình .steam của cốc trên bàn (CSS chỉ chạy khi máy không đặt giảm chuyển động)
+ const g=document.createElementNS(SVGNS,'g');g.setAttribute('class','steam');
+ g.innerHTML=RR(COFFEE_STEAM_X-2.5,COFFEE_STEAM_Y,1.4,6,.7,'rgba(255,255,255,.85)')+RR(COFFEE_STEAM_X+1,COFFEE_STEAM_Y-3,1.4,6,.7,'rgba(255,255,255,.7)');
+ $('#funDeco').appendChild(g);PLAY.steam=g}
+function playFrame(dt){PLAY.planes.slice().forEach(p=>planeMove(p,dt));steamFrame()}
+// Tắt nút "Hoạt hình vui": bỏ ngay máy bay, khói, tay, tim, bóng; chó mèo đang ở ngoài lối thì về lối theo đường cũ
+// (không biến mất giữa chừng: chúng vẫn ở đó khi tắt nút)
+function playClear(){
+ PLAY.planes.forEach(p=>p.g.remove());PLAY.planes=[];
+ if(PLAY.steam){PLAY.steam.remove();PLAY.steam=null}
+ if(!CRIT.dog)return;
+ Object.values(CRIT).forEach(a=>{a.pet=0;a.roll=false;a.hearts=0;petHandOff(a)});
+ petLayer('over').replaceChildren();
+ fetchReset();
+ const d=CRIT.dog,c=CRIT.cat;
+ if(d.visit&&d.visit.phase==='path')dogVisitEnd(d);
+ else if(d.visit&&d.visit.phase!=='out')dogVisitOut(d);
+ if(c.perch&&c.perch.phase==='path')catPerchEnd(c);
+ else if(c.perch&&c.perch.phase!=='out')catPerchOut(c,false)}
+funAddon({frame:playFrame,clear:playClear});
+funEvery(PET_SOCIAL_EVERY_MS,petSocial);
+funEvery(PLANE_EVERY_MS,playPlane);
 
 /* ---------- các khu HTML ---------- */
 function renderBadges(){
@@ -1226,7 +2274,7 @@ function banner(){
  // Chỗ có vấn đề trước (không ai đánh thức được, rồi chờ đánh thức), agent đang chạy sau cùng
  const rank=a=>!a?0:a.running?2:1;
  const lines=Object.keys(by).map(id=>{const a=S.agents.find(z=>z.id===id);
-  const how=!a?'không có trong agents.txt, không ai đánh thức được':a.running?'đang làm':a.mode==='subagent'?'chờ Master gọi':(MODE_WAIT[a.mode]||'chờ đánh thức').toLowerCase();
+  const how=!a?'không có trong agents.txt, không ai đánh thức được':a.running?'đang làm':a.mode==='subagent'?'chờ Master gọi':((Object.hasOwn(MODE_WAIT,a.mode)&&MODE_WAIT[a.mode])||'chờ đánh thức').toLowerCase();
   return{r:rank(a),t:'Lượt của '+id+' ('+how+'): '+by[id].join(', ')}}).sort((p,q)=>p.r-q.r);
  lines.slice(0,MAX_TURN_LINES).forEach(x=>b.append(el('p','small',x.t)));
  if(lines.length>MAX_TURN_LINES){const d=el('details','small');d.open=OPEN.get('banner:turns')===true;
@@ -1263,7 +2311,7 @@ function showDetail(){
   const close=el('button',null,'Đóng');close.setAttribute('aria-label','Đóng chi tiết');close.onclick=closeDetail;
   const h=el('h2',null,openId);h.id='detailTitle';h.tabIndex=-1;d.append(close,h);
   if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
-  d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',a.nowWait?'act':null,runLine(a)));
+  d.append(el('p',null,a.role+' · '+((Object.hasOwn(MODE_NAME,a.mode)&&MODE_NAME[a.mode])||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',a.nowWait?'act':null,runLine(a)));
   d.append(el('h2',null,'File đang chờ'));
   if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
   if(a.hist&&a.hist.length){d.append(el('h2',null,'Các lần chạy gần đây'));const ul=el('ul');
