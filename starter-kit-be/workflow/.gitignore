@@ -1,0 +1,7 @@
+# Do watch.sh sinh ra, không đưa lên git
+.run/
+logs/
+STATUS.md
+.merging
+# Token Telegram (xem notify.sh), không bao giờ đưa lên git
+.env
