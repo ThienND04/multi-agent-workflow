@@ -79,7 +79,7 @@ function demoSetup() {
   const scene = step => {
     clear();
     put('agents.txt', [
-      'master-01 master manual phiên chat chính', 'master-02 master manual phiên chat song song',
+      'master-01 master manual phiên chat chính', 'master-02 master manual phiên chat song song', 'master-03 master manual phiên chat thứ ba',
       'coder-01 coder subagent coder', 'coder-02 coder subagent coder', 'coder-03 coder auto claude -p --model sonnet',
       'coder-04 coder subagent coder-pro', 'coder-05 coder subagent coder',
       'tester-01 tester subagent tester', 'tester-02 tester window agy -i', 'tester-03 tester manual Antigravity'].join('\n') + '\n');
@@ -117,6 +117,8 @@ function demoSetup() {
     put(f4 + '/bugs/B-01.md', doc({ id: 'B-01', title: 'Thiếu tiêu đề', task: 'T-03', from: 'tester-02', to: 'coder-04', status: 'open', kind: 'bug' }));
     put('.run/tester-01.sub', 'F-104 T-02\n');
     put('.run/master-02.now', step === 2 ? 'Đang trả lời câu hỏi D-01 (F-104)\n' : 'Chờ bạn: nghiệm thu F-102\n');
+    // master-03: làn trực tiếp, không có file nào trong workflow/, chỉ có dòng .now; cảnh 4: chờ bạn xem lại
+    put('.run/master-03.now', step === 4 ? 'Chờ bạn: xem lại nút Lưu\n' : 'Sửa nút Lưu ở trang hồ sơ (làn trực tiếp)\n');
     // cảnh 1: coder-05 được giao việc ở F-101, đi từ cây nước vào bàn
     if (step === 1 || step === 2) { task(f1, 'T-05', 'Ghi log đăng nhập', 'in_progress', 'coder-05', 'coder-05', 'tester-01'); put('.run/coder-05.sub', 'F-101 T-05\n'); }
   };
@@ -222,7 +224,7 @@ function state() {
     // Các tính năng agent đang chạy cho; rỗng là không biết (hiện "đang chạy" ở mọi dãy bàn như cũ)
     a.runIn = [...new Set(((a.sub || a.job).match(/F-\d+/g) || []))];
     const m = masters.find(x => x.id === a.id);
-    a.now = m ? m.text : ''; a.nowWait = !!(m && m.waitOwner);
+    a.now = m ? m.text : ''; a.nowWait = !!(m && m.waitOwner); a.nowAt = m ? m.at : 0;
     // Lịch sử các lần Master gọi subagent: .run/<id>.hist, mỗi dòng "<bắt đầu> <xong> <F-NNN> <T-xx> <kết quả>"
     a.hist = read(path.join(W, '.run', a.id + '.hist')).split(/\r?\n/).filter(l => l.trim()).slice(-6).reverse()
       .map(l => { const p = l.trim().split(/\s+/); return { start: p[0] || '', end: p[1] || '', what: p.slice(2).join(' ') }; });
@@ -321,6 +323,7 @@ server.listen(port, '127.0.0.1', () => {
 const PAGE = String.raw`<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Văn phòng agent</title>
+<link rel="icon" href="data:,">
 <style>
 :root{--bg:#e9e1d0;--paper:#fbf4e4;--ink:#3b2a20;--fg:#2d241d;--fg2:#6b5c4e;--line:#cdbfa6;--accent:#2f63c4;
 --run:#1f7a4d;--runbg:#dff3e6;--wait:#9a5a00;--waitbg:#fdf0d2;--bad:#b23030;--badbg:#fbe3e0}
@@ -333,11 +336,13 @@ main{max-width:1200px;margin:0 auto}
 header.pix{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 h1{font:700 19px ui-monospace,Consolas,monospace;margin:0;letter-spacing:.02em}
 h2{font:700 12.5px ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--fg2);margin:0 0 8px}
-.sp{flex:1}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
 .badge{font:700 12px ui-monospace,Consolas,monospace;padding:3px 8px;border:2px solid var(--ink);background:var(--paper);white-space:nowrap}
 .badge.warn{background:var(--waitbg);color:var(--wait)}.badge.off{background:var(--badbg);color:var(--bad)}
-.banner{font:700 18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer}
-.banner.owner{background:var(--badbg);color:var(--bad);border-color:var(--bad);box-shadow:4px 4px 0 var(--bad);font-size:20px}
+.stale main>section,.stale #detail{filter:grayscale(.8);opacity:.6}
+.banner{font:700 18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.banner.owner{background:var(--badbg);color:var(--bad);border-color:var(--bad);box-shadow:4px 4px 0 var(--bad);font-size:20px;cursor:pointer}
+.banner details{margin:2px 0}.banner summary{font-size:14px}
 .banner.flow{background:var(--runbg);color:var(--run);border-color:var(--run);box-shadow:4px 4px 0 var(--run)}
 .banner p{margin:2px 0}.banner .small{font-size:14px;font-weight:600}.banner .alert{color:var(--bad);font-size:15px}
 .need.on{background:var(--waitbg);border-color:var(--wait);box-shadow:4px 4px 0 var(--wait)}
@@ -347,15 +352,22 @@ h2{font:700 12.5px ui-monospace,Consolas,monospace;text-transform:uppercase;lett
 .ask p{margin:2px 0}.ask .say code{background:var(--paper);border:1px solid var(--line);padding:1px 6px;font-size:14px}
 .ask details{margin-top:6px}.ask pre{white-space:pre-wrap;font:13px/1.5 ui-monospace,Consolas,monospace;background:var(--paper);border:1px solid var(--line);padding:8px 10px;margin:4px 0 0;max-height:360px;overflow:auto}
 .muted{color:var(--fg2);font-size:13px;margin:0}
+#needBox:focus{outline:none}
 .scene{padding:6px;background:#2a211b}
+/* Văn phòng không co nhỏ hơn 900px (chữ trong cảnh còn đọc được): màn hẹp thì vuốt ngang trong khung này.
+   Ba lớp cùng min-width nên người đi bộ, chó mèo vẫn nằm đúng chỗ trên cảnh */
+.sceneScroll{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#office,#walk,#pets{min-width:900px}
 #office{display:block;width:100%;height:auto}
-.scene{position:relative}
-#walk,#pets{position:absolute;left:6px;top:6px;width:calc(100% - 12px);height:auto;pointer-events:none}
-#pets .crit{pointer-events:auto;cursor:pointer}#pets text{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+#walk,#pets{position:absolute;left:0;top:0;width:100%;height:auto;pointer-events:none}
+.swipe{display:none;color:#e9dcc6;font-size:12px;padding:0 4px 4px;margin:0}
+@media (max-width:949px){.swipe{display:block}}
+#pets .crit{pointer-events:auto;cursor:pointer}#pets.dim,#walk.dim{filter:brightness(.62)}#pets text{font-family:ui-monospace,Consolas,monospace;font-weight:700}
 #office text{font-family:ui-monospace,Consolas,monospace;font-weight:700}
 #office .ag{cursor:pointer}
 #office .ag:focus{outline:none}
-#office .ag .sel{display:none}#office .ag.on .sel,#office .ag:focus-visible .sel,#office .ag:hover .sel{display:inline}
+/* opacity thay cho display:none: khung chọn vẫn nhận chạm, nên cả khung là vùng bấm của nhân vật */
+#office .ag .sel{opacity:0}#office .ag.on .sel,#office .ag:focus-visible .sel,#office .ag:hover .sel{opacity:1}
 #office .sit .armR,#office .sit .armL,#office .conf rect,#office .eyes{transform-box:fill-box}
 @media (prefers-reduced-motion:no-preference){
  .sit.type .armL{animation:tp .32s steps(2) infinite}.sit.type .armR{animation:tp .32s steps(2) infinite .16s}@keyframes tp{50%{transform:translateY(-2px)}}
@@ -383,44 +395,88 @@ table{border-collapse:collapse;width:100%;font-size:13px;margin-top:4px}
 td{padding:3px 6px;border-top:1px dashed var(--line);vertical-align:top}
 td:last-child{white-space:nowrap}
 .sq{display:inline-block;width:10px;height:10px;border:1px solid var(--ink);margin-right:6px;vertical-align:-1px}
-#detail{position:fixed;right:16px;bottom:16px;width:min(460px,calc(100% - 32px));max-height:70vh;overflow:auto;display:none;z-index:5}
+#detail{position:fixed;right:16px;bottom:16px;width:min(460px,calc(100% - 32px));max-height:min(70vh,calc(100vh - 32px));overflow:auto;display:none;z-index:5}
 #detail pre{white-space:pre-wrap;font-size:12px;background:var(--bg);border:1px solid var(--line);padding:8px;max-height:280px;overflow:auto}
-#detail button{float:right;font:inherit;font-size:13px;border:2px solid var(--ink);background:var(--paper);color:var(--fg);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+#detail button{float:right;font:inherit;font-size:13px;padding:6px 12px;min-height:36px;border:2px solid var(--ink);background:var(--paper);color:var(--fg);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+#detail h2:focus{outline:none}
+@media (max-width:600px){
+ #detail{left:8px;right:8px;bottom:8px;width:auto;max-height:45vh}
+ .banner{font-size:16px}.banner.owner{font-size:17px}.banner .small{font-size:13px}
+}
 </style></head>
 <body><main>
-<header class="pix"><h1 id="proj">VĂN PHÒNG AGENT</h1><span class="sp"></span>
-<span class="badge" id="bFeat"></span><span class="badge" id="bRun"></span><span class="badge warn" id="bNeed"></span><span class="badge" id="bWatch"></span><span class="badge" id="bConn">…</span></header>
-<section class="pix banner" id="banner" hidden tabindex="0" role="button"></section>
+<header class="pix"><h1 id="proj">VĂN PHÒNG AGENT</h1>
+<div class="badges"><span class="badge" id="bFeat"></span><span class="badge" id="bRun"></span><span class="badge" id="bNeed"></span><span class="badge" id="bWatch"></span><span class="badge" id="bConn">…</span></div></header>
+<section class="pix banner" id="banner" hidden></section>
 <section class="pix need" id="needBox"><h2>Cần bạn</h2><div id="need"></div></section>
 <section class="pix scene" aria-label="Văn phòng: mỗi tính năng một dãy bàn">
-<svg id="office" role="img" aria-label="Văn phòng agent"></svg>
+<p class="swipe">Vuốt ngang để xem cả văn phòng →</p>
+<div class="sceneScroll">
+<svg id="office" role="group" aria-label="Văn phòng agent"></svg>
 <svg id="walk" aria-hidden="true"></svg>
 <svg id="pets" aria-hidden="true"></svg>
+</div>
 <div class="legend" id="legend"></div>
 </section>
 <section class="pix"><h2>File của từng tính năng</h2><div id="files"></div></section>
 <p class="muted">Trang chỉ đọc, tự làm mới 3 giây một lần. Bấm vào nhân vật để xem chi tiết. Trả lời và duyệt: nói với Master.</p>
 </main>
-<section class="pix" id="detail" aria-live="polite"></section>
+<section class="pix" id="detail" role="region" aria-labelledby="detailTitle"></section>
 <script>
 const COLORS=['#2f6fe0','#1f9a6e','#e07a1f','#8b4fd0','#d8457f','#0f8f9f','#a0782a'];
 const HAIR=['#3b2a20','#7a4a22','#c9a24a','#2d2d3a','#a33a2a','#5a3a2a','#1f1a17','#6b3d1e'];
 const $=s=>document.querySelector(s);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let S=null,openId=null;const OPEN=new Map();
+// openKey: chỗ ngồi (data-k) của nhân vật vừa bấm; một agent có thể ngồi ở nhiều dãy bàn, đóng chi tiết thì trả tiêu điểm đúng chỗ đó
+let S=null,openId=null,openKey=null;const OPEN=new Map();
+// Màu theo thứ tự các tính năng còn trong văn phòng (không trùng màu khi ≤ 7 tính năng mở); đã giao chờ merge xanh nhạt,
+// xong màu xám. Dùng chung cho dãy bàn, bảng trắng và danh sách file để ba chỗ cùng một màu
+const DONE_COLOR='#b9b0a3',DELIVERED_COLOR='#7f9cc2';let FEAT_COLOR=new Map();
+function paintFeatures(){FEAT_COLOR=new Map();let k=0;
+ S.features.forEach(f=>FEAT_COLOR.set(f.dir,f.status==='done'?DONE_COLOR:f.status==='delivered'?DELIVERED_COLOR:COLORS[k++%COLORS.length]))}
+// Việc chờ chủ dự án. Master ghi "Chờ bạn: … F-102" đúng lúc đặt file của F-102 sang to: owner,
+// nên dòng .now nói về tính năng đã có file chờ bạn thì không đếm thêm lần nữa (dup), chỉ hiện để biết
+function ownerWaits(){
+ const fs=new Set(S.owner.map(o=>o.feature)),mw=(S.masters||[]).filter(m=>m.waitOwner);
+ const covered=m=>{const ids=m.text.match(/F-\d+/g)||[];return ids.length>0&&ids.every(id=>fs.has(id))};
+ const extra=mw.filter(m=>!covered(m));
+ return{extra,dup:mw.filter(covered),total:S.owner.length+extra.length};
+}
+// Giờ kiểu Việt Nam 24 giờ, không phụ thuộc ngôn ngữ trình duyệt
+const hm=t=>new Date(t).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',hour12:false});
+const hms=t=>new Date(t).toLocaleTimeString('vi-VN',{hour12:false});
+// Giờ nếu là hôm nay, ngày/tháng nếu khác ngày: chỉ ghi giờ thì dòng cũ từ hôm trước trông như việc mới bắt đầu hôm nay
+const whenOf=t=>{const d=new Date(t);return d.toDateString()===new Date().toDateString()?hm(t):String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')};
+// Dòng .now không đổi lâu hơn ngần này: phiên Master có thể đã đóng mà chưa xoá dòng
+const STALE_NOW_MS=2*3600e3;
+// Tới mục Cần bạn: cuộn tới và đưa cả tiêu điểm vào đó, để Tab tiếp theo đi vào các mục cần bạn chứ không quay về văn phòng
+const toNeed=()=>{const nb=$('#needBox');if(nb.hidden)return;nb.scrollIntoView({behavior:MOTION_OK?'smooth':'auto',block:'start'});nb.tabIndex=-1;nb.focus({preventScroll:true})};
+const onActivate=fn=>e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}};
+// Trang làm mới 3 giây một lần: chỉ dựng lại khu HTML khi dữ liệu của nó đổi, và không dựng lại khi bạn đang bôi đen
+// chữ trong đó (để chép được lệnh, hướng dẫn); giữ vị trí cuộn của các khung có thanh cuộn.
+// Chỉ giữ chỗ bôi đen trong SEL_HOLD_MS kể từ lần đổi cuối: quên bỏ bôi đen thì khu đó không đứng yên mãi, lệch với huy hiệu
+const SEL_HOLD_MS=15000;
+let KEY_NEED='',KEY_FILES='',KEY_DETAIL='',selAt=0;
+document.addEventListener('selectionchange',()=>{selAt=Date.now()});
+const selIn=n=>{const s=getSelection();return !!(s&&!s.isCollapsed&&s.rangeCount&&n.contains(s.getRangeAt(0).commonAncestorContainer))&&Date.now()-selAt<SEL_HOLD_MS};
+const keepScroll=(box,fn)=>{const ps=[...box.querySelectorAll('pre')].map(p=>p.scrollTop),top=box.scrollTop;fn();box.querySelectorAll('pre').forEach((p,i)=>{if(ps[i])p.scrollTop=ps[i]});box.scrollTop=top};
 const MODE_NAME={auto:'chạy ngầm tự động',window:'tự mở cửa sổ',manual:'đánh thức tay',subagent:'subagent, Master tự gọi'};
 const MODE_WAIT={auto:'Có việc, chờ watch.sh đánh thức',window:'Có việc, chờ watch.sh mở cửa sổ',manual:'Có việc, cần mở phiên tay',subagent:'Có việc, chờ Master gọi'};
-const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',delivered:'đã giao, chờ merge',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
+const ST={draft:'chờ bạn duyệt',review:'đang khảo sát',reviewed:'đã khảo sát',blocked:'đang chờ',in_dev:'đang làm',ready:'sẵn sàng làm',in_test:'đang kiểm tra',verified:'kiểm tra đạt',reopened:'phải sửa lại',acceptance:'chờ bạn nghiệm thu',delivered:'đã giao, chờ merge',done:'xong',open:'đang mở',answered:'đã trả lời',closed:'đã đóng',fixed:'đã sửa'};
 const stVi=x=>ST[x]||x||'?';
-// Vì sao dãy bàn không có Tester: ghi theo làn của tính năng
-const LANE_NOTE={quick:'làn nhanh: Master tự kiểm, không có Tester'};
+// Vì sao dãy bàn không có Tester: ghi theo làn của tính năng. chip: nhãn ngắn trên tiêu đề khối (vừa cả khối gọn nửa hàng),
+// full: câu đầy đủ ở <title> (rê chuột) và aria-label (trình đọc màn hình)
+const LANE_NOTE={quick:{chip:'làn nhanh',full:'Làn nhanh: Master tự kiểm, không có Tester'}};
+// Dòng .now ở khối phiên chat: tiêu đề khối "Làm trực tiếp" đã nói điều đó nên bỏ cụm "làn trực tiếp", đỡ tốn chỗ trên nhãn trạng thái
+const directNow=t=>t.replace(/\(?\s*làn trực tiếp\s*\)?\s*[:,]?/ig,' ').replace(/\s+/g,' ').trim()||t;
 // Nhãn trạng thái của tính năng / file: draft chỉ là "chờ bạn duyệt" khi to: owner; còn lại Master đang làm rõ
 const stOf=o=>o.status==='draft'&&o.to!=='owner'?'đang làm rõ':stVi(o.status);
 // Chủ dự án cần làm gì với một file to: owner
 function ownerAction(o){
  if(o.kind==='spec'&&o.status==='acceptance')return{act:'Đã làm xong, chờ bạn nghiệm thu',how:'Thử theo hướng dẫn bên dưới. Ổn thì nói với Master câu này; chưa ổn thì nói rõ chỗ chưa đạt.',say:'đạt'};
  if(o.kind==='spec')return{act:'Tài liệu chờ bạn duyệt',how:'Đọc file workflow/'+o.path+'. Ổn thì nói với Master câu này; chưa ổn thì nói chỗ cần sửa.',say:'duyệt'};
+ if(o.kind==='tasks'&&o.status==='verified')return{act:'Việc kiểm tra đạt, chờ bạn duyệt',how:'Thử theo hướng dẫn ở báo cáo của Master. Ổn thì nói với Master câu này; chưa ổn thì nói rõ chỗ chưa đạt.',say:'đạt'};
  if(o.kind==='questions')return{act:'Câu hỏi chờ bạn trả lời',how:'Master sẽ hỏi bạn trong phiên chat. Nếu Master chưa hỏi, nói với Master câu này.',say:'Xử lý việc đang chờ'};
  return{act:'Cần bạn xem',how:'Mở file workflow/'+o.path+' rồi trao đổi với Master.',say:''};
 }
@@ -647,22 +703,28 @@ function bubble(cx,y,txt,kind){
   +'<path d="M'+(cx-2.5)+' '+(y+12.3)+' l2.5 4 l2.5 -4" fill="'+col[0]+'" stroke="'+OL+'" stroke-width="1.3" stroke-linejoin="round"/>'
   +T(cx,y+9.6,8.5,col[1],txt)+'</g>'}
 // Biển tên: tên và trạng thái ngắn, cắt chữ cho vừa maxW để không đè lên biển bên cạnh
+const LBL_NAME=8,LBL_SHORT=7,LBL_H=20; // cỡ chữ dòng tên, dòng trạng thái; chiều cao biển
 function label(cx,y,name,short,kind,maxW){
  const c={run:'#8ff0b8',wait:'#ffd27a',idle:'#ddd3c5',bad:'#ff9c9c'}[kind];maxW=maxW||90;
- const n=cut(name,Math.floor((maxW-8)/(7*CW))),sh=cut(short,Math.floor((maxW-8)/(6*CW)));
- const w=Math.min(maxW,Math.max(n.length*7*CW,sh.length*6*CW)+10);
- return '<g class="lbl"><rect x="'+(cx-w/2)+'" y="'+y+'" width="'+w+'" height="18" rx="3.5" fill="rgba(43,33,27,.84)"/>'+T(cx,y+8,7,'#fff6e6',n)+T(cx,y+15.5,6,c,sh)+'</g>'}
+ const n=cut(name,Math.floor((maxW-8)/(LBL_NAME*CW))),sh=cut(short,Math.floor((maxW-8)/(LBL_SHORT*CW)));
+ const w=Math.min(maxW,Math.max(n.length*LBL_NAME*CW,sh.length*LBL_SHORT*CW)+10);
+ return '<g class="lbl"><rect x="'+(cx-w/2)+'" y="'+y+'" width="'+w+'" height="'+LBL_H+'" rx="3.5" fill="rgba(43,33,27,.84)"/>'+T(cx,y+8.5,LBL_NAME,'#fff6e6',n)+T(cx,y+17,LBL_SHORT,c,sh)+'</g>'}
 function selBox(x,y,w,h){return '<rect class="sel" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="rgba(255,224,102,.12)" stroke="#ffe066" stroke-width="2"/>'}
 // Trạng thái ngắn ghi dưới bàn
-function shortOf(a,st,asking){
+// fid: mã tính năng của dãy bàn; tiêu đề dãy đã ghi mã này nên bỏ khỏi dòng .now để còn chỗ cho chữ có ích.
+// Bỏ cả chữ "Đang" đầu dòng: bong bóng "…" và tay gõ phím đã nói Master đang làm, biển Master chỉ chứa ~23 ký tự
+function shortOf(a,st,asking,fid){
  if(st.kind==='bad')return 'chưa khai báo';
  if(asking)return 'đang hỏi Master';
- if(a&&a.now&&st.label===a.now)return cut(a.now,26);
+ if(a&&a.now&&st.label===a.now)return cut(((fid?a.now.split(fid).join('').replace(/\(\s*\)/g,'').replace(/\s+/g,' ').trim():'')||a.now).replace(/^Đang\s+/i,''),30);
  if(st.txt==='!')return 'chờ bạn';
- if(st.kind==='run')return st.label.indexOf('Master đang gọi')===0?'đang làm (Master gọi)':'đang làm';
+ if(st.kind==='run')return st.label.indexOf('Master đang gọi')===0?'Master gọi, đang làm':'đang làm';
  if(st.kind==='wait')return 'có '+st.txt+' việc chờ';
- if(/^Đang chạy ở/.test(st.label))return 'đang ở '+((st.label.match(/F-\d+/)||[''])[0]);
- if(a&&a.hist&&a.hist.length){const h=a.hist[0],m=(h.end||'').match(/T(\d\d:\d\d)/);if(m)return 'rảnh · lần cuối '+m[1]}
+ if(/^(Đang chạy ở|Đang ở)/.test(st.label))return 'đang ở '+((st.label.match(/F-\d+/)||[''])[0]);
+ if(/^Có việc ở/.test(st.label))return 'có việc ở '+((st.label.match(/F-\d+/)||[''])[0]);
+ // Lần Master gọi gần nhất đã xong: rảnh từ giờ đó; khác ngày thì ghi ngày (biển tên hẹp, chữ ngắn mới đọc hết)
+ if(a&&a.hist&&a.hist.length){const m=(a.hist[0].end||'').match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d)/);
+  if(m){const d=new Date(),today=+m[1]===d.getFullYear()&&+m[2]===d.getMonth()+1&&+m[3]===d.getDate();return 'rảnh từ '+(today?m[4]:m[3]+'/'+m[2])}}
  return 'rảnh';
 }
 function confetti(cx,y,elapsed){let s='<g class="conf">';const c=['#d64545','#f2c14e','#3f8f4a','#2f6fe0','#8b4fd0'];
@@ -682,6 +744,11 @@ function stateOf(a,dir){
  // Dòng .now của Master: có mã F-NNN thì chỉ hiện ở dãy bàn tính năng đó, không có mã thì hiện ở mọi dãy của Master
  if(a.now&&inF(a.now.match(/F-\d+/g)||[]))return a.nowWait?{kind:'wait',txt:'!',label:a.now,on:true}:{kind:'run',txt:'…',label:a.now,on:true};
  if(here)return{kind:'wait',txt:String(here),label:MODE_WAIT[a.mode]||'Có việc, cần mở phiên tay',on:true};
+ // Bận ở tính năng khác (.now của Master, hay file chờ ở dãy khác): đừng ghi "Rảnh" kẻo bạn tưởng agent đang rảnh
+ const nowIn=(a.now&&a.now.match(/F-\d+/g))||[];
+ if(nowIn.length)return{kind:'idle',txt:'z',label:'Đang ở '+[...new Set(nowIn)].join(', ')+': '+a.now,on:false};
+ const waitIn=[...new Set(a.pending.map(p=>(p.match(/F-\d+/)||[''])[0]).filter(Boolean))];
+ if(waitIn.length)return{kind:'idle',txt:'z',label:'Có việc ở '+waitIn.join(', '),on:false};
  return{kind:'idle',txt:'z',label:'Rảnh',on:false};
 }
 
@@ -690,8 +757,25 @@ const CW=0.6; // độ rộng một ký tự monospace so với cỡ chữ
 const cut=(t,n)=>t.length>n?t.slice(0,Math.max(1,n-1))+'…':t;
 // Khung rộng W. Tường cao tới FLOOR_Y. Các dãy bàn từ LX tới BR, cách nhau GAP (lối đi cho thú cưng).
 // Lối đi thảm đỏ từ AX, rộng AW, chính giữa là bàn của bạn. TOP: dãy bàn đầu tiên. Dưới cùng là góc nghỉ.
-const W=720, FLOOR_Y=118, LX=24, BR=640, AX=652, AW=48, OWNER_X=AX+AW/2, COL0=LX+124, STEP=98, PER_ROW=5, ROW_H=130, HEAD=30, TOP=192, GAP=24;
-const BED_X=200, HOLE_X=284;
+// TOP: dãy bàn đầu tiên; lối chó mèo phía trên nó, q4(TOP-12)=204, nằm dưới hàng biển tên thứ ba ở cây nước (y 162-182),
+// để con vật (lớp #pets nằm trên cảnh) không che tên và không chặn cú bấm vào agent ở cây nước
+const W=720, FLOOR_Y=118, LX=24, BR=640, AX=652, AW=48, OWNER_X=AX+AW/2, COL0=LX+124, STEP=98, PER_ROW=5, ROW_H=130, HEAD=30, TOP=216, GAP=24;
+// HOLE_X: lỗ chuột ở chân tường, giữa cửa và bảng trắng, trên lối sát tường (lối này bắt đầu sau cây nước, xem BASE_X0)
+const BED_X=200, HOLE_X=360;
+// Khối gọn: tính năng có tối đa COMPACT_SEATS chỗ (Master và 1-2 người: làn nhanh, đang làm rõ, làm trực tiếp) chỉ rộng
+// nửa hàng, hai khối gọn chung một hàng, để vài việc nhỏ không mỗi việc chiếm cả một dãy bàn trống, đẩy dãy khác xuống dưới.
+// HALF_W đủ chỗ cho bàn Master, hai bàn và biển tên của bàn cuối: SEAT_DX + STEP + 72/2 + DESK_LBL_W/2 = 306
+const COMPACT_SEATS=3, MID_GAP=4, HALF_W=(BR-LX-MID_GAP)/2, SEAT_DX=COL0-LX;
+// Khối phiên chat (Master không cầm tính năng nào đang mở) không phải tính năng nào: màu trung tính, không lấy màu của bảng màu tính năng
+const DIRECT_COLOR='#6f7f94';
+// Biển tên rộng tối đa bằng khoảng cách tâm hai bàn kề nhau trừ 2, để không đè biển bên cạnh.
+// Bàn Master (rộng 100) cách bàn đầu tiên 102 đơn vị: biển Master rộng tới 2*102 - DESK_LBL_W
+const DESK_LBL_W=STEP-2, MASTER_LBL_W=108;
+// Cây nước: tối đa COOLER_MAX người đứng cách nhau COOLER_STEP; biển tên so le COOLER_ROWS hàng để mỗi biển rộng hơn
+const COOLER_X=162, COOLER_STEP=28, COOLER_ROWS=3, COOLER_MAX=5;
+// Sàn trống dưới bảng trắng, giữa lối chó mèo sát chân tường và lối trên dãy bàn đầu: nhãn pháo giấy, dưới nó là
+// bong bóng "watch.sh ngừng bất thường" (hai cái hiện cùng lúc cũng không chồng nhau, không che người hay cửa)
+const NOTE_X=436, PARTY_Y=127, DEAD_Y=147;
 const NIGHT=!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
 const MOTION_OK=!window.matchMedia||!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Nhớ chỗ của từng agent ở lần vẽ trước: đổi chỗ (cây nước ↔ bàn) thì cho đi bộ; tính năng vừa xong thì bắn pháo giấy
@@ -699,15 +783,22 @@ const PREV_PLACE=new Map(),PREV_STATUS=new Map(),ARRIVE=new Map();let PARTY=[];
 const WALK_MS=1400;
 // Agent vừa đi bộ tới chỗ mới: ẩn ở chỗ mới cho tới khi người đi bộ tới nơi (kể cả qua các lần làm mới 3 giây)
 const arriving=id=>{const t=ARRIVE.get(id);if(!t)return null;const e=Date.now()-t;return e<WALK_MS+50?e:null};
-const agG=(id,label,inner)=>{const e=arriving(id);
+// key: chỗ ngồi ("<dãy>/<ID>", "cooler/<ID>"), riêng cho từng chỗ vì một agent có thể ngồi ở nhiều dãy bàn
+const agG=(id,label,inner,key)=>{const e=arriving(id);
  return '<g class="ag'+(openId===id?' on':'')+(e!=null?' arrive':'')+'"'+(e!=null?' style="animation-delay:-'+(e/1000).toFixed(2)+'s"':'')
-  +' data-id="'+esc(id)+'" tabindex="0" role="button" aria-label="'+esc(id+': '+label)+'"><title>'+esc(id+': '+label)+'</title>'+inner+'</g>'};
+  +' data-id="'+esc(id)+'" data-k="'+esc(key)+'" tabindex="0" role="button" aria-label="'+esc(id+': '+label)+'"><title>'+esc(id+': '+label)+'</title>'+inner+'</g>'};
+// Tìm lại nhân vật sau khi vẽ lại: đúng chỗ ngồi nếu còn, không thì (vừa đổi chỗ) chỗ đầu tiên của agent đó
+const findAg=(root,key,id)=>(key&&root.querySelector('.ag[data-k="'+CSS.escape(key)+'"]'))||(id?root.querySelector('.ag[data-id="'+CSS.escape(id)+'"]'):null);
 
 // Một chỗ ngồi: màn hình, bàn, đồ trên bàn, người quay lưng, ghế, bong bóng, biển tên
 // Y: mép trên mặt bàn; đầu người ngồi ở Y+6, người đứng ở Y-2
 function station(f,id,a,x,w,top,isMaster,color){
  const Y=top+50,cx=x+w/2,role=a?a.role:(id.split('-')[0]||'coder');
- let st=stateOf(a,f.dir);
+ // Khối phiên chat chỉ có dòng .now (không file, có khi không mã F-NNN): đang làm, hay chờ bạn. Dòng không đổi quá
+ // STALE_NOW_MS thì phiên có thể đã đóng: ngồi gật gù, không gõ phím, kẻo dòng từ mấy hôm trước trông như việc đang làm
+ const since=f.direct?whenOf(a.nowAt):'',nowOld=f.direct&&!a.nowWait&&Date.now()-a.nowAt>STALE_NOW_MS;
+ let st=!f.direct?stateOf(a,f.dir):a.nowWait?{kind:'wait',txt:'!',label:a.now,on:true}
+  :nowOld?{kind:'idle',txt:'z',label:a.now+' (không đổi từ '+since+', phiên có thể đã đóng)',on:false}:{kind:'run',txt:'…',label:a.now,on:true};
  // Master không còn file chờ nhưng tính năng đang chờ chủ dự án: hiện "!" thay vì "z" (như trước)
  if(isMaster&&st.kind==='idle'&&S.owner.some(o=>o.path.indexOf(f.dir+'/')===0))st={kind:'wait',txt:'!',label:'Chờ bạn (xem mục Cần bạn)',on:true};
  // Câu hỏi của agent này trong tính năng còn mở, chưa tới lượt nó: giơ tay
@@ -726,8 +817,38 @@ function station(f,id,a,x,w,top,isMaster,color){
  // Master chờ bạn: đứng dậy quay lại, giơ tờ giấy; còn lại ngồi quay lưng nhìn màn hình
  if(standUp)s+=chair(cx+20,Y+27)+standFront(cx-8,Y-2,L,role,color,'paper');
  else s+=(a?sitBack(cx,Y+6,L,role,color,pose):'<g opacity=".45">'+sitBack(cx,Y+6,L,role,'#8f9bb0','idle')+'</g>')+chair(cx,Y+27);
- s+=bubble(cx,top+4,bubbleTxt,bubbleKind)+label(cx,Y+56,id,shortOf(a,st,asking),asking?'wait':st.kind,w+18);
- return agG(id,st.label+(asking?' · đang chờ Master trả lời câu hỏi':'')+(bugs?' · có lỗi Tester báo':''),s);
+ // khối phiên chat: tiêu đề khối đã ghi dòng .now, biển tên chỉ ghi từ lúc nào (biết việc nhỏ kéo dài bao lâu)
+ const short=f.direct?(standUp?'chờ bạn':nowOld?'không đổi':'đang làm')+' từ '+since:shortOf(a,st,asking,f.id);
+ s+=bubble(cx,top+4,bubbleTxt,bubbleKind)+label(cx,Y+56,id,short,asking?'wait':st.kind,isMaster?MASTER_LBL_W:DESK_LBL_W);
+ return agG(id,st.label+(asking?' · đang chờ Master trả lời câu hỏi':'')+(bugs?' · có lỗi Tester báo':''),s,(f.dir||'direct')+'/'+id);
+}
+
+// Tiêu đề khối: tên, nhãn trạng thái, nhãn làn. Mọi thứ cắt cho vừa bề rộng khối w (khối gọn chỉ nửa hàng).
+// Tính năng: nhãn trạng thái ngắn và quan trọng ("chờ bạn nghiệm thu") nên cắt tên trước, tên chỉ giữ chắc HEAD_TITLE_KEEP
+// ký tự (mã F-NNN). Khối phiên chat: giữ nguyên tên ("Làm trực tiếp · master-NN"), cắt dòng .now ở nhãn trạng thái
+const HEAD_FS=8.5, CHIP_FS=7.5, LANE_FS=7, HEAD_TITLE_KEEP=10;
+function blockHead(b,x,y,w){
+ const lane=LANE_NOTE[b.f.lane],lnw=lane?lane.chip.length*CW*LANE_FS+10:0;
+ // chỗ cho tên và nhãn trạng thái: khung tiêu đề từ x+4 tới x+w-4, đệm 6 hai bên và giữa các nhãn
+ const room=w-26-(lane?lnw+6:0),keep=b.f.direct?b.title.length:Math.min(b.title.length,HEAD_TITLE_KEEP);
+ const sv=cut(b.status,Math.max(6,Math.floor((room-keep*CW*HEAD_FS-12)/(CW*CHIP_FS)))),svw=sv.length*CW*CHIP_FS+12;
+ const lbl=cut(b.title,Math.floor((room-svw)/(CW*HEAD_FS))),lw=lbl.length*CW*HEAD_FS,lx=x+22+lw+svw;
+ let s=RR(x+4,y+6,lw+svw+18+(lane?lnw+6:0),18,4,b.color)+T(x+10,y+18.5,HEAD_FS,'#ffffff',lbl,'start')
+  +'<rect x="'+(x+16+lw)+'" y="'+(y+9)+'" width="'+svw+'" height="12" rx="3" fill="'+(b.warn?'#ffe066':'rgba(255,255,255,.88)')+'"/>'+T(x+16+lw+svw/2,y+17.8,CHIP_FS,b.warn?'#7a2a00':'#3b2a20',sv);
+ if(lane)s+='<g role="img" aria-label="'+esc(lane.full)+'"><title>'+esc(lane.full)+'</title>'
+  +RR(lx,y+9,lnw,12,3,'rgba(255,255,255,.16)',' stroke="#ffffff" stroke-width="1"')+T(lx+lnw/2,y+17.6,LANE_FS,'#ffffff',lane.chip)+'</g>';
+ return s;
+}
+// Xếp khối thành hàng: khối lớn chiếm cả hàng; khối gọn rộng nửa hàng, khối gọn kế tiếp lấp nửa còn trống của hàng
+// trước (kể cả khi có khối lớn xen giữa), để vài việc nhỏ không mỗi việc một hàng
+function layoutRows(blocks){
+ const rows=[];let half=null;
+ blocks.forEach(b=>{
+  if(!b.compact){rows.push({h:b.h,cells:[{b,x:LX,w:BR-LX}]});return}
+  if(half){half.cells.push({b,x:LX+HALF_W+MID_GAP,w:HALF_W});half.h=Math.max(half.h,b.h);half=null;return}
+  half={h:b.h,cells:[{b,x:LX,w:HALF_W}]};rows.push(half);
+ });
+ return rows;
 }
 
 function build(){
@@ -736,75 +857,85 @@ function build(){
  // tính năng vừa chuyển sang "xong" ở lần làm mới này: pháo giấy 6 giây
  S.features.forEach(f=>{const p=PREV_STATUS.get(f.dir);if(p&&p!=='done'&&f.status==='done')PARTY.push({id:f.id,at:now});PREV_STATUS.set(f.dir,f.status)});
  PARTY=PARTY.filter(p=>now-p.at<6000);
- // tính năng đã xong rời văn phòng (chỉ còn trên bảng trắng); màu giữ theo thứ tự gốc
- const blocks=S.features.map((f,i)=>[f,i]).filter(([f])=>f.status!=='done'&&f.status!=='delivered').map(([f,i])=>{
+ // tính năng đã xong hay đã giao rời văn phòng (chỉ còn trên bảng trắng); màu lấy từ FEAT_COLOR
+ const blocks=S.features.filter(f=>f.status!=='done'&&f.status!=='delivered').map(f=>{
   const ms=f.members.filter(m=>m===f.master);
   const others=f.members.filter(m=>m!==f.master).sort((a,b)=>{const ra=(byId[a]||{}).role||'',rb=(byId[b]||{}).role||'';return ra===rb?a.localeCompare(b):(ra==='coder'?-1:rb==='coder'?1:ra.localeCompare(rb))});
-  const rows=Math.max(1,Math.ceil(others.length/PER_ROW));
-  return{f,color:COLORS[i%COLORS.length],master:ms[0]||f.master||'',others,rows,h:HEAD+rows*ROW_H+6};
+  const rows=Math.max(1,Math.ceil(others.length/PER_ROW)),master=ms[0]||f.master||'';
+  return{f,color:FEAT_COLOR.get(f.dir)||COLORS[0],master,others,rows,h:HEAD+rows*ROW_H+6,
+   // chỗ Master luôn để dành (bàn người khác bắt đầu sau nó), nên chỉ đếm người khác: tối đa COMPACT_SEATS - 1
+   title:f.id+' · '+f.title,status:stOf(f),warn:f.to==='owner',compact:others.length<COMPACT_SEATS};
  });
+ const featBlocks=blocks.slice(),members=new Set(blocks.flatMap(b=>[b.master,...b.others]));
+ // Master có .now mà không cầm tính năng nào đang mở vẫn là đang làm việc: ngồi ở một khối gọn riêng, không đứng ở cây nước.
+ // Chỉ ghi "Làm trực tiếp" khi dòng .now nói vậy (làn trực tiếp: Master tự sửa 1-3 file, không có file trong workflow/).
+ // Còn lại là "Phiên chat": chờ xác nhận làn, watch.sh dừng, tính năng đã giao chờ MR… không phải đang sửa việc nhỏ
+ S.agents.filter(a=>a.role==='master'&&a.now&&!members.has(a.id)).forEach(a=>blocks.push({
+  f:{dir:'',id:'',title:'',items:[],direct:true},color:DIRECT_COLOR,master:a.id,others:[],rows:1,h:HEAD+ROW_H+6,
+  title:(/làn trực tiếp/i.test(a.now)?'Làm trực tiếp':'Phiên chat')+' · '+a.id,status:directNow(a.now),warn:a.nowWait,compact:true}));
  const busy=new Set(blocks.flatMap(b=>[b.master,...b.others]));
- const free=S.agents.filter(a=>!busy.has(a.id));
+ // Cây nước chỉ vẽ COOLER_MAX người: ai đang chạy hay đang chờ được ưu tiên chỗ (sort ổn định, giữ thứ tự agents.txt trong nhóm)
+ const freeRank=a=>{const k=stateOf(a,'').kind;return k==='wait'||k==='bad'?0:k==='run'?1:2};
+ const free=S.agents.filter(a=>!busy.has(a.id)).sort((a,b)=>freeRank(a)-freeRank(b));
  const done=S.features.filter(f=>f.status==='done'),delivered=S.features.filter(f=>f.status==='delivered');
  // agent đổi khu (cây nước ↔ bàn) so với lần vẽ trước: ghi mốc để ẩn ở chỗ mới tới khi người đi bộ tới nơi
  if(MOTION_OK)S.agents.forEach(a=>{const q=PREV_PLACE.get(a.id),z=busy.has(a.id)?'desk':'cooler';if(q&&q.zone!==z)ARRIVE.set(a.id,now)});
  // vị trí các dãy bàn, các lối đi ngang (cho thú cưng) và góc nghỉ dưới cùng
- const tops=[],lanes=[q4(TOP-12)];let y=TOP;
- blocks.forEach(b=>{tops.push(y);lanes.push(q4(y+b.h+GAP/2));y+=b.h+GAP});
- if(!blocks.length)lanes.push(q4(TOP+80));
+ const rowsL=layoutRows(blocks),lanes=[q4(TOP-12)];let y=TOP;
+ rowsL.forEach(r=>{r.y=y;lanes.push(q4(y+r.h+GAP/2));y+=r.h+GAP});
+ if(!rowsL.length)lanes.push(q4(TOP+80));
  const laneL=lanes[lanes.length-1],laneB=laneL+60,H=laneB+14;
- const need=S.owner.length+(S.masters||[]).filter(m=>m.waitOwner).length;
+ const need=ownerWaits().total;
  const watch=(S.watch||{state:'never'}).state;
  // chỗ của từng agent ở lần vẽ này: để so với lần trước và cho đi bộ
  const place=new Map();
- // ---- tường, sàn, đồ trang trí
- let s=defs()+wall()+R(0,FLOOR_Y,W,H-FLOOR_Y,'url(#fl)')+R(0,FLOOR_Y,W,5,'rgba(60,30,10,.12)');
+ // ---- tường, sàn, đồ trang trí: chỉ để nhìn, trình đọc màn hình bỏ qua (số liệu đã có ở huy hiệu và băng rôn)
+ let s=defs()+'<g aria-hidden="true">'+wall()+R(0,FLOOR_Y,W,H-FLOOR_Y,'url(#fl)')+R(0,FLOOR_Y,W,5,'rgba(60,30,10,.12)');
  if(need)s+=P('M298 118 l50 0 l16 28 l-82 0z','rgba(255,214,140,.25)');
  s+=aisle(AX,FLOOR_Y,AW,H-FLOOR_Y)+bunting(64,290,11,4)+bunting(514,646,11,3);
  s+=bookshelf(10,28,48,84)+cooler(66)+pantry(102)+sconce(134,30)+windowPane(152,18,80,46)+clock(266,40,watch==='running')+door(298,need>0)
   +P('M'+(HOLE_X-5)+' 117.5 l0 -4 q5 -7 10 0 l0 4z','#2b1d16')+whiteboard()+calendar(520,20)+poster(560,16)+sconce(604,30)+plantBig(616,FLOOR_Y);
  s+=lounge(laneB-4);
  if(NIGHT)s+=R(0,0,W,H,'rgba(20,30,70,.18)')+E(134,34,26,20,'url(#glow)')+E(604,34,26,20,'url(#glow)')+E(22,laneB-52,30,26,'url(#glow)');
+ s+='</g>';
  if(need)s+=bubble(323,6,'!'+need,'bad');
- // ---- bảng trắng: các tính năng đang làm, rồi các tính năng đã xong
- s+=T(436,26,8.5,'#3b2a20','CÁC TÍNH NĂNG');
- const board=blocks.map(b=>({f:b.f,color:b.color})).concat(delivered.map(f=>({f,color:'#7f9cc2'})),done.slice().reverse().map(f=>({f,color:'#b9b0a3'})));
+ // ---- bảng trắng: các tính năng đang làm, rồi các tính năng đã giao, đã xong
+ s+=T(NOTE_X,26,8.5,'#3b2a20','CÁC TÍNH NĂNG');
+ const board=featBlocks.map(b=>({f:b.f,color:b.color})).concat(delivered.map(f=>({f,color:DELIVERED_COLOR})),done.slice().reverse().map(f=>({f,color:DONE_COLOR})));
  board.slice(0,4).forEach((b,i)=>{const y=31+i*16.5;
-  s+=RR(371,y+1,6,6,1.5,b.color)+T(381,y+7.5,7.5,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(122/(CW*7.5))),'start')+T(381,y+15,6.6,b.f.to==='owner'?'#b23030':'#6b5c4e',stOf(b.f),'start')});
- if(board.length>4)s+=T(502,99,6.5,'#6b5c4e','+'+(board.length-4)+' nữa','end');
- if(!board.length)s+=T(436,60,7.5,'#6b5c4e','(chưa có)');
- PARTY.forEach(p=>{s+=confetti(436,14,now-p.at)+T(436,124,8.5,'#b23030','🎉 '+p.id+' xong!')});
- // ---- cây nước: agent rảnh đứng uống nước; biển tên so le hai hàng để không đè nhau
- free.slice(0,5).forEach((a,k)=>{const cx=162+k*28,y=80,st=stateOf(a,'');
+  s+=RR(371,y+1,6,6,1.5,b.color)+T(381,y+7.5,7.5,'#3b2a20',cut(b.f.id+' '+b.f.title,Math.floor(122/(CW*7.5))),'start')+T(381,y+15,7.2,b.f.to==='owner'?'#b23030':'#6b5c4e',stOf(b.f),'start')});
+ if(board.length>4)s+=T(502,99,7,'#6b5c4e','+'+(board.length-4)+' nữa','end');
+ if(!board.length)s+=T(NOTE_X,60,7.5,'#6b5c4e','(chưa có)');
+ // pháo giấy: một nhãn chung trên sàn dưới bảng trắng (nền trắng, đọc được), nhiều tính năng xong cùng lúc không chồng chữ
+ if(PARTY.length){const last=PARTY[PARTY.length-1];s+=confetti(NOTE_X,14,now-last.at)+bubble(NOTE_X,PARTY_Y,cut('🎉 '+PARTY.map(p=>p.id).join(', ')+' xong!',26),'run')}
+ // ---- cây nước: agent rảnh đứng uống nước; biển tên so le COOLER_ROWS hàng để không đè nhau
+ free.slice(0,COOLER_MAX).forEach((a,k)=>{const cx=COOLER_X+k*COOLER_STEP,y=80,st=stateOf(a,'');
   place.set(a.id,{x:cx,y,zone:'cooler'});
   s+=agG(a.id,st.label,selBox(cx-13,y-22,26,66)+standFront(cx,y,look(a.id),a.role,'#8f9bb0','cup').replace('class="sip"','class="sip" style="animation-delay:-'+(k*0.9)+'s"')
-   +bubble(cx,y-18,st.txt,st.kind)+label(cx,y+40+(k%2)*20,a.id,shortOf(a,st,false),st.kind,62))});
+   +bubble(cx,y-18,st.txt,st.kind)+label(cx,y+40+(k%COOLER_ROWS)*(LBL_H+1),a.id,shortOf(a,st,false),st.kind,COOLER_ROWS*COOLER_STEP-2),'cooler/'+a.id)});
  // ---- bàn của bạn, lối đi thảm đỏ chạy thẳng xuống
  {const cx=OWNER_X,L={hair:'#2d2d3a',skin:'#f5cfa6',style:'short',pants:'#3a3f5c'};
   let o=RR(cx-17,46,34,38,4,'#4a3b6b',K(1))+RR(cx-15,48,30,3,1.5,'#6a5a95');
   o+=standFront(cx,58,L,'boss','#2f6fe0','')+desk(cx-36,86,72,true)+laptopBack(cx,89)+cup(cx+20,80,true)+plantSmall(cx-25,92);
   o+=RR(cx-15,100,30,11,2,'#3b2a20',K(.6))+T(cx,108.5,8,'#f2c14e','BẠN')+bubble(cx,28,need?'!'+need:'z',need?'bad':'idle');
   s+='<g id="owner" tabindex="0" role="button" aria-label="'+esc(need?'Bàn của bạn: '+need+' việc chờ bạn':'Bàn của bạn: không có việc chờ')+'" style="cursor:pointer"><title>'+(need?need+' việc chờ bạn: bấm để xem':'Không có việc chờ bạn')+'</title>'+o+'</g>'}
- // ---- các dãy bàn
- blocks.forEach((b,bi)=>{
-  const f=b.f,y=tops[bi];
-  s+=rugBlock(LX,y,BR-LX,b.h,b.color);
-  const sv=stOf(f),svw=sv.length*CW*7.5+12,lbl=cut(f.id+' · '+f.title,Math.floor((BR-LX-22-svw)/(CW*8.5))),lw=lbl.length*CW*8.5;
-  s+=RR(LX+4,y+6,Math.min(lw+svw+24,BR-LX-12),18,4,b.color)+T(LX+10,y+18.5,8.5,'#ffffff',lbl,'start')
-   +'<rect x="'+(LX+16+lw)+'" y="'+(y+9)+'" width="'+svw+'" height="12" rx="3" fill="'+(f.to==='owner'?'#ffe066':'rgba(255,255,255,.88)')+'"/>'+T(LX+16+lw+svw/2,y+17.8,7.5,f.to==='owner'?'#7a2a00':'#3b2a20',sv)
-   +(LANE_NOTE[f.lane]&&LX+28+lw+svw+LANE_NOTE[f.lane].length*CW*7<BR-8?T(LX+24+lw+svw,y+18,7,'#3b2a20',LANE_NOTE[f.lane],'start'):'');
+ // ---- các dãy bàn: mỗi ô (bx, bw) là một khối, khối gọn rộng nửa hàng
+ rowsL.forEach(row=>row.cells.forEach(({b,x:bx,w:bw})=>{
+  const f=b.f,y=row.y,right=bx+bw;
+  s+=rugBlock(bx,y,bw,b.h,b.color)+blockHead(b,bx,y,bw);
   const rowTop=r=>y+HEAD+r*ROW_H;
-  // đồ giữa các bàn (cây, tủ hồ sơ, thùng rác) và cây ở cuối dãy
+  // đồ giữa các bàn (cây, tủ hồ sơ, thùng rác) và cây ở cuối dãy; khối chỉ có Master thì đặt cây ở góc phải
   for(let r=0;r<b.rows;r++){const n=Math.min(PER_ROW,b.others.length-r*PER_ROW);
-   for(let c=0;c<n;c++){const gx=COL0+c*STEP+72+13;if(c===n-1&&gx>BR-14)break;
-    s+=gapDeco(c===n-1?0:hashN(f.dir+r+'/'+c)%4,c===n-1?Math.min(gx+12,BR-18):gx,rowTop(r)+80)}}
+   for(let c=0;c<n;c++){const gx=bx+SEAT_DX+c*STEP+72+13;if(c===n-1&&gx>right-14)break;
+    s+=gapDeco(c===n-1?0:hashN(f.dir+r+'/'+c)%4,c===n-1?Math.min(gx+12,right-18):gx,rowTop(r)+80)}}
+  if(!b.others.length)s+=gapDeco(0,right-18,rowTop(0)+80);
   const seat=(id,x,w,top,isM)=>{
    if(!place.has(id))place.set(id,{x:x+w/2,y:top+48,zone:'desk'});
    s+=station(f,id,byId[id],x,w,top,isM,b.color);
   };
-  if(b.master)seat(b.master,LX+8,100,rowTop(0),true);
-  b.others.forEach((id,k)=>{const r=Math.floor(k/PER_ROW),c=k%PER_ROW;seat(id,COL0+c*STEP,72,rowTop(r),false)});
- });
+  if(b.master)seat(b.master,bx+8,100,rowTop(0),true);
+  b.others.forEach((id,k)=>{const r=Math.floor(k/PER_ROW),c=k%PER_ROW;seat(id,bx+SEAT_DX+c*STEP,72,rowTop(r),false)});
+ }));
  if(!blocks.length)s+=T((LX+BR)/2,TOP+44,9,'#3b2a20',done.length?'Không có tính năng nào đang làm':'Chưa có tính năng nào (workflow/F-*)');
  // ---- người đi bộ: agent vừa đổi chỗ (cây nước → bàn, bàn → cây nước). Vẽ ở lớp riêng #walk,
  // lần làm mới 3 giây (thay toàn bộ #office) không cắt ngang người đang đi
@@ -814,24 +945,36 @@ function build(){
   walkers.push({x0:q.x,y0:q.y,x1:p.x,y1:p.y,svg:standFront(0,0,look(id),a.role,'#8f9bb0','')})});
  PREV_PLACE.clear();place.forEach((p,id)=>PREV_PLACE.set(id,p));
  ARRIVE.forEach((t,id)=>{if(now-t>WALK_MS+100)ARRIVE.delete(id)});
- // ---- watch.sh chết: tắt đèn
- if(watch==='dead')s+=R(0,0,W,H,'rgba(10,10,30,.38)')+'<g class="bub bob">'+'<rect x="219" y="62" width="94" height="16" rx="4" fill="#ffe6e3" stroke="'+OL+'" stroke-width="1.5"/>'+T(266,74,8.5,'#b23030','watch.sh đã dừng')+'</g>';
- const svg=$('#office');svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML=s;
- const wk=$('#walk');wk.setAttribute('viewBox','0 0 '+W+' '+H);
- $('#pets').setAttribute('viewBox','0 0 '+W+' '+H);
+ // ---- watch.sh ngừng bất thường: tắt đèn. Lớp tối không nhận chuột để vẫn bấm được nhân vật bên dưới;
+ // bong bóng đặt trên sàn trống dưới bảng trắng, không che cửa hay người ở cây nước
+ if(watch==='dead'){const t='watch.sh ngừng bất thường',bw=t.length*8.5*CW+10;
+  s+='<g pointer-events="none">'+R(0,0,W,H,'rgba(10,10,30,.38)')+'<g class="bub bob">'+RR(NOTE_X-bw/2,DEAD_Y,bw,16,4,'#ffe6e3',K(1.5))+T(NOTE_X,DEAD_Y+11.5,8.5,'#b23030',t)+'</g></g>'}
+ const svg=$('#office');
+ // thay cả SVG mỗi lần vẽ: nhớ ai đang được chọn bằng bàn phím (đúng chỗ ngồi) để trả lại tiêu điểm, kẻo Tab phải đi lại từ đầu trang
+ const fe=document.activeElement,refocus=fe&&svg.contains(fe)?{owner:fe.id==='owner',key:fe.dataset.k,id:fe.dataset.id}:null;
+ svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.innerHTML=s;
+ // lớp người đi bộ, chó mèo nằm trên lớp tối của #office: tự làm tối theo, kẻo đèn tắt mà chúng vẫn sáng
+ const wk=$('#walk');wk.setAttribute('viewBox','0 0 '+W+' '+H);wk.classList.toggle('dim',watch==='dead');
+ const pets=$('#pets');pets.setAttribute('viewBox','0 0 '+W+' '+H);pets.classList.toggle('dim',watch==='dead');
  walkers.forEach(w=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','walker');g.innerHTML=w.svg;wk.appendChild(g);
   const an=g.animate([{transform:'translate('+w.x0+'px,'+w.y0+'px)'},{transform:'translate('+w.x1+'px,'+w.y1+'px)'}],{duration:WALK_MS,easing:'ease-in-out',fill:'forwards'});
   an.onfinish=()=>g.remove();setTimeout(()=>g.remove(),WALK_MS+800)}); // dự phòng: tab chạy nền thì hoạt hình có thể dừng
- // ---- lối đi cho chó, mèo, chuột: dải sàn sát chân tường, lối giữa các dãy bàn, hai lối dọc hai bên, lối trước góc nghỉ
- const segs=[[XL,BASE_Y,XR,BASE_Y],[XL,BASE_Y,XL,laneB],[XR,BASE_Y,XR,laneL],[XL,laneB,632,laneB]].concat(lanes.map(v=>[XL,v,XR,v]));
+ // ---- lối đi cho chó, mèo, chuột: dải sàn sát chân tường, lối giữa các dãy bàn, hai lối dọc hai bên, lối trước góc nghỉ.
+ // Lớp #pets nằm trên cảnh nên con vật không được đi hay ngồi đè lên chỗ bấm được (che chữ, chặn cú bấm): lối sát chân tường
+ // chỉ chạy từ sau cây nước (BASE_X0) tới trước lối đi thảm đỏ (BASE_END), một lối dọc nối nó xuống lối trên dãy bàn đầu;
+ // lối dọc bên phải bắt đầu dưới biển "BẠN"
+ const segs=[[BASE_X0,BASE_Y,BASE_END,BASE_Y],[BASE_X0,BASE_Y,BASE_X0,lanes[0]],[XL,lanes[0],XL,laneB],[XR,SPOT_Y,XR,laneL],[XL,laneB,632,laneB]].concat(lanes.map(v=>[XL,v,XR,v]));
  const sig=JSON.stringify(segs);if(sig!==GSIG){GSIG=sig;setGraph(makeGraph(segs),laneB)}
- svg.querySelectorAll('.ag').forEach(g=>{const go=()=>{openId=g.dataset.id;build();showDetail()};g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
- const ow=svg.querySelector('#owner'),toNeed=()=>$('#needBox').scrollIntoView({behavior:MOTION_OK?'smooth':'auto',block:'start'});
- ow.addEventListener('click',toNeed);ow.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toNeed()}});
+ // bấm hay Enter vào nhân vật: mở bảng chi tiết và đưa tiêu điểm vào đó (trình đọc màn hình đọc tên agent)
+ svg.querySelectorAll('.ag').forEach(g=>{const go=()=>{openId=g.dataset.id;openKey=g.dataset.k;KEY_DETAIL='';build();showDetail();$('#detailTitle').focus({preventScroll:true})};g.addEventListener('click',go);g.addEventListener('keydown',onActivate(go))});
+ const ow=svg.querySelector('#owner');
+ ow.addEventListener('click',toNeed);ow.addEventListener('keydown',onActivate(toNeed));
+ if(refocus){const n=refocus.owner?ow:findAg(svg,refocus.key,refocus.id);if(n)n.focus({preventScroll:true})}
  const lg=$('#legend');lg.replaceChildren();
- lg.append(el('span',null,'Màn hình chạy code, tay gõ phím = đang làm · gõ ngón tay = có việc chờ (số trên bong bóng) · giơ tay "?" = đang chờ Master trả lời · bọ đỏ trên bàn = có lỗi Tester báo · Master đứng dậy quay lại giơ giấy "!" = chờ bạn · gật gù "z" = rảnh · bóng mờ "?" = ID chưa khai trong agents.txt'),
-  el('span',null,'Cửa mở = có việc chờ bạn · đồng hồ đứng, đèn tắt = watch.sh không chạy · rê chuột vào ai để xem chi tiết, bấm để mở · bấm bàn "BẠN" để tới mục Cần bạn · bấm vào chó, mèo, chuột để nghe chúng kêu'));
- if(free.length>5)lg.append(el('span',null,'Rảnh, không hiện hết: '+free.slice(5).map(a=>a.id).join(', ')));
+ lg.append(el('span',null,'Màn hình chạy code, tay gõ phím = đang làm · gõ ngón tay = có việc chờ (số trên bong bóng) · giơ tay "?" = đang chờ Master trả lời · bọ đỏ trên bàn = có lỗi Tester báo · Master đứng dậy quay lại giơ giấy "!" = chờ bạn · gật gù "z" = không có việc ở dãy này · bóng mờ "?" = ID chưa khai trong agents.txt'),
+  el('span',null,'Dãy bàn nhỏ (Master và 1-2 người) chỉ rộng nửa hàng · khối xám = Master đang làm trong phiên chat, không cầm tính năng nào đang mở: "Làm trực tiếp" là tự sửa việc nhỏ, không có file trong workflow/; "Phiên chat" là việc khác (chọn làn, chờ MR…)'),
+  el('span',null,'Cửa mở = có việc chờ bạn · đồng hồ đứng = watch.sh không chạy · đèn tắt = watch.sh ngừng bất thường · bấm (hoặc chạm) vào ai để mở chi tiết · bấm bàn "BẠN" để tới mục Cần bạn · bấm vào chó, mèo, chuột để nghe chúng kêu'));
+ if(free.length>COOLER_MAX)lg.append(el('span',null,'Ở cây nước, không hiện hết: '+free.slice(COOLER_MAX).map(a=>{const st=stateOf(a,'');return a.id+(st.kind==='idle'?'':' ('+st.label+')')}).join(', ')));
 }
 
 /* ---------- chó, mèo, chuột chạy khắp văn phòng ---------- */
@@ -840,6 +983,11 @@ function build(){
 // mèo rượt theo; chuột về lỗ thì mèo ngồi canh. Chó đi sát mèo thì mèo giật mình nhảy lên rồi bỏ chạy.
 // Lớp #pets riêng, không bị thay khi trang làm mới 3 giây.
 const XL=16,XR=OWNER_X,BASE_Y=124,q4=v=>Math.round(v/4)*4;
+// BASE_END: lối sát tường dừng ở đây (trước bàn của bạn); SPOT_Y: chó ngồi trên thảm đỏ ngay dưới bàn, không che biển "BẠN"
+const BASE_END=q4(AX-32),SPOT_Y=q4(FLOOR_Y+42);
+// BASE_X0: lối sát tường bắt đầu sau mép phải biển tên cuối ở cây nước (COOLER_RIGHT) thêm nửa bề ngang con vật,
+// để con vật không đè lên chân người đứng uống nước và hàng biển tên đầu (y 120-140)
+const PET_HALF_W=16,COOLER_RIGHT=COOLER_X+(COOLER_MAX-1)*COOLER_STEP+(COOLER_ROWS*COOLER_STEP-2)/2,BASE_X0=q4(COOLER_RIGHT+PET_HALF_W);
 let G=null,GSIG='',HOLE='',GUARD='',BED='',SPOT='';const CRIT={};
 function makeGraph(segs){const g=new Map();
  segs.forEach(([x0,y0,x1,y1])=>{const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0))/4,sx=Math.sign(x1-x0)*4,sy=Math.sign(y1-y0)*4;let prev=null;
@@ -856,7 +1004,7 @@ const goTo=(a,id)=>{a.path=route(nodeAt(a.x,a.y),id)};
 // Chỗ xa con vật a nhất trong vài điểm bốc ngẫu nhiên (để mèo chạy trốn)
 const farNode=a=>{let b=randNode();for(let i=0;i<6;i++){const k=randNode();if(dist(G.get(k),a)>dist(G.get(b),a))b=k}return b};
 function setGraph(g,laneB){
- G=g;HOLE=HOLE_X+','+BASE_Y;GUARD=(HOLE_X+16)+','+BASE_Y;BED=BED_X+','+laneB;SPOT=XR+','+BASE_Y;
+ G=g;HOLE=HOLE_X+','+BASE_Y;GUARD=(HOLE_X+16)+','+BASE_Y;BED=BED_X+','+laneB;SPOT=XR+','+SPOT_Y;
  const at=id=>G.get(id);
  if(!CRIT.dog){
   const c=at(randNode());
@@ -960,95 +1108,197 @@ function critLoop(t){requestAnimationFrame(critLoop);
 requestAnimationFrame(critLoop);
 
 /* ---------- các khu HTML ---------- */
-function render(){
- $('#proj').textContent='VĂN PHÒNG AGENT · '+S.project;
- {const d=S.features.filter(f=>f.status==='done').length,g=S.features.filter(f=>f.status==='delivered').length;$('#bFeat').textContent=(S.features.length-d-g)+' ĐANG LÀM · '+(g?g+' CHỜ MERGE · ':'')+d+' XONG'}
- $('#bRun').textContent=S.agents.filter(a=>a.running).length+'/'+S.agents.length+' ĐANG CHẠY';
- {const mw=(S.masters||[]).filter(m=>m.waitOwner).length;$('#bNeed').textContent=(S.owner.length+mw)+' CHỜ BẠN'}
- {const w=S.watch||{state:'never'},bw=$('#bWatch');
-  bw.textContent=w.state==='running'?'WATCH ✓':w.state==='dead'?'WATCH ĐÃ CHẾT':'WATCH TẮT';
-  bw.className='badge'+(w.state==='dead'?' off':w.state==='running'?'':' warn');
-  bw.title=w.state==='running'?'watch.sh đang chạy, quét lần cuối '+hm(w.at):'Chạy: sh workflow/watch.sh'}
- {const n=S.owner.length+(S.masters||[]).filter(m=>m.waitOwner).length;document.title=(n?'('+n+') Chờ bạn · ':'')+'Văn phòng agent'}
- const anom=S.anomalies||[],paused=S.agents.filter(a=>a.paused);
- $('#needBox').classList.toggle('on',S.owner.length>0||anom.length>0||paused.length>0);
- banner();
- const need=$('#need');need.replaceChildren();
- if(anom.length||paused.length){const box=el('div','ask');
-  box.append(el('p','act','Bất thường ('+(anom.length+paused.length)+')'),el('p','muted','watch.sh phát hiện. Nói với Master: "Xử lý việc đang chờ", hoặc tự xem file.'));
-  paused.forEach(a=>{const p=el('p',null,a.id+' đang tạm dừng vì bị đánh thức quá nhiều lần. Xem log, rồi chạy: ');p.append(el('code',null,'sh workflow/watch.sh --resume '+a.id));box.append(p)});
-  anom.forEach(t=>box.append(el('p',null,'• '+t)));need.append(box)}
- if(!S.hasWorkflow)need.append(el('p','muted','Không thấy thư mục workflow/. Hãy chạy monitor tại thư mục dự án.'));
- else if(!S.owner.length){if(!anom.length&&!paused.length)need.append(el('p','muted','Không có gì chờ bạn.'))}
- else S.owner.forEach(o=>{const a=ownerAction(o),box=el('div','ask');
-  box.append(el('p','act',o.feature+' · '+a.act),el('p',null,o.title||o.file),el('p','muted',a.how));
-  if(a.say){const p=el('p','say');p.append(document.createTextNode('Nói với Master: '),el('code',null,a.say));box.append(p)}
-  (o.sections||[]).forEach((x,i)=>{const k=o.path+'#'+x.title,d=el('details');
-   d.open=OPEN.has(k)?OPEN.get(k):/cách thử/i.test(x.title); // mặc định mở mục "Cách thử"; nhớ lựa chọn của bạn
-   d.addEventListener('toggle',()=>OPEN.set(k,d.open));
-   d.append(el('summary',null,x.title),el('pre',null,x.text||'(trống)'));box.append(d)});
-  need.append(box)});
- build();
- const files=$('#files');files.replaceChildren();
- S.features.forEach((f,i)=>{const d=el('details');const k='feat:'+f.dir;
-  d.open=OPEN.get(k)===true; // trang làm mới 3 giây một lần: giữ nguyên khung bạn đang mở
+function renderBadges(){
+ const d=S.features.filter(f=>f.status==='done').length,g=S.features.filter(f=>f.status==='delivered').length,bf=$('#bFeat');
+ bf.textContent=(S.features.length-d-g)+' TÍNH NĂNG ĐANG MỞ · '+(g?g+' CHỜ MERGE · ':'')+d+' XONG';
+ bf.title='Số tính năng trong workflow/F-*. Đang mở gồm cả đang làm rõ và chờ bạn nghiệm thu; chờ merge là đã giao, chờ gộp vào nhánh chính';
+ // Master chạy trong phiên chat, không bao giờ "đang chạy" theo watch.sh: không tính vào đây
+ const wk=S.agents.filter(a=>a.role!=='master'),br=$('#bRun');
+ br.textContent=wk.filter(a=>a.running).length+'/'+wk.length+' CODER·TESTER CHẠY';
+ br.title='Coder, Tester đang chạy (watch.sh đánh thức hoặc Master gọi) trên tổng số khai trong agents.txt. Master không tính vào đây';
+ const n=ownerWaits().total,bn=$('#bNeed');
+ bn.textContent=n+' CHỜ BẠN';bn.className='badge'+(n?' warn':'');
+ document.title=(n?'('+n+') Chờ bạn · ':'')+'Văn phòng agent';
+ const w=S.watch||{state:'never'},bw=$('#bWatch');
+ bw.textContent=w.state==='running'?'WATCH ✓':w.state==='dead'?'WATCH LỖI':'WATCH TẮT';
+ bw.className='badge'+(w.state==='dead'?' off':w.state==='running'?'':' warn');
+ bw.title=w.state==='running'?'watch.sh đang chạy, quét lần cuối '+hm(w.at)
+  :w.state==='dead'?'watch.sh ngừng bất thường, nhịp cuối '+hm(w.at)+'. Chạy lại: sh workflow/watch.sh --restart'
+  :'Chạy: sh workflow/watch.sh';
+}
+// Một mục trong "Cần bạn" cho file to: owner
+function ownerItem(o){
+ const a=ownerAction(o),box=el('div','ask');
+ box.append(el('p','act',o.feature+' · '+a.act),el('p',null,o.title||o.file),el('p','muted',a.how));
+ if(a.say){const p=el('p','say');p.append(document.createTextNode('Nói với Master: '),el('code',null,a.say));box.append(p)}
+ (o.sections||[]).forEach(x=>{const k=o.path+'#'+x.title,d=el('details');
+  d.open=OPEN.has(k)?OPEN.get(k):/cách thử/i.test(x.title); // mặc định mở mục "Cách thử"; nhớ lựa chọn của bạn
   d.addEventListener('toggle',()=>OPEN.set(k,d.open));
-  const sm=el('summary');const sq=el('span','sq');sq.style.background=COLORS[i%COLORS.length];sm.append(sq,f.id+' · '+f.title+' · '+stOf(f)+' ('+f.items.length+' file)');d.append(sm);
+  d.append(el('summary',null,x.title),el('pre',null,x.text||'(trống)'));box.append(d)});
+ return box;
+}
+// Khu "Cần bạn": khớp với số trên huy hiệu và băng rôn (file to: owner + Master chờ bạn chưa có file), cộng bất thường
+function renderNeed(){
+ const anom=S.anomalies||[],paused=S.agents.filter(a=>a.paused),ow=ownerWaits();
+ const has=S.owner.length>0||ow.extra.length>0||anom.length>0||paused.length>0;
+ const nb=$('#needBox');nb.classList.toggle('on',has);
+ nb.hidden=S.hasWorkflow&&!has; // không có gì thì ẩn hẳn, huy hiệu "0 CHỜ BẠN" đã nói đủ
+ const need=$('#need'),k=JSON.stringify([S.hasWorkflow,S.owner,ow.extra,anom,paused.map(a=>a.id)]);
+ if(k===KEY_NEED||selIn(need))return;
+ KEY_NEED=k;
+ keepScroll(need,()=>{
+  need.replaceChildren();
+  if(anom.length||paused.length){const box=el('div','ask');
+   box.append(el('p','act','Bất thường ('+(anom.length+paused.length)+')'),el('p','muted','watch.sh phát hiện. Nói với Master: "Xử lý việc đang chờ", hoặc tự xem file.'));
+   paused.forEach(a=>{const p=el('p',null,a.id+' đang tạm dừng vì bị đánh thức quá nhiều lần. Xem log, rồi chạy: ');p.append(el('code',null,'sh workflow/watch.sh --resume '+a.id));box.append(p)});
+   anom.forEach(t=>box.append(el('p',null,'• '+t)));need.append(box)}
+  if(!S.hasWorkflow){need.append(el('p','muted','Không thấy thư mục workflow/. Hãy chạy monitor tại thư mục dự án.'));return}
+  S.owner.forEach(o=>need.append(ownerItem(o)));
+  ow.extra.forEach(m=>{const box=el('div','ask');
+   box.append(el('p','act',m.id+' · Master đang chờ bạn'),el('p',null,m.text),el('p','muted','Trả lời trong phiên chat của '+m.id+' ('+hm(m.at)+')'));
+   need.append(box)});
+ });
+}
+function renderFiles(){
+ const files=$('#files'),k=JSON.stringify(S.features);
+ if(k===KEY_FILES||selIn(files))return;
+ KEY_FILES=k;
+ files.replaceChildren();
+ S.features.forEach(f=>{const d=el('details');const k='feat:'+f.dir;
+  d.open=OPEN.get(k)===true; // giữ nguyên khung bạn đang mở
+  d.addEventListener('toggle',()=>OPEN.set(k,d.open));
+  const sm=el('summary');const sq=el('span','sq');sq.style.background=FEAT_COLOR.get(f.dir);sm.append(sq,f.id+' · '+f.title+' · '+stOf(f)+' ('+f.items.length+' file)');d.append(sm);
   const t=el('table');f.items.forEach(it=>{const tr=el('tr');const td=el('td');td.append(el('code',null,it.file));tr.append(td,el('td',null,it.title),el('td',null,stOf(it)),el('td',null,'→ '+(it.to==='owner'?'bạn':it.to==='none'?'không ai':it.to)));t.append(tr)});d.append(t);files.append(d)});
  if(!S.features.length)files.append(el('p','muted','Chưa có.'));
+}
+function render(){
+ $('#proj').textContent='VĂN PHÒNG AGENT · '+S.project;
+ paintFeatures();
+ renderBadges();
+ banner();
+ renderNeed();
+ build();
+ renderFiles();
  if(openId)showDetail();
 }
 // Một dòng to nói rõ ai đang cầm lượt: chủ dự án (đỏ) hay agent nào (xanh), Master nào đang mở, watch.sh còn chạy không
-const hm=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 function watchLine(active){
  const w=S.watch||{state:'never'};
- if(w.state==='dead')return '⚠ watch.sh đã dừng bất thường (nhịp tim cuối '+hm(w.at)+'): không báo Telegram, không đánh thức agent auto/window. Chạy lại: sh workflow/watch.sh --restart';
+ if(w.state==='dead')return '⚠ watch.sh ngừng bất thường (nhịp tim cuối '+hm(w.at)+'): không báo Telegram, không đánh thức agent auto/window. Chạy lại: sh workflow/watch.sh --restart';
  if(w.state!=='running'&&active)return '⚠ watch.sh không chạy'+(w.state==='stopped'?' (dừng lúc '+hm(w.at)+(w.reason?', '+w.reason:'')+')':'')+': không báo Telegram, không đánh thức agent auto/window. Chạy: sh workflow/watch.sh';
  return '';
 }
-function masterLine(m){const old=Date.now()-m.at>2*3600e3;
- return 'MASTER '+m.id+': '+m.text+(old?' (không đổi từ '+hm(m.at)+', phiên có thể đã đóng)':' ('+hm(m.at)+')')}
+function masterLine(m){const old=Date.now()-m.at>STALE_NOW_MS;
+ return 'MASTER '+m.id+': '+m.text+(old?' (không đổi từ '+whenOf(m.at)+', phiên có thể đã đóng)':' ('+hm(m.at)+')')}
+const MAX_TURN_LINES=3; // băng rôn xanh chỉ liệt kê vài lượt, còn lại gập lại (bàn trong văn phòng đã hiện đủ)
 function banner(){
- const b=$('#banner');b.replaceChildren();b.className='pix banner';
- const ms=S.masters||[],mw=ms.filter(m=>m.waitOwner),act=S.features.filter(f=>f.status!=='done'&&f.status!=='delivered');
+ const b=$('#banner');
+ // đang bôi đen lệnh trong băng rôn (để chép): giữ nguyên, lần làm mới sau sẽ vẽ lại
+ if(selIn(b))return;
+ // dựng lại băng rôn làm mất tiêu điểm trên "+N lượt khác": nhớ để trả lại
+ const ae=document.activeElement,refocusSum=!!ae&&b.contains(ae)&&ae.tagName==='SUMMARY';
+ b.replaceChildren();b.className='pix banner';
+ const ms=S.masters||[],ow=ownerWaits(),act=S.features.filter(f=>f.status!=='done'&&f.status!=='delivered');
  const wl=watchLine(act.length>0||ms.length>0);
+ const paused=S.agents.filter(a=>a.paused);
+ const pausedLines=()=>paused.forEach(a=>b.append(el('p','small alert','⏸ '+a.id+' tạm dừng: sh workflow/watch.sh --resume '+a.id)));
  const turns=[];act.forEach(f=>f.items.forEach(it=>{if(it.to&&it.to!=='none'&&it.to!=='owner')turns.push({f,it})}));
  const run=S.agents.filter(a=>a.running);
- const need=S.owner.length+mw.length;
- if(need){
-  b.classList.add('owner');b.append(el('p',null,'ĐANG CHỜ BẠN ('+need+')'));
+ if(ow.total){
+  b.classList.add('owner');b.append(el('p',null,'ĐANG CHỜ BẠN ('+ow.total+')'));
   S.owner.forEach(o=>{const a=ownerAction(o);b.append(el('p','small','▶ '+o.feature+' · '+a.act+(a.say?' → nói với Master: "'+a.say+'"':'')))});
-  mw.forEach(m=>b.append(el('p','small','▶ '+m.id+': '+m.text+' (trả lời trong phiên chat của '+m.id+')')));
-  ms.filter(m=>!m.waitOwner).forEach(m=>b.append(el('p','small',masterLine(m))));
+  ow.extra.forEach(m=>b.append(el('p','small','▶ '+m.id+': '+m.text+' (trả lời trong phiên chat của '+m.id+')')));
+  // Master chờ bạn về tính năng đã có file ở trên: hiện một dòng để biết, không đếm thêm
+  ms.filter(m=>!m.waitOwner||ow.dup.includes(m)).forEach(m=>b.append(el('p','small',masterLine(m))));
+  pausedLines();
   if(wl)b.append(el('p','small alert',wl));
-  b.hidden=false;b.onclick=()=>$('#needBox').scrollIntoView({behavior:MOTION_OK?'smooth':'auto',block:'start'});return}
- if(!turns.length&&!run.length&&!ms.length&&!wl){b.hidden=true;return}
+  // bôi đen để chép lệnh thì không tính là bấm (không cuộn đi mất)
+  b.setAttribute('role','button');b.tabIndex=0;b.onclick=()=>{if(!selIn(b))toNeed()};b.onkeydown=onActivate(toNeed);
+  b.hidden=false;return}
+ // băng rôn chỉ là nút khi bấm được (đỏ: tới mục Cần bạn); băng xanh chỉ để đọc. Chỉ gỡ ở đây, không gỡ rồi gắn lại mỗi
+ // lần làm mới: gỡ tabindex thì trình duyệt bỏ tiêu điểm khỏi băng rôn, người dùng bàn phím bị đẩy về đầu trang
+ b.removeAttribute('role');b.removeAttribute('tabindex');b.onclick=null;b.onkeydown=null;
+ if(!turns.length&&!run.length&&!ms.length&&!wl&&!paused.length){b.hidden=true;return}
  b.classList.add('flow');
  b.append(el('p',null,run.length?'ĐANG CHẠY: '+run.map(a=>a.id+(a.sub?' ('+a.sub+', Master gọi)':'')).join(' · '):ms.length?'MASTER ĐANG LÀM':'KHÔNG AI ĐANG CHẠY'));
  ms.forEach(m=>b.append(el('p','small',masterLine(m))));
  const by={};turns.forEach(x=>{(by[x.it.to]=by[x.it.to]||[]).push(x.f.id+' '+x.it.file)});
- Object.keys(by).forEach(id=>{const a=S.agents.find(z=>z.id===id);
+ // Chỗ có vấn đề trước (không ai đánh thức được, rồi chờ đánh thức), agent đang chạy sau cùng
+ const rank=a=>!a?0:a.running?2:1;
+ const lines=Object.keys(by).map(id=>{const a=S.agents.find(z=>z.id===id);
   const how=!a?'không có trong agents.txt, không ai đánh thức được':a.running?'đang làm':a.mode==='subagent'?'chờ Master gọi':(MODE_WAIT[a.mode]||'chờ đánh thức').toLowerCase();
-  b.append(el('p','small','Lượt của '+id+' ('+how+'): '+by[id].join(', ')))});
+  return{r:rank(a),t:'Lượt của '+id+' ('+how+'): '+by[id].join(', ')}}).sort((p,q)=>p.r-q.r);
+ lines.slice(0,MAX_TURN_LINES).forEach(x=>b.append(el('p','small',x.t)));
+ if(lines.length>MAX_TURN_LINES){const d=el('details','small');d.open=OPEN.get('banner:turns')===true;
+  d.addEventListener('toggle',()=>OPEN.set('banner:turns',d.open));
+  d.append(el('summary',null,'+'+(lines.length-MAX_TURN_LINES)+' lượt khác'));
+  lines.slice(MAX_TURN_LINES).forEach(x=>d.append(el('p',null,x.t)));b.append(d)}
+ pausedLines();
  if(wl)b.append(el('p','small alert',wl));
- b.hidden=false;b.onclick=null;
+ b.hidden=false;
+ if(refocusSum){const sm=b.querySelector('summary');if(sm)sm.focus({preventScroll:true})}
+}
+function closeDetail(){
+ const id=openId,key=openKey;openId=null;openKey=null;KEY_DETAIL='';$('#detail').style.display='none';build();
+ const g=findAg($('#office'),key,id);if(g)g.focus({preventScroll:true});
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&openId)closeDetail()});
+// Trạng thái chạy của agent trong bảng chi tiết. Master chạy trong phiên chat: lấy dòng .now
+function runLine(a){
+ if(a.paused)return 'Tạm dừng (đánh thức quá nhiều lần): sh workflow/watch.sh --resume '+a.id;
+ if(a.running)return a.sub?'Đang chạy: Master gọi subagent ('+a.sub+')':'Đang chạy';
+ if(a.now)return masterLine({id:a.id,text:a.now,at:a.nowAt}).replace(/^MASTER \S+: /,'');
+ return 'Không chạy';
 }
 function showDetail(){
- const d=$('#detail');const a=S.agents.find(x=>x.id===openId);d.replaceChildren();d.style.display='block';
- const close=el('button',null,'Đóng');close.onclick=()=>{openId=null;d.style.display='none';build()};d.append(close,el('h2',null,openId));
- if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
- d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',null,a.paused?'Tạm dừng (đánh thức quá nhiều lần): sh workflow/watch.sh --resume '+a.id:a.running?(a.sub?'Đang chạy: Master gọi subagent ('+a.sub+')':'Đang chạy'):'Không chạy'));
- d.append(el('h2',null,'File đang chờ'));
- if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
- if(a.hist&&a.hist.length){d.append(el('h2',null,'Các lần chạy gần đây'));const ul=el('ul');
-  a.hist.forEach(h=>{const li=el('li');li.append(el('code',null,(h.start||'').replace('T',' ')+' → '+((h.end||'').split('T')[1]||h.end)),document.createTextNode(' '+h.what));ul.append(li)});d.append(ul)}
- d.append(el('h2',null,'Log gần nhất'));
- if(a.lastLog)d.append(el('p','muted',a.lastLog.name+(a.lastLog.mtime?' · '+new Date(a.lastLog.mtime).toLocaleString():'')),el('pre',null,a.lastLog.tail||'(trống)'));
- else d.append(el('p','muted','Chưa có log (agent subagent hoặc đánh thức tay, hoặc chưa được đánh thức lần nào).'));
+ const d=$('#detail');const a=S.agents.find(x=>x.id===openId);d.style.display='block';
+ // làm mới 3 giây: dữ liệu không đổi hay bạn đang bôi đen chữ thì giữ nguyên bảng (giữ tiêu điểm, vị trí cuộn)
+ const k=JSON.stringify([openId,a||null]);
+ if(k===KEY_DETAIL||selIn(d))return;
+ KEY_DETAIL=k;
+ // dựng lại bảng xoá nút Đóng hay tiêu đề đang giữ tiêu điểm: nhớ để trả lại, kẻo Tab phải đi lại từ đầu trang
+ const ae=document.activeElement,refocus=d.contains(ae)?(ae.tagName==='BUTTON'?'button':'#detailTitle'):null;
+ keepScroll(d,()=>{
+  d.replaceChildren();
+  const close=el('button',null,'Đóng');close.setAttribute('aria-label','Đóng chi tiết');close.onclick=closeDetail;
+  const h=el('h2',null,openId);h.id='detailTitle';h.tabIndex=-1;d.append(close,h);
+  if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
+  d.append(el('p',null,a.role+' · '+(MODE_NAME[a.mode]||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',a.nowWait?'act':null,runLine(a)));
+  d.append(el('h2',null,'File đang chờ'));
+  if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
+  if(a.hist&&a.hist.length){d.append(el('h2',null,'Các lần chạy gần đây'));const ul=el('ul');
+   a.hist.forEach(h=>{const li=el('li');li.append(el('code',null,(h.start||'').replace('T',' ')+' → '+((h.end||'').split('T')[1]||h.end)),document.createTextNode(' '+h.what));ul.append(li)});d.append(ul)}
+  d.append(el('h2',null,'Log gần nhất'));
+  if(a.lastLog)d.append(el('p','muted',a.lastLog.name+(a.lastLog.mtime?' · '+new Date(a.lastLog.mtime).toLocaleString('vi-VN',{hour12:false}):'')),el('pre',null,a.lastLog.tail||'(trống)'));
+  else d.append(el('p','muted',a.role==='master'?'Master chạy trong phiên chat, không có log của watch.sh.':'Chưa có log (agent subagent hoặc đánh thức tay, hoặc chưa được đánh thức lần nào).'));
+ });
+ if(refocus){const n=d.querySelector(refocus);if(n)n.focus({preventScroll:true})}
 }
+// Mất kết nối hay máy chủ lỗi: làm xám cả trang (trừ dòng trên cùng) và đổi tiêu đề tab, để không tưởng số liệu cũ là mới.
+// Máy chủ treo (monitor bị Ctrl+Z, máy ngủ) không trả lời cũng không báo lỗi: quá POLL_TIMEOUT_MS thì coi là mất kết nối,
+// và không gửi yêu cầu mới khi yêu cầu trước chưa xong (kẻo chồng chất)
+const POLL_TIMEOUT_MS=5000;
+let lastOk=null,polling=false;
 async function poll(){
- try{const r=await fetch('/api/state',{cache:'no-store'});S=await r.json();const c=$('#bConn');c.textContent='CẬP NHẬT '+new Date().toLocaleTimeString();c.className='badge';render()}
- catch(e){const c=$('#bConn');c.textContent='MẤT KẾT NỐI';c.className='badge off'}
+ if(polling)return;
+ polling=true;
+ const c=$('#bConn');
+ try{
+  const r=await fetch('/api/state',{cache:'no-store',signal:AbortSignal.timeout&&AbortSignal.timeout(POLL_TIMEOUT_MS)});
+  if(!r.ok)throw new Error('LỖI MÁY CHỦ '+r.status+': '+(await r.text()).slice(0,120));
+  S=await r.json();lastOk=Date.now();
+ }catch(e){
+  const server=/^LỖI MÁY CHỦ/.test(e.message);
+  c.textContent=(server?'LỖI MÁY CHỦ':'MẤT KẾT NỐI')+(lastOk?' · số liệu lúc '+hms(lastOk):'');
+  c.className='badge off';c.title=e.message;
+  document.body.classList.add('stale');
+  document.title='⚠ '+(server?'Lỗi máy chủ':'Mất kết nối')+' · Văn phòng agent';
+  return;
+ }finally{polling=false}
+ c.textContent='CẬP NHẬT '+hms(lastOk);c.className='badge';c.title='';
+ document.body.classList.remove('stale');
+ // vẽ ngoài try: lỗi của trang hiện ra console với đủ vết, không bị báo nhầm thành "MẤT KẾT NỐI"
+ render();
 }
 poll();setInterval(poll,3000);
 </script></body></html>`;
