@@ -32,6 +32,7 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
 ## 3. Không tự quyết
 
 - **Không cần hỏi:** chi tiết bên trong việc, không đổi hành vi hay giao diện, khi theo đúng `workflow/DECISIONS.md`.
+- **Sửa ngoài `files:` mà không cần hỏi**, chỉ ba loại: (1) file test của module đang sửa, (2) file chuỗi hiển thị (locale) của module đó, (3) chỉnh kiểu dữ liệu ở nơi khác cho biên dịch được, **không đổi logic**. Ghi từng file và lý do vào mục "File ngoài `files:`" trong bàn giao; Master thêm vào `files:`, Tester soi kỹ các file đó khi đọc diff. Ngoài ba loại này thì vẫn hỏi.
 - **Bắt buộc hỏi:** hành vi, giao diện, định dạng dữ liệu, API, thêm thư viện, đổi cấu trúc thư mục, chỗ tài liệu mơ hồ hoặc mâu thuẫn.
 
 ## 4. Lưu phiên và làm tiếp
@@ -59,7 +60,10 @@ Khi được đánh thức, **chỉ xử lý những file có `to:` là ID của
   - Không bao giờ `--force` (kể cả `--force-with-lease`), không push nhánh của người khác.
   - **Không push thẳng lên `BASE_BRANCH` khi `DELIVERY=mr`**: code vào nhánh chính qua MR/PR. Hook `pre-push` chặn việc này với mọi người; gặp nó thì dừng và báo chủ dự án, **không** tìm cách khác (`--no-verify`, sửa hay xoá hook, đổi `core.hooksPath`).
 - `git commit --no-verify`, `git push --no-verify`, viết lại lịch sử nhánh người khác.
-- Sửa file ngoài vai, ngoài `files` của việc, hoặc ngoài thư mục tính năng của mình (Master).
+- Đổi trạng thái git ở **thư mục gốc** (`switch`, `checkout`, `rebase`, `merge`, `reset`, `stash`): thư mục gốc dùng chung cho chủ dự án và mọi phiên Master. Mọi việc code làm trong worktree. Ngoại lệ duy nhất: Master gộp ở máy khi `DELIVERY=merge`, theo `workflow/roles/master.md`.
+- Nối một lệnh đổi trạng thái (`git switch`, `checkout`, `reset`, xoá file…) sau một lệnh có thể lỗi bằng `;`. Dùng `&&`, để lệnh trước lỗi thì lệnh sau không chạy.
+- Sửa file ngoài vai, ngoài `files` của việc (trừ ba loại ở mục 3), hoặc ngoài thư mục tính năng của mình (Master).
+- Tự nhập mật khẩu hay mã đăng nhập vào trang web, nhất là trang gửi lên máy khác `localhost`. Gặp trang đăng nhập thì dừng phần kiểm trên trình duyệt và báo (Coder, Tester ghi vào bàn giao; Master nhờ chủ dự án đăng nhập).
 - Xoá hay sửa phần người khác đã ghi trong file trao đổi. Chỉ được ghi thêm, và đổi `status`, `to`.
 - Sửa `workflow/STATUS.md` (do watch.sh sinh), `workflow/agents.txt` và `workflow/roles/` (của chủ dự án).
 - Đọc, in, hay gửi đi nội dung `.env` và các khoá bí mật.

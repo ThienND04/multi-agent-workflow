@@ -44,9 +44,9 @@ Trong `workflow/F-NNN-short-name/` của tính năng:
 
 | Bước | Khi nào | Làm gì | Đặt |
 |---|---|---|---|
-| 9. Kiểm tra | Việc `status: in_test`, `to:` bạn | Mục 3: đọc diff, chạy test, chèn lỗi thử bộ test, chạy sản phẩm thật trên trình duyệt như người dùng. Tiêu chí không kiểm được thì tạo câu hỏi | Đạt: `status: verified`, `to: <master>`. Trượt: tạo lỗi `to: <assignee>`, việc `status: reopened`, `to: <assignee>`. Cần hỏi: câu hỏi `to: <master>`, việc `to: none`, ghi `blocked_by` |
+| 9. Kiểm tra | Việc `status: in_test`, `to:` bạn | Mục 3: đọc diff, chạy test, chèn lỗi thử bộ test, chạy sản phẩm thật trên trình duyệt như người dùng. Việc cuối của một chuỗi việc nối tiếp (các việc trước Master đã kiểm nhanh): kiểm **cả chuỗi**, gồm mọi tiêu chí của các việc trong chuỗi. Tiêu chí không kiểm được thì tạo câu hỏi | Đạt: `status: verified`, `to: <master>`. Trượt: tạo lỗi `to: <assignee>`, việc `status: reopened`, `to: <assignee>`. Cần hỏi: câu hỏi `to: <master>`, việc `to: none`, ghi `blocked_by` |
 | 6. Đọc câu trả lời | Câu hỏi `status: answered`, `to:` bạn | Đọc câu trả lời | Câu hỏi `status: closed`, `to: none`; việc `to:` bạn, kiểm tiếp như bước 9 |
-| 10b. Kiểm lại | Lỗi `status: fixed`, việc `in_test`, `to:` bạn | Kiểm lại lỗi đã sửa và cả việc | Lỗi hết: lỗi `status: closed`, `to: none`, rồi làm như bước 9 |
+| 10b. Kiểm lại | Lỗi `status: fixed`, việc `in_test`, `to:` bạn | Kiểm lại lỗi đã sửa và cả việc. Master gửi tiếp cho bạn thì bạn còn ngữ cảnh lượt trước: chỉ đọc phần diff mới (`git diff <commit đã kiểm>..<nhánh>`), chỉ chèn lỗi quanh chỗ vừa sửa | Lỗi hết: lỗi `status: closed`, `to: none`, rồi làm như bước 9 |
 
 `<master>` là dòng `master:` trong `SPEC.md`; `<assignee>` là dòng `assignee:` trong file việc.
 
@@ -61,7 +61,7 @@ Trong `workflow/F-NNN-short-name/` của tính năng:
 Ở bước 9, làm đủ 4 phần, theo thứ tự:
 
 **a. Đọc diff** (`git diff <nhánh chính>...<nhánh>`, với `<nhánh chính>` là `BASE_BRANCH` trong `workflow/project.conf`). Bạn là người duy nhất đọc code trước khi gộp. Xem:
-- chỉ có file trong `files:` của việc, không có file trong `workflow/`;
+- chỉ có file trong `files:` của việc, không có file trong `workflow/`. File ngoài `files:` chỉ được là những file Coder đã ghi ở mục "File ngoài `files:`" của bàn giao, và **đúng là** một trong ba loại được phép (`AGENTS.md` mục 3): test, locale của module, hay chỉnh kiểu cho biên dịch được mà **không đổi logic**. Soi kỹ loại thứ ba: có đổi hành vi thì tạo lỗi `kind: review`;
 - không có khoá bí mật, mật khẩu, nội dung `.env`;
 - dữ liệu từ người dùng hay từ ngoài được kiểm tra; không ghép thẳng vào câu SQL, HTML hay lệnh shell;
 - test thật sự kiểm tiêu chí (có so sánh kết quả, không bị bỏ qua, không chỉ chạy cho có);
@@ -71,14 +71,14 @@ Chỗ **phải sửa** thì tạo lỗi `kind: review`. Chỗ chỉ là **gợi 
 
 **b. Chạy test** theo lệnh trong `DECISIONS.md`. Không tin báo cáo của Coder.
 
-**c. Chèn lỗi thử bộ test.** Với mỗi tiêu chí quan trọng có test tự động (việc nhỏ thì 2–3 tiêu chí là đủ):
+**c. Chèn lỗi thử bộ test.** **Tối đa khoảng 5 ca mỗi lượt**, chọn các tiêu chí quan trọng có test tự động, ưu tiên logic dữ liệu (ánh xạ, kiểm tra hợp lệ, điều kiện); việc nhỏ thì 2–3 ca là đủ. Lượt kiểm lại sau khi sửa lỗi chỉ chèn ca liên quan lỗi đã sửa, không lặp lại các ca đã đạt. Mỗi ca:
 - trong worktree kiểm tra của bạn, sửa tạm code để làm sai đúng tiêu chí đó (đảo điều kiện, xoá một bước kiểm tra, đổi giá trị);
 - chạy test: **phải đỏ**. Test vẫn xanh thì tạo lỗi `kind: weak-test`: test không bắt được lỗi đó;
 - trả lại nguyên trạng bằng `git checkout -- .`, kiểm `git status` sạch. **Không bao giờ commit** thay đổi này.
 
 Ghi thành bảng trong file việc: tiêu chí, lỗi đã chèn, test nào đỏ.
 
-**d. Chạy sản phẩm thật trên trình duyệt** như người dùng (lệnh và địa chỉ trong `DECISIONS.md`; dùng công cụ trình duyệt bạn có, chưa nạp thì tìm và nạp trước). Đối chiếu **từng** tiêu chí trong `SPEC.md` và mockup. Đừng chỉ đọc lại phần "Tự kiểm trên trình duyệt" của Coder: tự làm lại, nhất là các trường hợp biên. Không có công cụ trình duyệt thì ghi rõ trong bàn giao rằng phần d chưa làm.
+**d. Chạy sản phẩm thật trên trình duyệt** như người dùng (lệnh và địa chỉ trong `DECISIONS.md`; dùng công cụ trình duyệt bạn có, chưa nạp thì tìm và nạp trước). Dùng **cổng cố định** trong `DECISIONS.md`: server đang chạy bản khác thì tắt rồi chạy bản của worktree kiểm tra **đúng cổng đó** (`--strictPort`); xong thì để server chạy. Trang đòi đăng nhập thì **không tự nhập mật khẩu**: ghi "cần chủ dự án đăng nhập" vào bàn giao, phần d chưa xong. Đối chiếu **từng** tiêu chí trong `SPEC.md` và mockup. Đừng chỉ đọc lại phần "Tự kiểm trên trình duyệt" của Coder: tự làm lại, nhất là các trường hợp biên. Không có công cụ trình duyệt thì ghi rõ trong bàn giao rằng phần d chưa làm.
 
 Ghi kết quả từng tiêu chí, kèm bằng chứng (lệnh đã chạy; mở đâu, làm gì, thấy gì; ảnh trong `<gốc>/workflow/F-NNN-…/shots/` nếu công cụ lưu được) vào file việc.
 
