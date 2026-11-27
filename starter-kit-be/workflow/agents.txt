@@ -6,8 +6,10 @@
 #   subagent : Master tự gọi subagent này ngay trong phiên chat của Master (Claude Code, ứng dụng desktop
 #              hoặc dòng lệnh). Cột cuối là tên subagent trong .claude/agents/ (coder, coder-pro, tester).
 #              Không cần cài thêm gì. watch.sh không đánh thức, không báo.
-#   auto     : watch.sh tự chạy lệnh ở chế độ chạy ngầm, thêm lời nhắn vào cuối lệnh, ghi log vào
-#              workflow/logs/. Agent chạy KHÔNG có người canh: chỉ cấp quyền cần thiết, không cấp quyền push.
+#   auto     : chạy ngầm qua workflow/agent.sh (với claude/agy) hoặc watch.sh.
+#              agent.js tự lưu session ID vào workflow/.run/sessions/<ID>.json để dùng lại phiên cũ
+#              khi đánh thức lại; chưa có hoặc truyền --new (`agent.sh new <ID>`) thì tạo phiên mới.
+#              Agent chạy KHÔNG có người canh: chỉ cấp quyền cần thiết, không cấp quyền push.
 #   window   : watch.sh mở một CỬA SỔ terminal mới, chạy công cụ ở dạng tương tác với lời nhắn gửi sẵn.
 #              Bạn thấy agent làm gì, trả lời được khi nó xin quyền. Cửa sổ còn mở mà có việc mới thì
 #              watch.sh không mở thêm, chỉ báo bạn gõ "Xử lý việc đang chờ" vào cửa sổ đó.
@@ -16,15 +18,15 @@
 # Chế độ auto và window cần công cụ AI dòng lệnh (cài theo hướng dẫn của từng công cụ). Lệnh phải kết thúc bằng tham số
 # nhận lời nhắn, vì watch.sh thêm lời nhắn vào cuối lệnh.
 #
-# Lệnh mẫu (kiểm tra lại theo phiên bản công cụ bạn cài):
-#   Công cụ         auto (chạy ngầm)                                         window (cửa sổ)
-#   Claude Code   : claude -p --permission-mode acceptEdits --model sonnet  claude --model sonnet
-#   Antigravity   : agy --mode accept-edits --model <model> -p              agy --model <model> -i
-#   Codex CLI     : codex exec --sandbox workspace-write                    codex
-#   Gemini CLI    : gemini --approval-mode auto_edit -p                     gemini -i
-#   Xem model của Antigravity: agy models. Thêm --effort low cho việc nhẹ (khảo sát, kiểm tra đơn giản).
+# Lệnh mẫu (chạy trên Linux qua workflow/agent.sh và watch.sh):
+#   Claude Code   : claude --permission-mode acceptEdits --model sonnet
+#   Antigravity   : agy --mode accept-edits --effort high
+#   Xem model của Antigravity: agy models. Có thể thêm --effort low|medium|high|max.
 #   Tài khoản Claude thứ hai:
-#     env CLAUDE_CONFIG_DIR=/c/Users/<tên-bạn>/.claude-acc2 claude -p --permission-mode acceptEdits --model sonnet
+#     env CLAUDE_CONFIG_DIR=/home/<tên-bạn>/.claude-acc2 claude --permission-mode acceptEdits --model sonnet
+#
+# Lưu ý: giữ nguyên lệnh gốc (không cần tự thêm -p, --output-format hay --resume); workflow/agent.js
+# tự gắn các cờ stream-json, --session-id / --resume và -p=<prompt> đúng chuẩn từng CLI.
 #
 # Master: để manual, vì bạn đang chat với Master trong phiên chính. Khi có việc chờ Master, watch.sh báo bạn;
 # bạn nói với Master "Xử lý việc đang chờ".
@@ -36,14 +38,15 @@ master-01     master  manual    phiên chat chính
 master-02     master  manual    phiên chat song song thứ hai
 master-03     master  manual    phiên chat song song thứ ba
 
-coder-01      coder   subagent  coder
-tester-01     tester  subagent  tester
+# Mặc định dùng chế độ auto với claude và agy để Master (dù là Claude hay Antigravity)
+# và watch.sh tự tạo/đánh thức chạy ngầm, tự lưu & dùng lại session ID cố định theo từng ID.
+coder-01      coder   auto      claude --permission-mode acceptEdits --model sonnet
+coder-02      coder   auto      agy --mode accept-edits
+tester-01     tester  auto      agy --mode accept-edits --effort high
+tester-02     tester  auto      claude --permission-mode acceptEdits --model opus
 
-# Tester nên khác model với Coder của việc (dễ mù cùng một chỗ): subagent coder dùng sonnet, tester dùng opus.
-# Việc giao cho coder-pro (opus) thì tốt nhất có một Tester chạy công cụ khác, như tester-02 bên dưới.
-#
-# Ví dụ khác:
-# coder-02    coder   subagent  coder-pro          (việc khó, model mạnh hơn)
-# coder-03    coder   auto      claude -p --permission-mode acceptEdits --model sonnet
-# tester-02   tester  window    agy --model <model> -i          (Antigravity CLI, mở cửa sổ riêng)
+# Nếu muốn chạy dạng subagent của Claude Code (khi Master là Claude Code):
+# coder-01    coder   subagent  coder
+# coder-03    coder   subagent  coder-pro
+# tester-01   tester  subagent  tester
 # tester-03   tester  manual    Antigravity (ứng dụng giao diện, dán lời nhắn từ clipboard)

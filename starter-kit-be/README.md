@@ -13,11 +13,12 @@ Bộ workflow multi-agent cho mọi dự án: frontend, backend, CLI, thư việ
 - Bản chép nguyên văn luật riêng của chủ dự án (ở đây là `~/.claude/CLAUDE.md` của Đại ca). Mọi agent đọc và tuân; `AGENTS.md` mục 8 nói cách áp dụng cho dự án nhiều ngôn ngữ.
 - Người khác dùng kit: **thay nội dung bằng luật của mình**, giữ khối chú thích đầu file, rồi xem lại `AGENTS.md` mục 8 cho khớp.
 
-## Chép vào dự án
+## Chép vào dự án và Cập nhật
 1. Từ thư mục kit chạy `sh install-kit.sh <thư mục gốc dự án>` (thêm `--local` cho dự án của team: kit ẩn khỏi git, chỉ có trên máy này). Script chép `.claude/`, `.agents/skills/mr7-review/`, `workflow/`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.gitattributes` (không chép README này), không ghi đè file dự án đã có: `AGENTS.md` có sẵn thì kit vào `AGENTS-WORKFLOW.md`; `settings.json` có sẵn thì gộp tay; `workflow/` đã có thì dừng. Đặt `BASE_BRANCH` theo nhánh hiện tại; `--local` tự thêm `.agents/` (hoặc `/.agents/skills/mr7-review/` nếu dự án đã có `.agents/`) cùng `.claude/`, `workflow/`, `.worktrees/`, `.mr-review/`, `.slot.*.env` vào `.git/info/exclude`.
-2. Sửa `workflow/project.conf` (`BASE_BRANCH`: đích của MR và thước đo review, ví dụ `develop`; `WORK_BRANCH`: nhánh bạn đang code nếu nó đã đi trước `BASE_BRANCH`; `DELIVERY`). `install-kit.sh` đặt `BASE_BRANCH` theo nhánh hiện tại, **sai nếu đó là nhánh tính năng**, `workflow/agents.txt`, thay `workflow/OWNER-RULES.md` nếu cần.
-3. Chạy `sh workflow/watch.sh --lint`.
-4. Mở phiên chat Master và dán: "Bạn là master-01. Làm phần lần đầu trong dự án theo workflow/roles/master.md: khảo sát, điền workflow/DECISIONS.md, viết workflow/stack/<unit>.sh và .md, chạy thử, rồi đưa tôi duyệt."
+2. **Cập nhật khi bộ kit có bản mới:** chạy `sh update-kit.sh <thư mục gốc dự án>` (hoặc `sh install-kit.sh <thư mục gốc dự án> --update`, thêm `--dry-run` để xem trước). Lệnh sẽ ghi đè các file core của kit (`agent.js`, `agent.sh`, `watch.sh`, `monitor.js`, `run.sh`, `notify.sh`, `roles/*`, `hooks/*`, `stack/README.md`, `stack/examples/*`, `.claude/agents/*`, `skills/mr7-review/*`, `AGENTS.md`), tự gộp các rule mới vào `.claude/settings.json` mà **giữ nguyên** toàn bộ cấu hình và dữ liệu riêng của dự án (`project.conf`, `agents.txt`, `OWNER-RULES.md`, `DECISIONS.md`, `stack/<unit>.*`, `F-*`, `.run/`, `logs/`, `.env`).
+3. Sửa `workflow/project.conf` (`BASE_BRANCH`: đích của MR và thước đo review, ví dụ `develop`; `WORK_BRANCH`: nhánh bạn đang code nếu nó đã đi trước `BASE_BRANCH`; `DELIVERY`). `install-kit.sh` đặt `BASE_BRANCH` theo nhánh hiện tại, **sai nếu đó là nhánh tính năng**, `workflow/agents.txt`, thay `workflow/OWNER-RULES.md` nếu cần.
+4. Chạy `sh workflow/watch.sh --lint`.
+5. Mở phiên chat Master và dán: "Bạn là master-01. Làm phần lần đầu trong dự án theo workflow/roles/master.md: khảo sát, điền workflow/DECISIONS.md, viết workflow/stack/<unit>.sh và .md, chạy thử, rồi đưa tôi duyệt."
 
 ## Lần đầu trong dự án (Master làm, chi tiết ở `workflow/roles/master.md`)
 1. Chưa có git thì hỏi Đại ca trước khi `git init`.
@@ -29,10 +30,14 @@ Bộ workflow multi-agent cho mọi dự án: frontend, backend, CLI, thư việ
 7. Thêm `.worktrees/` (worktree nằm trong dự án, nên agent ghi file được mà không cần cấp quyền thêm) và `.mr-review/` vào `.git/info/exclude` (`.slot.*.env` do run.sh tự thêm).
 8. `DECISIONS.md` còn `TODO(` hay `[NEEDS CLARIFICATION]` thì chưa giao việc code.
 
-## Chế độ agent (`workflow/agents.txt`)
-- **subagent** (mặc định): Master tự gọi `coder`, `coder-pro`, `tester` trong `.claude/agents/` ngay trong phiên chat. Không cần cài thêm, không cần `watch.sh`.
-- **auto**: `watch.sh` chạy ngầm, ví dụ `claude -p --permission-mode acceptEdits --model sonnet`. Không người canh: quyền lấy từ `.claude/settings.json`, mà file này cho phép `git push` (để Master push khi Đại ca bảo), nên agent `auto` cũng push được; chỉ luật vai cấm. Muốn chặn hẳn thì thêm cờ `--disallowedTools` cho `Bash(git push:*)` và `Bash(git -C * push:*)` vào lệnh trong `agents.txt` (cần kiểm cú pháp theo phiên bản Claude Code).
-- **window**, **manual**: mở cửa sổ terminal, hoặc báo và chép lời nhắn để bạn dán (xem chú thích trong `agents.txt`). Có agent ở ba chế độ này thì chạy `sh workflow/watch.sh`.
+## Chế độ agent (`workflow/agents.txt`) và `workflow/agent.sh`
+- **auto với `claude` / `agy` (mặc định trên Linux):** chạy ngầm không cần mở cửa sổ tay, dùng chung cho cả Master (Claude Code hoặc Antigravity) gọi trực tiếp lẫn `watch.sh` tự đánh thức:
+  - Script `sh workflow/agent.sh wake|run <ID>` (hoặc `watch.sh`) tự lưu `sessionId` vào `workflow/.run/sessions/<ID>.json`. Lần sau gọi lại đúng `<ID>` sẽ **tự resume session cũ**; nếu chưa có hoặc truyền `--new` (`sh workflow/agent.sh new <ID>`) sẽ **tạo session mới**.
+  - Các lệnh hỗ trợ: `wake` (chạy ngầm), `run` (chạy chờ kết quả), `wait` (chờ nhiều agent chạy ngầm), `new` (đặt lại để lần tới tạo phiên mới), `use` (đổi về một session cũ), `status`, `logs`, `stop`.
+  - **Trên UI của `watch.sh` (`http://localhost:4300`):** khu **Quản lý Agent & Session** và bảng chi tiết từng nhân vật cho phép thêm/xoá agent (`master`, `coder`, `tester`) vào `agents.txt`, đánh thức kèm lời nhắn, tạo phiên mới, dừng tiến trình, hoặc chuyển đổi giữa các session ID đã lưu.
+  - Quyền khi chạy ngầm: với `claude`, quyền lấy từ `.claude/settings.json` (`--permission-mode acceptEdits`); muốn chặn hẳn `git push` cho agent `auto` thì thêm `--disallowedTools "Bash(git push:*)" "Bash(git -C * push:*)"` vào lệnh trong `agents.txt`. Với `agy`, mặc định `--mode accept-edits`.
+- **subagent** (tuỳ chọn cho Claude Code): Master tự gọi `coder`, `coder-pro`, `tester` trong `.claude/agents/` ngay trong phiên chat.
+- **window**, **manual**: mở cửa sổ terminal, hoặc báo và chép lời nhắn để bạn dán (xem chú thích trong `agents.txt`). Có agent ở các chế độ cần quét tự động thì chạy `sh workflow/watch.sh`.
 
 ## Lưu ý đã gặp khi thử trên dự án thật (Express + Mongo, npm workspaces)
 - Mở `claude` **trong thư mục dự án** và bấm tin cậy một lần. Phiên `claude -p` (agent `auto`) của workspace chưa tin cậy bỏ qua `permissions.allow` của dự án (cảnh báo "Ignoring … permissions.allow").

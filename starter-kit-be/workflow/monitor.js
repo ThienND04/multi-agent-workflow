@@ -199,6 +199,34 @@ function readWatch() {
   return { state: 'never' };
 }
 
+function detectCliTool(mode, note) {
+  if (mode !== 'auto' && mode !== 'window') return '';
+  const parts = String(note || '').trim().split(/\s+/);
+  for (const p of parts) {
+    const base = path.basename(p);
+    if (base === 'claude' || base === 'agy') return base;
+  }
+  return '';
+}
+
+function readAgentSession(id) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(RUNDIR, 'sessions', id + '.json'), 'utf8'));
+    return {
+      sessionId: raw.sessionId || null,
+      tool: raw.tool || '',
+      turnCount: raw.turnCount || 0,
+      lastUsedAt: raw.lastUsedAt || null,
+      lastTask: raw.lastTask || '',
+      lastExitCode: typeof raw.lastExitCode === 'number' ? raw.lastExitCode : null,
+      forceNew: Boolean(raw.forceNew),
+      history: Array.isArray(raw.history) ? raw.history.slice(0, 12) : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 function state() {
   const agents = readAgents();
   // Chỉ Master ghi .now. Coder, Tester (subagent cũng nạp CLAUDE.md) lỡ ghi thì bỏ qua, kẻo "Chờ bạn:" của họ
@@ -211,6 +239,8 @@ function state() {
     a.running = !!(lg && !lg.finished && fs.existsSync(path.join(W, '.run', a.id + '.pid')));
     a.lastLog = lg; a.pending = []; a.features = [];
     a.paused = fs.existsSync(path.join(W, '.run', a.id + '.paused'));
+    a.cliTool = detectCliTool(a.mode, a.note);
+    a.session = readAgentSession(a.id);
     // Subagent do Master gọi không có pid hay log của watch.sh: Master ghi .run/<id>.sub ("F-001 T-01") lúc gọi,
     // ghi rỗng khi xong. File cũ hơn 90 phút coi như Master quên xoá.
     a.sub = '';
@@ -255,8 +285,10 @@ function state() {
 }
 
 // ---------- Máy chủ ----------
-// Mã bí mật cho lệnh dừng (sh workflow/watch.sh --stop): ghi vào .run/, chỉ ai đọc được thư mục dự án mới dừng được
+// Mã bí mật cho lệnh dừng (sh workflow/watch.sh --stop): ghi vào .run/, chỉ ai đọc được thư mục dự án mới dừng được.
+// UI_TOKEN chỉ giữ trong bộ nhớ và nhúng vào HTML khi phục vụ trang, dùng chống CSRF cho các nút điều khiển trên web.
 const TOKEN = crypto.randomBytes(16).toString('hex');
+const UI_TOKEN = crypto.randomBytes(16).toString('hex');
 const runFile = n => path.join(RUNDIR, n);
 function writeRun() {
   if (!isDir(W)) return;
@@ -273,12 +305,192 @@ function quit() {
 }
 for (const s of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(s, quit);
 
+function sendJson(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(JSON.stringify(data));
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let raw = '';
+    req.on('data', chunk => {
+      raw += chunk;
+      if (raw.length > 65536) { reject(new Error('Dữ liệu quá lớn')); req.destroy(); }
+    });
+    req.on('end', () => {
+      if (!raw.trim()) return resolve({});
+      try { resolve(JSON.parse(raw)); } catch { reject(new Error('JSON không hợp lệ')); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function checkUiAuth(req, res) {
+  if (DEMO) { sendJson(res, 400, { error: 'Chế độ xem thử không hỗ trợ thao tác ghi.' }); return false; }
+  if (!isDir(W)) { sendJson(res, 400, { error: 'Không tìm thấy thư mục workflow/.' }); return false; }
+  if (req.headers['x-ui-token'] !== UI_TOKEN) { sendJson(res, 403, { error: 'Thiếu hoặc sai mã phiên UI.' }); return false; }
+  const origin = req.headers.origin;
+  if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(origin)) {
+    sendJson(res, 403, { error: 'Origin không hợp lệ.' });
+    return false;
+  }
+  return true;
+}
+
+function validId(id) {
+  return typeof id === 'string' && /^[a-z]+-[0-9a-z-]+$/.test(id) && id !== 'owner' && id !== 'none';
+}
+
+function sanitizeOpt(val) {
+  if (typeof val !== 'string') return '';
+  const trimmed = val.trim();
+  if (!trimmed) return '';
+  if (!/^[A-Za-z0-9._:/-]+$/.test(trimmed)) throw new Error('Tham số chứa ký tự không hợp lệ: ' + trimmed);
+  return trimmed;
+}
+
+function buildAgentLine(body) {
+  const id = String(body.id || '').trim();
+  const role = String(body.role || '').trim();
+  const mode = String(body.mode || '').trim();
+  const tool = String(body.tool || '').trim();
+  const model = sanitizeOpt(body.model || '');
+  const effort = sanitizeOpt(body.effort || '');
+  const note = String(body.note || '').replace(/[\r\n]/g, ' ').trim();
+
+  if (!validId(id)) throw new Error('ID không hợp lệ (dạng đúng: coder-03, tester-03, master-04).');
+  if (!['master', 'coder', 'tester'].includes(role)) throw new Error('Vai chỉ có thể là master, coder hoặc tester.');
+  if (!['auto', 'manual', 'window', 'subagent'].includes(mode)) throw new Error('Chế độ không hợp lệ.');
+
+  let rest = note;
+  if (mode === 'auto') {
+    if (tool === 'claude') {
+      const args = ['claude', '--permission-mode', 'acceptEdits'];
+      if (model) args.push('--model', model);
+      if (effort) args.push('--effort', effort);
+      rest = args.join(' ');
+    } else if (tool === 'agy') {
+      const args = ['agy', '--mode', 'accept-edits'];
+      if (model) args.push('--model', model);
+      if (effort) args.push('--effort', effort);
+      rest = args.join(' ');
+    } else {
+      throw new Error('Chế độ auto chỉ hỗ trợ công cụ claude hoặc agy.');
+    }
+  } else if (!rest) {
+    rest = tool && tool !== 'terminal' ? `phiên ${tool}` : 'phiên mở tay';
+  }
+  return { id, line: `${id.padEnd(14)}${role.padEnd(8)}${mode.padEnd(10)}${rest}` };
+}
+
+function upsertAgentInFile(id, newLine, allowUpdate) {
+  const agentsPath = path.join(W, 'agents.txt');
+  const lines = read(agentsPath).split(/\r?\n/);
+  let foundIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t || t.startsWith('#')) continue;
+    if (t.split(/\s+/)[0] === id) { foundIdx = i; break; }
+  }
+  if (foundIdx !== -1 && !allowUpdate) throw new Error(`Agent '${id}' đã tồn tại trong workflow/agents.txt.`);
+  if (foundIdx !== -1) lines[foundIdx] = newLine;
+  else {
+    while (lines.length && lines[lines.length - 1] === '') lines.pop();
+    lines.push(newLine);
+  }
+  fs.writeFileSync(agentsPath, lines.join('\n') + '\n', 'utf8');
+}
+
+function removeAgentFromFile(id) {
+  const agentsPath = path.join(W, 'agents.txt');
+  const lines = read(agentsPath).split(/\r?\n/);
+  let removed = false;
+  const kept = lines.filter(l => {
+    const t = l.trim();
+    if (t && !t.startsWith('#') && t.split(/\s+/)[0] === id) { removed = true; return false; }
+    return true;
+  });
+  if (!removed) throw new Error(`Không tìm thấy '${id}' trong workflow/agents.txt.`);
+  fs.writeFileSync(agentsPath, kept.join('\n').replace(/\n*$/, '\n'), 'utf8');
+}
+
+function runAgentScript(args) {
+  const scriptPath = path.join(W, 'agent.js');
+  if (!fs.existsSync(scriptPath)) return Promise.reject(new Error('Thiếu workflow/agent.js. Hãy cập nhật kit.'));
+  return new Promise((resolve, reject) => {
+    cp.execFile(process.execPath, [scriptPath, ...args], { cwd: ROOT, encoding: 'utf8', timeout: 15000 }, (err, stdout, stderr) => {
+      if (err) {
+        const msg = (stderr || stdout || err.message || 'Lỗi chạy agent.js').trim();
+        return reject(new Error(msg));
+      }
+      resolve(stdout.trim());
+    });
+  });
+}
+
+async function handleApiPost(req, res, url) {
+  if (!checkUiAuth(req, res)) return;
+  let body;
+  try { body = await readJsonBody(req); } catch (e) { return sendJson(res, 400, { error: e.message }); }
+
+  try {
+    if (url === '/api/agents') {
+      const { id, line } = buildAgentLine(body);
+      upsertAgentInFile(id, line, Boolean(body.update));
+      return sendJson(res, 200, { ok: true, id, state: state() });
+    }
+    if (url === '/api/agents/delete') {
+      const id = String(body.id || '').trim();
+      if (!validId(id)) return sendJson(res, 400, { error: 'ID không hợp lệ.' });
+      const cur = state().agents.find(a => a.id === id);
+      if (cur && cur.running) return sendJson(res, 409, { error: `Agent '${id}' đang chạy, hãy dừng trước khi xoá.` });
+      removeAgentFromFile(id);
+      return sendJson(res, 200, { ok: true, id, state: state() });
+    }
+    if (url === '/api/agent/wake') {
+      const id = String(body.id || '').trim();
+      if (!validId(id)) return sendJson(res, 400, { error: 'ID không hợp lệ.' });
+      const args = ['wake', id, '--json'];
+      if (body.newSession) args.push('--new');
+      if (typeof body.msg === 'string' && body.msg.trim()) args.push('--msg', body.msg.trim());
+      if (typeof body.files === 'string' && body.files.trim()) args.push('--files', body.files.trim());
+      const out = await runAgentScript(args);
+      return sendJson(res, 200, { ok: true, result: JSON.parse(out), state: state() });
+    }
+    if (url === '/api/agent/new') {
+      const id = String(body.id || '').trim();
+      if (!validId(id)) return sendJson(res, 400, { error: 'ID không hợp lệ.' });
+      const msg = await runAgentScript(['new', id]);
+      return sendJson(res, 200, { ok: true, msg, state: state() });
+    }
+    if (url === '/api/agent/use') {
+      const id = String(body.id || '').trim();
+      const sessionId = String(body.sessionId || '').trim();
+      if (!validId(id) || !sessionId) return sendJson(res, 400, { error: 'Thiếu ID hoặc sessionId.' });
+      const msg = await runAgentScript(['use', id, sessionId]);
+      return sendJson(res, 200, { ok: true, msg, state: state() });
+    }
+    if (url === '/api/agent/stop') {
+      const id = String(body.id || '').trim();
+      if (!validId(id)) return sendJson(res, 400, { error: 'ID không hợp lệ.' });
+      const msg = await runAgentScript(['stop', id]);
+      return sendJson(res, 200, { ok: true, msg, state: state() });
+    }
+    return sendJson(res, 404, { error: 'Không có endpoint này.' });
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message || String(e) });
+  }
+}
+
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (req.method === 'POST' && url === '/api/stop') {
     if (req.headers['x-token'] !== TOKEN) { res.writeHead(403); return res.end(); }
     res.writeHead(200); res.end('ok');
     return setTimeout(quit, 50);
+  }
+  if (req.method === 'POST' && url.startsWith('/api/')) {
+    return handleApiPost(req, res, url);
   }
   if (req.method !== 'GET') { res.writeHead(405); return res.end(); }
   if (url === '/api/state') {
@@ -289,7 +501,7 @@ const server = http.createServer((req, res) => {
   }
   if (url === '/' || url === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-    return res.end(PAGE);
+    return res.end(PAGE.replace('__UI_TOKEN__', UI_TOKEN));
   }
   res.writeHead(404); res.end('Không có');
 });
@@ -407,10 +619,21 @@ table{border-collapse:collapse;width:100%;font-size:13px;margin-top:4px}
 td{padding:3px 6px;border-top:1px dashed var(--line);vertical-align:top}
 td:last-child{white-space:nowrap}
 .sq{display:inline-block;width:10px;height:10px;border:1px solid var(--ink);margin-right:6px;vertical-align:-1px}
-#detail{position:fixed;right:16px;bottom:16px;width:min(460px,calc(100% - 32px));max-height:min(70vh,calc(100vh - 32px));overflow:auto;display:none;z-index:5}
+#detail{position:fixed;right:16px;bottom:16px;width:min(480px,calc(100% - 32px));max-height:min(76vh,calc(100vh - 32px));overflow:auto;display:none;z-index:5}
 #detail pre{white-space:pre-wrap;font-size:12px;background:var(--bg);border:1px solid var(--line);padding:8px;max-height:280px;overflow:auto}
-#detail button{float:right;font:inherit;font-size:13px;padding:6px 12px;min-height:36px;border:2px solid var(--ink);background:var(--paper);color:var(--fg);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+#detail>button:first-child{float:right}
 #detail h2:focus{outline:none}
+.btn{font:700 12.5px ui-monospace,Consolas,monospace;padding:5px 10px;min-height:32px;border:2px solid var(--ink);background:var(--paper);color:var(--fg);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.btn:hover{filter:brightness(.96)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.pri{background:var(--runbg);color:var(--run)}.btn.bad{background:var(--badbg);color:var(--bad)}.btn.warn{background:var(--waitbg);color:var(--wait)}
+.mgrForm{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-bottom:10px;padding-bottom:10px;border-bottom:2px dashed var(--line)}
+.mgrForm label{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:700;color:var(--fg2)}
+.mgrForm input,.mgrForm select,.sessBox input,.sessBox textarea,.sessBox select{font:inherit;font-size:13px;padding:5px 8px;border:2px solid var(--ink);background:var(--bg);color:var(--fg)}
+.sessBox{border:2px dashed var(--line);padding:8px 10px;margin:8px 0;background:var(--bg)}
+.sessBox textarea{width:100%;margin:6px 0;resize:vertical}
+.rowAct{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.msgStatus{font-size:13px;margin:6px 0 0;font-weight:600}
+.msgStatus.err{color:var(--bad)}.msgStatus.ok{color:var(--run)}
 @media (max-width:600px){
  #detail{left:8px;right:8px;bottom:8px;width:auto;max-height:45vh}
  .banner{font-size:16px}.banner.owner{font-size:17px}.banner .small{font-size:13px}
@@ -433,11 +656,25 @@ td:last-child{white-space:nowrap}
 <div class="funbar"><button type="button" class="funbtn" id="funBtn" aria-pressed="true">Hoạt hình vui<span id="funState" aria-hidden="true">: bật</span></button>
 <span id="funNote" hidden>Máy bạn đặt giảm chuyển động: chỉ hiện bong bóng thoại, không ai đi lại hay nhảy.</span></div>
 </section>
+<section class="pix" id="mgrBox"><h2>Quản lý Agent &amp; Session</h2>
+<form class="mgrForm" id="mgrForm">
+<label>Vai<select id="fRole"><option value="coder">coder</option><option value="tester">tester</option><option value="master">master</option></select></label>
+<label>ID<input id="fId" size="11" placeholder="coder-03" required></label>
+<label>Chế độ<select id="fMode"><option value="auto">auto (ngầm)</option><option value="manual">manual (terminal)</option></select></label>
+<label>Công cụ<select id="fTool"><option value="claude">claude</option><option value="agy">agy</option><option value="terminal">terminal</option></select></label>
+<label>Model<input id="fModel" size="12" placeholder="mặc định"></label>
+<label>Effort<select id="fEffort"><option value="">mặc định</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="max">max</option></select></label>
+<button type="submit" class="btn pri">+ Thêm Agent</button>
+</form>
+<div id="mgrMsg" class="msgStatus" hidden></div>
+<div id="mgrList"></div>
+</section>
 <section class="pix"><h2>File của từng tính năng</h2><div id="files"></div></section>
-<p class="muted">Trang chỉ đọc, tự làm mới 3 giây một lần. Bấm vào nhân vật để xem chi tiết. Trả lời và duyệt: nói với Master.</p>
+<p class="muted">Tự làm mới 3 giây một lần. Bấm vào nhân vật để xem chi tiết hoặc đánh thức/đổi session. Trả lời và duyệt file: nói với Master.</p>
 </main>
 <section class="pix" id="detail" role="region" aria-labelledby="detailTitle"></section>
 <script>
+const UI_TOKEN='__UI_TOKEN__';
 const COLORS=['#2f6fe0','#1f9a6e','#e07a1f','#8b4fd0','#d8457f','#0f8f9f','#a0782a'];
 const HAIR=['#3b2a20','#7a4a22','#c9a24a','#2d2d3a','#a33a2a','#5a3a2a','#1f1a17','#6b3d1e'];
 const $=s=>document.querySelector(s);
@@ -2226,6 +2463,7 @@ function render(){
  banner();
  renderNeed();
  build();
+ renderMgr();
  renderFiles();
  if(openId)showDetail();
 }
@@ -2298,20 +2536,132 @@ function runLine(a){
  if(a.now)return masterLine({id:a.id,text:a.now,at:a.nowAt}).replace(/^MASTER \S+: /,'');
  return 'Không chạy';
 }
+const isEditingIn=box=>!!(box&&document.activeElement&&box.contains(document.activeElement)&&['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName));
+let KEY_MGR='';
+async function apiPost(endpoint,payload){
+ const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-UI-Token':UI_TOKEN},body:JSON.stringify(payload||{})});
+ const data=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(data.error||('HTTP '+r.status));
+ if(data.state){S=data.state;KEY_MGR='';KEY_DETAIL='';render()}
+ return data;
+}
+function showMgrMsg(text,isErr){
+ const m=$('#mgrMsg');if(!m)return;
+ m.textContent=text;m.className='msgStatus '+(isErr?'err':'ok');m.hidden=!text;
+}
+function nextAgentIdFor(role){
+ const used=new Set((S&&S.agents||[]).map(a=>a.id));
+ for(let i=1;i<=99;i++){const id=role+'-'+String(i).padStart(2,'0');if(!used.has(id))return id}
+ return role+'-new';
+}
+function initMgrForm(){
+ const form=$('#mgrForm'),roleEl=$('#fRole'),modeEl=$('#fMode'),toolEl=$('#fTool'),idEl=$('#fId');
+ if(!form||form.dataset.bound)return;form.dataset.bound='1';
+ let idTouched=false;
+ idEl.addEventListener('input',()=>{idTouched=true});
+ roleEl.addEventListener('change',()=>{
+  if(roleEl.value==='master'){modeEl.value='manual';toolEl.value='terminal'}
+  else{modeEl.value='auto';if(toolEl.value==='terminal')toolEl.value='claude'}
+  if(!idTouched||!idEl.value.trim())idEl.value=nextAgentIdFor(roleEl.value);
+ });
+ modeEl.addEventListener('change',()=>{
+  if(modeEl.value==='auto'&&toolEl.value==='terminal')toolEl.value='claude';
+ });
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();showMgrMsg('');
+  try{
+   const res=await apiPost('/api/agents',{id:idEl.value.trim(),role:roleEl.value,mode:modeEl.value,tool:toolEl.value,model:$('#fModel').value.trim(),effort:$('#fEffort').value});
+   idTouched=false;idEl.value=nextAgentIdFor(roleEl.value);$('#fModel').value='';
+   showMgrMsg('Đã thêm agent '+res.id+' vào workflow/agents.txt',false);
+  }catch(err){showMgrMsg(err.message,true)}
+ });
+}
+function renderMgr(){
+ initMgrForm();
+ const idEl=$('#fId'),roleEl=$('#fRole');
+ if(idEl&&!idEl.value.trim()&&S)idEl.value=nextAgentIdFor(roleEl.value);
+ const box=$('#mgrList');if(!box||!S)return;
+ const k=JSON.stringify(S.agents.map(a=>[a.id,a.role,a.mode,a.cliTool,a.running,a.paused,a.pending.length,a.session]));
+ if(k===KEY_MGR||selIn(box)||isEditingIn(box))return;
+ KEY_MGR=k;
+ box.replaceChildren();
+ if(!S.agents.length){box.append(el('p','muted','Chưa có agent nào trong workflow/agents.txt.'));return}
+ const t=el('table');
+ S.agents.forEach(a=>{
+  const tr=el('tr');
+  const tdId=el('td');const btnId=el('button','btn',a.id);btnId.type='button';btnId.onclick=()=>{openId=a.id;openKey=null;KEY_DETAIL='';showDetail();$('#detailTitle').focus({preventScroll:true})};
+  tdId.append(btnId);
+  const tdRole=el('td',null,a.role+' · '+a.mode+(a.cliTool?' ('+a.cliTool+')':''));
+  const tdSt=el('td',null,a.running?'Đang chạy':a.paused?'Tạm dừng':'Rảnh'+(a.pending.length?' ('+a.pending.length+' chờ)':''));
+  const sess=a.session;
+  const sessTxt=!a.cliTool&&a.mode!=='auto'?'(mở tay)':sess&&sess.forceNew?'sẽ tạo mới':sess&&sess.sessionId?sess.sessionId.slice(0,8)+'… ('+(sess.turnCount||0)+' lượt)':'chưa có';
+  const tdSess=el('td',null,sessTxt);
+  const tdAct=el('td');const actWrap=el('div','rowAct');
+  if(a.cliTool){
+   const bWake=el('button','btn pri',a.running?'Đang chạy':'Đánh thức');bWake.type='button';bWake.disabled=a.running;
+   bWake.onclick=async()=>{showMgrMsg('');try{const m=prompt('Lời nhắn cho '+a.id+' (bỏ trống nếu chỉ chạy các file đang chờ to: '+a.id+'):','');if(m===null)return;await apiPost('/api/agent/wake',{id:a.id,msg:m});showMgrMsg('Đã đánh thức '+a.id,false)}catch(err){showMgrMsg(err.message,true)}};
+   const bNew=el('button','btn warn','Phiên mới');bNew.type='button';bNew.disabled=a.running;
+   bNew.onclick=async()=>{showMgrMsg('');try{const r=await apiPost('/api/agent/new',{id:a.id});showMgrMsg(r.msg||'Đã đặt phiên mới cho '+a.id,false)}catch(err){showMgrMsg(err.message,true)}};
+   actWrap.append(bWake,bNew);
+   if(a.running){const bStop=el('button','btn bad','Dừng');bStop.type='button';bStop.onclick=async()=>{showMgrMsg('');try{const r=await apiPost('/api/agent/stop',{id:a.id});showMgrMsg(r.msg||'Đã dừng '+a.id,false)}catch(err){showMgrMsg(err.message,true)}};actWrap.append(bStop)}
+  }else if(a.role==='master'&&a.mode==='manual'){
+   const hint=el('span','muted','Terminal: ');const code=el('code',null,'claude / agy');actWrap.append(hint,code);
+  }
+  const bDel=el('button','btn','Xoá');bDel.type='button';bDel.disabled=a.running;
+  bDel.onclick=async()=>{if(!confirm('Xoá '+a.id+' khỏi workflow/agents.txt?'))return;showMgrMsg('');try{await apiPost('/api/agents/delete',{id:a.id});showMgrMsg('Đã xoá '+a.id,false)}catch(err){showMgrMsg(err.message,true)}};
+  actWrap.append(bDel);tdAct.append(actWrap);
+  tr.append(tdId,tdRole,tdSt,tdSess,tdAct);t.append(tr);
+ });
+ box.append(t);
+}
+function buildSessionBox(a){
+ const box=el('div','sessBox');
+ box.append(el('h2',null,'Quản lý Session'));
+ const sess=a.session;
+ const curTxt=sess&&sess.forceNew?'Đang chờ tạo phiên mới ở lần đánh thức kế tiếp':sess&&sess.sessionId?sess.sessionId+' · '+(sess.turnCount||0)+' lượt'+(sess.lastTask?' · '+sess.lastTask:''):'Chưa có session (sẽ tự tạo khi đánh thức)';
+ box.append(el('p',null,'Phiên hiện tại: '+curTxt));
+ if(sess&&Array.isArray(sess.history)&&sess.history.length){
+  const sel=el('select');
+  sess.history.forEach(h=>{
+   const opt=el('option',null,h.sessionId.slice(0,8)+'… ('+(h.turnCount||0)+' lượt'+(h.lastTask?', '+h.lastTask:'')+')');
+   opt.value=h.sessionId;if(sess.sessionId===h.sessionId)opt.selected=true;sel.append(opt);
+  });
+  const bUse=el('button','btn','Dùng phiên này');bUse.type='button';bUse.disabled=a.running;
+  bUse.onclick=async()=>{try{await apiPost('/api/agent/use',{id:a.id,sessionId:sel.value})}catch(err){alert(err.message)}};
+  const row=el('div','rowAct');row.append(sel,bUse);box.append(row);
+ }
+ if(a.cliTool){
+  const ta=el('textarea');ta.rows=2;ta.placeholder='Lời nhắn gửi cho '+a.id+' (tuỳ chọn nếu đã có file to: '+a.id+')...';
+  const chkLbl=el('label');chkLbl.style.fontSize='12px';const chk=document.createElement('input');chk.type='checkbox';chkLbl.append(chk,document.createTextNode(' Tạo phiên mới (--new)'));
+  const stMsg=el('p','msgStatus');stMsg.hidden=true;
+  const row=el('div','rowAct');
+  const bWake=el('button','btn pri',a.running?'Đang chạy...':'Đánh thức');bWake.type='button';bWake.disabled=a.running;
+  bWake.onclick=async()=>{stMsg.hidden=true;try{const r=await apiPost('/api/agent/wake',{id:a.id,msg:ta.value,newSession:chk.checked});ta.value='';chk.checked=false;stMsg.textContent='Đã đánh thức (session: '+((r.result&&r.result.sessionId)||'...')+')';stMsg.className='msgStatus ok';stMsg.hidden=false}catch(err){stMsg.textContent=err.message;stMsg.className='msgStatus err';stMsg.hidden=false}};
+  const bNew=el('button','btn warn','Phiên mới');bNew.type='button';bNew.disabled=a.running;
+  bNew.onclick=async()=>{stMsg.hidden=true;try{const r=await apiPost('/api/agent/new',{id:a.id});stMsg.textContent=r.msg;stMsg.className='msgStatus ok';stMsg.hidden=false}catch(err){stMsg.textContent=err.message;stMsg.className='msgStatus err';stMsg.hidden=false}};
+  row.append(bWake,bNew);
+  if(a.running){const bStop=el('button','btn bad','Dừng');bStop.type='button';bStop.onclick=async()=>{try{await apiPost('/api/agent/stop',{id:a.id})}catch(err){stMsg.textContent=err.message;stMsg.className='msgStatus err';stMsg.hidden=false}};row.append(bStop)}
+  box.append(ta,chkLbl,row,stMsg);
+ }else if(a.role==='master'){
+  box.append(el('p','muted','Master này mở thủ công ở terminal (claude hoặc agy). Muốn điều khiển từ web, tạo hoặc sửa sang chế độ auto trong Quản lý Agent.'));
+ }
+ return box;
+}
 function showDetail(){
  const d=$('#detail');const a=S.agents.find(x=>x.id===openId);d.style.display='block';
- // làm mới 3 giây: dữ liệu không đổi hay bạn đang bôi đen chữ thì giữ nguyên bảng (giữ tiêu điểm, vị trí cuộn)
+ // làm mới 3 giây: dữ liệu không đổi, bạn đang bôi đen chữ hoặc đang gõ trong ô nhập thì giữ nguyên bảng
  const k=JSON.stringify([openId,a||null]);
- if(k===KEY_DETAIL||selIn(d))return;
+ if(k===KEY_DETAIL||selIn(d)||isEditingIn(d))return;
  KEY_DETAIL=k;
  // dựng lại bảng xoá nút Đóng hay tiêu đề đang giữ tiêu điểm: nhớ để trả lại, kẻo Tab phải đi lại từ đầu trang
  const ae=document.activeElement,refocus=d.contains(ae)?(ae.tagName==='BUTTON'?'button':'#detailTitle'):null;
  keepScroll(d,()=>{
   d.replaceChildren();
-  const close=el('button',null,'Đóng');close.setAttribute('aria-label','Đóng chi tiết');close.onclick=closeDetail;
+  const close=el('button','btn','Đóng');close.setAttribute('aria-label','Đóng chi tiết');close.onclick=closeDetail;
   const h=el('h2',null,openId);h.id='detailTitle';h.tabIndex=-1;d.append(close,h);
   if(!a){d.append(el('p',null,'Agent này được nhắc trong file nhưng chưa có trong workflow/agents.txt, nên watch.sh không đánh thức được.'));return}
   d.append(el('p',null,a.role+' · '+((Object.hasOwn(MODE_NAME,a.mode)&&MODE_NAME[a.mode])||'đánh thức tay')+(a.note?' · '+a.note:'')),el('p',a.nowWait?'act':null,runLine(a)));
+  if(!DEMO)d.append(buildSessionBox(a));
   d.append(el('h2',null,'File đang chờ'));
   if(a.pending.length){const ul=el('ul');a.pending.forEach(p=>{const li=el('li');li.append(el('code',null,p));ul.append(li)});d.append(ul)}else d.append(el('p','muted','Không có.'));
   if(a.hist&&a.hist.length){d.append(el('h2',null,'Các lần chạy gần đây'));const ul=el('ul');

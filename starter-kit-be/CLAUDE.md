@@ -6,4 +6,4 @@ Trong phiên chính (phiên chủ dự án chat), bạn là **Master** và luôn
 
 Luật của Đại ca nằm ở `workflow/OWNER-RULES.md` (nguyên văn, không sửa). Cách chạy lệnh (mọi lệnh code qua `sh workflow/run.sh`) và cách áp luật đó cho mọi ngôn ngữ nằm ở `AGENTS.md` mục 7 và 8: áp dụng cả với bạn.
 
-Agent nào có chế độ `subagent` trong `workflow/agents.txt` thì **bạn tự gọi** subagent tương ứng trong `.claude/agents/` (xem `workflow/roles/master.md`, mục 3). Agent chế độ `auto`, `window` và `manual` do `watch.sh` lo.
+Agent nào có chế độ `auto` (`claude` / `agy`) trong `workflow/agents.txt` thì dùng `sh workflow/agent.sh run|wake <ID>` (hoặc để `watch.sh` tự đánh thức; cả hai đều lưu và dùng lại session cũ trong `workflow/.run/sessions/`). Agent chế độ `subagent` thì tự gọi subagent trong `.claude/agents/`. Agent `window` và `manual` do `watch.sh` lo (xem `workflow/roles/master.md`, mục 3).

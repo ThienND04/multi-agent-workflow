@@ -300,6 +300,19 @@ EOF
 
 wake() { # wake <id> <vai> <lệnh> <danh sách file>
   id="$1"; role="$2"; cmd="$3"; files="$4"
+  # Nếu agent dùng claude hoặc agy và có agent.js, đánh thức qua agent.js để lưu & dùng lại session cũ.
+  if [ -f "$W/agent.js" ] && command -v node >/dev/null 2>&1; then
+    for tok in $cmd; do
+      case "$(basename "$tok" 2>/dev/null)" in
+        claude|agy)
+          file_csv=$(printf '%s\n' "$files" | awk 'NF { printf "%s%s", (n++ ? "," : ""), $0 }')
+          if node "$W/agent.js" wake "$id" --files "$file_csv" --timeout "$TIMEOUT"; then
+            return 0
+          fi
+          break ;;
+      esac
+    done
+  fi
   prompt=$(make_prompt "$id" "$role" "$files")
   log="$LOGS/$(date '+%Y%m%d-%H%M%S')-$id.log"
   tcmd=""
